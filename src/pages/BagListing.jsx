@@ -521,8 +521,14 @@ const S = {
     heroSection: { position: "relative", zIndex: 2, textAlign: "center", padding: "60px 24px", maxWidth: 760 },
     heroEyebrow: { fontSize: 11, letterSpacing: "0.38em", textTransform: "uppercase", color: "rgba(201,168,106,0.75)", margin: "0 0 16px" },
     heroTitle: {
-        fontSize: "3.6rem", lineHeight: 1.04, margin: "0 0 16px", color: TEXT,
-        fontFamily: "'Cormorant Garamond',serif", letterSpacing: "0.07em", textShadow: "0 2px 24px rgba(0,0,0,0.7)",
+        fontSize: "3.6rem", lineHeight: 1.04, margin: "0 0 16px",
+        fontFamily: "'Cormorant Garamond',serif", letterSpacing: "0.07em",
+        background: "linear-gradient(135deg, #8B6914 0%, #C9A84C 25%, #E8C96A 45%, #F5DFA0 55%, #C9A84C 75%, #8B6914 100%)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+        textShadow: "none",
+        fontWeight: 700,
     },
     heroSub: { fontSize: 15, color: "#D8C9A1", lineHeight: 1.8, margin: 0, textShadow: "0 1px 10px rgba(0,0,0,0.6)" },
     filterWrap: {

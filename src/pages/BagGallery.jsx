@@ -30,6 +30,10 @@ const BagGallery = () => {
         fetchBag();
     }, [id]);
 
+    const openFullImage = (url) => {
+        window.open(url, "_self");
+    };
+
     if (loading) {
         return (
             <div style={styles.loadingContainer}>
@@ -66,7 +70,7 @@ const BagGallery = () => {
 
     return (
         <div style={styles.page}>
-            {/* ── Header ── */}
+            {/* Header */}
             <header style={styles.header}>
                 <h1 style={styles.headerTitle}>TRÉSOR BAGS - Gallery</h1>
                 <button onClick={() => navigate("/")} style={styles.backBtn}>
@@ -75,7 +79,7 @@ const BagGallery = () => {
             </header>
 
             <main style={styles.container}>
-                {/* ── Main Image Display ── */}
+                {/* Main Image Display */}
                 <div style={styles.mainImageSection}>
                     <div style={styles.mainImageContainer}>
                         <img
@@ -83,10 +87,18 @@ const BagGallery = () => {
                             alt={bag.title}
                             style={styles.mainImage}
                         />
+                        {/* Fullscreen button on main image */}
+                        <button
+                            style={styles.fullscreenBtn}
+                            onClick={() => openFullImage(selectedImage)}
+                            title="View full image"
+                        >
+                            🔍
+                        </button>
                     </div>
                 </div>
 
-                {/* ── Bag Details ── */}
+                {/* Bag Details */}
                 <div style={styles.detailsSection}>
                     <h1 style={styles.title}>{bag.title}</h1>
                     <p style={styles.description}>{bag.description}</p>
@@ -139,22 +151,31 @@ const BagGallery = () => {
                 </div>
             </main>
 
-            {/* ── Thumbnail Gallery ── */}
+            {/* Thumbnail Gallery */}
             {allImages.length > 1 && (
                 <div style={styles.thumbnailSection}>
                     <h3 style={styles.thumbnailTitle}>Gallery ({allImages.length} images)</h3>
                     <div style={styles.thumbnailGrid}>
                         {allImages.map((image, index) => (
-                            <img
-                                key={index}
-                                src={image}
-                                alt={`Gallery item ${index + 1}`}
-                                style={{
-                                    ...styles.thumbnail,
-                                    ...(selectedImage === image && styles.activeThumbnail),
-                                }}
-                                onClick={() => setSelectedImage(image)}
-                            />
+                            <div key={index} style={styles.thumbnailWrapper}>
+                                <img
+                                    src={image}
+                                    alt={`Gallery item ${index + 1}`}
+                                    style={{
+                                        ...styles.thumbnail,
+                                        ...(selectedImage === image && styles.activeThumbnail),
+                                    }}
+                                    onClick={() => setSelectedImage(image)}
+                                />
+                                {/* Fullscreen button on each thumbnail */}
+                                <button
+                                    style={styles.thumbFullscreenBtn}
+                                    onClick={() => openFullImage(image)}
+                                    title="View full image"
+                                >
+                                    🔍
+                                </button>
+                            </div>
                         ))}
                     </div>
                 </div>
@@ -230,12 +251,33 @@ const styles = {
         alignItems: "center",
         justifyContent: "center",
         border: "1px solid rgba(255,255,255,0.08)",
+        position: "relative",
     },
     mainImage: {
         width: "100%",
         height: "100%",
         objectFit: "contain",
         padding: "20px",
+    },
+    fullscreenBtn: {
+        position: "absolute",
+        top: "12px",
+        right: "12px",
+        width: "36px",
+        height: "36px",
+        borderRadius: "50%",
+        background: "rgba(0,0,0,0.6)",
+        border: "1px solid rgba(229,196,138,0.5)",
+        color: "#E5C48A",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "16px",
+        backdropFilter: "blur(6px)",
+        transition: "all 0.2s ease",
+        zIndex: 10,
+        lineHeight: 1,
     },
     detailsSection: {
         background: "rgba(18,18,18,0.94)",
@@ -319,6 +361,11 @@ const styles = {
         gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
         gap: "16px",
     },
+    thumbnailWrapper: {
+        position: "relative",
+        display: "inline-block",
+        width: "100%",
+    },
     thumbnail: {
         width: "100%",
         aspectRatio: "1",
@@ -328,11 +375,33 @@ const styles = {
         transition: "all 0.3s ease",
         border: "2px solid transparent",
         opacity: 0.75,
+        display: "block",
     },
     activeThumbnail: {
         opacity: 1,
         border: "2px solid #E5C48A",
         boxShadow: "0 14px 28px rgba(229,196,138,0.18)",
+    },
+    thumbFullscreenBtn: {
+        position: "absolute",
+        top: "6px",
+        right: "6px",
+        width: "26px",
+        height: "26px",
+        borderRadius: "50%",
+        background: "rgba(0,0,0,0.65)",
+        border: "1px solid rgba(229,196,138,0.5)",
+        color: "#E5C48A",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "12px",
+        backdropFilter: "blur(4px)",
+        transition: "all 0.2s ease",
+        zIndex: 10,
+        lineHeight: 1,
+        padding: 0,
     },
     loadingContainer: {
         display: "flex",

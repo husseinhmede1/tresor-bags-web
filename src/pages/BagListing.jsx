@@ -207,6 +207,7 @@ const BagListing = () => {
     const [color, setColor] = useState("");
     const [capacity, setCapacity] = useState("");
     const [expandedBag, setExpandedBag] = useState(null);
+    const [filterOpen, setFilterOpen] = useState(false);
 
     const HEIGHT_RANGE = { min: 10, max: 80 };
     const WIDTH_RANGE = { min: 10, max: 60 };
@@ -364,42 +365,58 @@ const BagListing = () => {
 
             {/* ── Filters ── */}
             <div style={S.filterWrap} className="t-filter-wrap">
+                {/* Search always visible */}
                 <div style={S.searchRow}>
                     <div style={S.searchInputWrap}>
                         <input type="text" placeholder="Search by title or description…"
                             value={searchInput} onChange={handleSearchChange} style={S.searchInput} />
                         {searchInput !== searchQuery && <span style={S.searchSpinner} />}
                     </div>
+                    {/* Collapse toggle button */}
+                    <button onClick={() => setFilterOpen(o => !o)} style={S.collapseToggle}>
+                        <span style={S.collapseToggleIcon(filterOpen)}>⌃</span>
+                        <span>{filterOpen ? "Hide Filters" : "Show Filters"}</span>
+                    </button>
                 </div>
 
-                <div style={S.filterGrid} className="t-filter-grid">
-                    <div style={S.filterGroup}>
-                        <label style={S.filterLabel}>Price Range ($)</label>
-                        <div style={S.priceRow}>
-                            <input type="number" placeholder="Min" value={minPrice}
-                                onChange={(e) => setMinPrice(e.target.value)} style={S.priceInput} />
-                            <span style={S.dash}>—</span>
-                            <input type="number" placeholder="Max" value={maxPrice}
-                                onChange={(e) => setMaxPrice(e.target.value)} style={S.priceInput} />
+                {/* Collapsible filter body */}
+                <div style={S.collapseBody(filterOpen)}>
+                    <div style={S.collapseDivider} />
+                    <div style={S.filterGrid} className="t-filter-grid">
+                        <div style={S.filterGroup}>
+                            <label style={S.filterLabel}>Price Range ($)</label>
+                            <div style={S.priceRow}>
+                                <input type="number" placeholder="Min" value={minPrice}
+                                    onChange={(e) => setMinPrice(e.target.value)} style={S.priceInput} />
+                                <span style={S.dash}>—</span>
+                                <input type="number" placeholder="Max" value={maxPrice}
+                                    onChange={(e) => setMaxPrice(e.target.value)} style={S.priceInput} />
+                            </div>
+                        </div>
+                        <SliderGroup label="Height (cm)" minVal={minHeight} maxVal={maxHeight} setMin={setMinHeight} setMax={setMaxHeight} range={HEIGHT_RANGE} unit="cm" />
+                        <SliderGroup label="Width (cm)" minVal={minWidth} maxVal={maxWidth} setMin={setMinWidth} setMax={setMaxWidth} range={WIDTH_RANGE} unit="cm" />
+                        <SliderGroup label="Weight (kg)" minVal={minWeight} maxVal={maxWeight} setMin={setMinWeight} setMax={setMaxWeight} range={WEIGHT_RANGE} unit="kg" />
+                        <div style={S.filterGroup}>
+                            <label style={S.filterLabel}>Color</label>
+                            <input type="text" placeholder="e.g., Black, Red" value={color} onChange={(e) => setColor(e.target.value)} style={S.textInput} />
+                        </div>
+                        <div style={S.filterGroup}>
+                            <label style={S.filterLabel}>Capacity</label>
+                            <input type="text" placeholder="e.g., 20L, 30L" value={capacity} onChange={(e) => setCapacity(e.target.value)} style={S.textInput} />
                         </div>
                     </div>
-                    <SliderGroup label="Height (cm)" minVal={minHeight} maxVal={maxHeight} setMin={setMinHeight} setMax={setMaxHeight} range={HEIGHT_RANGE} unit="cm" />
-                    <SliderGroup label="Width (cm)" minVal={minWidth} maxVal={maxWidth} setMin={setMinWidth} setMax={setMaxWidth} range={WIDTH_RANGE} unit="cm" />
-                    <SliderGroup label="Weight (kg)" minVal={minWeight} maxVal={maxWeight} setMin={setMinWeight} setMax={setMaxWeight} range={WEIGHT_RANGE} unit="kg" />
-                    <div style={S.filterGroup}>
-                        <label style={S.filterLabel}>Color</label>
-                        <input type="text" placeholder="e.g., Black, Red" value={color} onChange={(e) => setColor(e.target.value)} style={S.textInput} />
-                    </div>
-                    <div style={S.filterGroup}>
-                        <label style={S.filterLabel}>Capacity</label>
-                        <input type="text" placeholder="e.g., 20L, 30L" value={capacity} onChange={(e) => setCapacity(e.target.value)} style={S.textInput} />
+                    <div style={S.filterFooter}>
+                        <span style={S.resultCount}>{total} bag{total !== 1 ? "s" : ""} found</span>
+                        <button onClick={resetFilters} style={S.resetBtn}>Reset Filters</button>
                     </div>
                 </div>
 
-                <div style={S.filterFooter}>
-                    <span style={S.resultCount}>{total} bag{total !== 1 ? "s" : ""} found</span>
-                    <button onClick={resetFilters} style={S.resetBtn}>Reset Filters</button>
-                </div>
+                {/* Result count always visible when collapsed */}
+                {!filterOpen && (
+                    <div style={{ padding: "10px 0 2px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={S.resultCount}>{total} bag{total !== 1 ? "s" : ""} found</span>
+                    </div>
+                )}
             </div>
 
             {error && <div style={S.errorBox}>{error}</div>}
@@ -535,7 +552,30 @@ const S = {
         margin: "20px auto", padding: "24px 20px", background: "rgba(16,16,16,0.97)",
         borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: "0 24px 60px rgba(0,0,0,0.22)", maxWidth: 1200,
     },
-    searchRow: { display: "flex", gap: 10, marginBottom: 20, alignItems: "center" },
+    collapseToggle: {
+        display: "flex", alignItems: "center", gap: 7,
+        padding: "12px 20px", borderRadius: 12, cursor: "pointer",
+        background: "rgba(229,196,138,0.07)", border: `1px solid rgba(229,196,138,0.25)`,
+        color: GOLD_L, fontSize: 13, fontWeight: 700, letterSpacing: "0.05em",
+        whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.25s ease",
+    },
+    collapseToggleIcon: (open) => ({
+        display: "inline-block",
+        transform: open ? "rotate(0deg)" : "rotate(180deg)",
+        transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+        fontSize: 16, lineHeight: 1,
+    }),
+    collapseBody: (open) => ({
+        overflow: "hidden",
+        maxHeight: open ? "600px" : "0px",
+        opacity: open ? 1 : 0,
+        transition: "max-height 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease",
+    }),
+    collapseDivider: {
+        height: 1, background: `linear-gradient(90deg, transparent, rgba(229,196,138,0.2), transparent)`,
+        margin: "16px 0",
+    },
+    searchRow: { display: "flex", gap: 10, marginBottom: 0, alignItems: "center" },
     searchInputWrap: { flex: 1, position: "relative", display: "flex", alignItems: "center" },
     searchInput: { ...inputBase, padding: "14px 44px 14px 18px", borderRadius: 14, fontSize: 14 },
     searchSpinner: {

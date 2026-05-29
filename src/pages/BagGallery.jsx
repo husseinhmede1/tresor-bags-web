@@ -44,7 +44,7 @@ const BagGallery = () => {
             <div style={styles.errorContainer}>
                 <h2>Error</h2>
                 <p>{error}</p>
-                <button onClick={() => navigate("/tresor-bags")} style={styles.backBtn}>
+                <button onClick={() => navigate("/")} style={styles.backBtn}>
                     Go Back
                 </button>
             </div>
@@ -55,7 +55,7 @@ const BagGallery = () => {
         return (
             <div style={styles.errorContainer}>
                 <h2>Bag not found</h2>
-                <button onClick={() => navigate("/tresor-bags")} style={styles.backBtn}>
+                <button onClick={() => navigate("/")} style={styles.backBtn}>
                     Go Back
                 </button>
             </div>
@@ -69,7 +69,7 @@ const BagGallery = () => {
             {/* ── Header ── */}
             <header style={styles.header}>
                 <h1 style={styles.headerTitle}>TRÉSOR BAGS - Gallery</h1>
-                <button onClick={() => navigate("/tresor-bags")} style={styles.backBtn}>
+                <button onClick={() => navigate("/")} style={styles.backBtn}>
                     ← Back
                 </button>
             </header>

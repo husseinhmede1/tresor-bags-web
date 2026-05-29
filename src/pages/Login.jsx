@@ -12,7 +12,7 @@ const Login = () => {
 
     // Already logged in → go straight to admin listing
     if (isAdmin) {
-        navigate("/tresor-bags/admin/dashboard", { replace: true });
+        navigate("/admin/dashboard", { replace: true });
     }
 
     const handleSubmit = async (e) => {
@@ -22,7 +22,7 @@ const Login = () => {
         
         const success = login(password);
         if (success) {
-            navigate("/tresor-bags/admin/dashboard");
+            navigate("/admin/dashboard");
         } else {
             setError("Invalid credentials. Please try again.");
         }
@@ -70,14 +70,10 @@ const Login = () => {
                     >
                         {loading ? "Signing in..." : "Sign In"}
                     </button>
-
-                    <div style={styles.hint}>
-                        <p style={styles.hintText}>Demo password: <code style={styles.code}>admin123</code></p>
-                    </div>
                 </form>
 
                 <p style={styles.back}>
-                    <a href="/tresor-bags" style={styles.backLink}>
+                    <a href="/" style={styles.backLink}>
                         ← Back to Store
                     </a>
                 </p>

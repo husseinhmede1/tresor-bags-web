@@ -12,7 +12,7 @@ const AddBag = () => {
             setError("");
             const result = await createBag(formData);
             if (result.success) {
-                navigate("/tresor-bags/admin/dashboard");
+                navigate("/admin/dashboard");
             }
         } catch (err) {
             setError(err.message || "Failed to create bag");

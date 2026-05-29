@@ -342,7 +342,7 @@ const BagListing = () => {
                     {isAdmin && (
                         <>
                             <span style={S.adminBadge} className="t-badge">Admin</span>
-                            <button style={S.addBtn} onClick={() => navigate("/tresor-bags/admin/add")}>+ Add Bag</button>
+                            <button style={S.addBtn} onClick={() => navigate("/admin/add")}>+ Add Bag</button>
                             <button style={S.logoutBtn} onClick={logout}>Logout</button>
                         </>
                     )}
@@ -431,11 +431,11 @@ const BagListing = () => {
                             <div style={S.card} className="tresor-card">
                                 {isAdmin && (
                                     <div style={S.adminActions}>
-                                        <button style={S.editBtn} onClick={() => navigate(`/tresor-bags/admin/edit/${bag._id}`)}>✏️</button>
+                                        <button style={S.editBtn} onClick={() => navigate(`/admin/edit/${bag._id}`)}>✏️</button>
                                         <button style={S.deleteBtn} onClick={() => handleDelete(bag._id)}>🗑️</button>
                                     </div>
                                 )}
-                                <div style={S.imgWrap} onClick={() => navigate(`/tresor-bags/gallery/${bag._id}`)}>
+                                <div style={S.imgWrap} onClick={() => navigate(`/gallery/${bag._id}`)}>
                                     <img src={bag.mainImage} alt={bag.title} style={S.img} className="tresor-img" />
                                     <div style={S.imgOverlay}><span style={S.viewLabel}>View Details</span></div>
                                 </div>

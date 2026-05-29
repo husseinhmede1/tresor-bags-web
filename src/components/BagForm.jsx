@@ -143,7 +143,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         finally { setLoading(false); }
     };
 
-    const handleCancel = () => navigate("/tresor-bags/admin/dashboard");
+    const handleCancel = () => navigate("/admin/dashboard");
 
     return (
         <div style={S.page}>

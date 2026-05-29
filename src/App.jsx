@@ -16,17 +16,17 @@ const App = () => {
         <Routes>
 
           {/* Public listing */}
-          <Route path="/tresor-bags" element={<BagListing />} />
+          <Route path="/" element={<BagListing />} />
 
           {/* Public gallery view */}
-          <Route path="/tresor-bags/gallery/:id" element={<BagGallery />} />
+          <Route path="/gallery/:id" element={<BagGallery />} />
 
           {/* Admin login */}
-          <Route path="/tresor-bags/admin" element={<Login />} />
+          <Route path="/admin" element={<Login />} />
 
-          {/* Admin dashboard — same listing, admin mode active via context */}
+          {/* Admin dashboard - same listing, admin mode active via context */}
           <Route
-            path="/tresor-bags/admin/dashboard"
+            path="/admin/dashboard"
             element={
               <ProtectedRoute>
                 <BagListing />
@@ -36,7 +36,7 @@ const App = () => {
 
           {/* Add new bag */}
           <Route
-            path="/tresor-bags/admin/add"
+            path="/admin/add"
             element={
               <ProtectedRoute>
                 <AddBag />
@@ -46,7 +46,7 @@ const App = () => {
 
           {/* Edit bag */}
           <Route
-            path="/tresor-bags/admin/edit/:id"
+            path="/admin/edit/:id"
             element={
               <ProtectedRoute>
                 <EditBag />
@@ -55,7 +55,7 @@ const App = () => {
           />
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/tresor-bags" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
 
         </Routes>
       </BrowserRouter>

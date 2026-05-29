@@ -34,7 +34,7 @@ const EditBag = () => {
             setError("");
             const result = await updateBag(id, formData);
             if (result.success) {
-                navigate("/tresor-bags/admin/dashboard");
+                navigate("/admin/dashboard");
             }
         } catch (err) {
             setError(err.message || "Failed to update bag");
@@ -56,7 +56,7 @@ const EditBag = () => {
             <div style={styles.errorPage}>
                 <h2>Error</h2>
                 <p>{error}</p>
-                <button onClick={() => navigate("/tresor-bags/admin/dashboard")}>
+                <button onClick={() => navigate("/admin/dashboard")}>
                     Go Back
                 </button>
             </div>

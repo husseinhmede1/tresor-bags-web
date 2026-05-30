@@ -270,6 +270,7 @@ const BagListing = () => {
                 .card-reveal-wrapper { transition-delay:0ms !important; }
             }
             @media (max-width:600px) {
+                .swipe-hint    { display:block !important; }
                 .t-header      { padding:14px 16px !important; }
                 .t-hero-wrap   { min-height:420px !important; }
                 .t-hero-title  { font-size:1.9rem !important; letter-spacing:0.03em !important; }
@@ -409,25 +410,42 @@ const BagListing = () => {
 
             {/* ── Tab Switcher ── */}
             <div style={S.tabSwitcher}>
+                {/* Glass pill track */}
                 <div style={S.tabTrack}>
+                    {/* Sliding gold pill indicator */}
+                    <div style={{
+                        ...S.tabSlider,
+                        left: activeTab === "items" ? 4 : "calc(50% + 2px)",
+                    }} />
+                    {/* Items button */}
                     <button
-                        className="tab-btn"
                         onClick={() => setActiveTab("items")}
-                        style={{ ...S.tabBtn, ...(activeTab === "items" ? S.tabBtnActive : {}) }}
+                        style={{ ...S.tabBtn, color: activeTab === "items" ? "#070707" : MUTED, zIndex: 1 }}
                     >
-                        <span style={S.tabIcon}>🎒</span> Items
-                        {activeTab === "items" && bagTotal > 0 && <span style={S.tabCount}>{bagTotal}</span>}
+                        <span>🎒</span>
+                        <span>Items</span>
+                        {bagTotal > 0 && (
+                            <span style={{ ...S.tabCount, background: activeTab === "items" ? "rgba(0,0,0,0.18)" : "rgba(229,196,138,0.1)", color: activeTab === "items" ? "#070707" : GOLD_L }}>
+                                {bagTotal}
+                            </span>
+                        )}
                     </button>
+                    {/* Categories button */}
                     <button
-                        className="tab-btn"
                         onClick={() => setActiveTab("categories")}
-                        style={{ ...S.tabBtn, ...(activeTab === "categories" ? S.tabBtnActive : {}) }}
+                        style={{ ...S.tabBtn, color: activeTab === "categories" ? "#070707" : MUTED, zIndex: 1 }}
                     >
-                        <span style={S.tabIcon}>🏷️</span> Categories
-                        {activeTab === "categories" && catTotal > 0 && <span style={S.tabCount}>{catTotal}</span>}
+                        <span>🏷️</span>
+                        <span>Categories</span>
+                        {catTotal > 0 && (
+                            <span style={{ ...S.tabCount, background: activeTab === "categories" ? "rgba(0,0,0,0.18)" : "rgba(229,196,138,0.1)", color: activeTab === "categories" ? "#070707" : GOLD_L }}>
+                                {catTotal}
+                            </span>
+                        )}
                     </button>
                 </div>
-                <div style={{ ...S.tabIndicator, left: activeTab === "items" ? "2px" : "50%" }} />
+                {/* Swipe hint on mobile */}
+                <p style={S.swipeHint}>← swipe to switch →</p>
             </div>
 
             {/* ══════════ ITEMS TAB ══════════ */}
@@ -656,14 +674,41 @@ const S = {
     heroTitle: { fontSize: "3.6rem", lineHeight: 1.04, margin: "0 0 16px", fontFamily: "'Cormorant Garamond',serif", letterSpacing: "0.07em", background: "linear-gradient(135deg,#8B6914 0%,#C9A84C 25%,#E8C96A 45%,#F5DFA0 55%,#C9A84C 75%,#8B6914 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", textShadow: "none", fontWeight: 700 },
     heroSub: { fontSize: 15, color: "#D8C9A1", lineHeight: 1.8, margin: 0, textShadow: "0 1px 10px rgba(0,0,0,0.6)" },
 
-    /* Tab switcher */
-    tabSwitcher: { position: "relative", margin: "20px auto 0", maxWidth: 1200, padding: "0 16px" },
-    tabTrack: { display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: 16, border: `1px solid ${BORDER}`, padding: 4, gap: 2, position: "relative" },
-    tabBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px 20px", borderRadius: 12, border: "none", background: "transparent", color: MUTED, fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.25s ease", letterSpacing: "0.04em" },
-    tabBtnActive: { background: "rgba(229,196,138,0.12)", color: GOLD_L, border: `1px solid rgba(229,196,138,0.25)` },
-    tabIcon: { fontSize: 16 },
-    tabCount: { background: "rgba(229,196,138,0.15)", color: GOLD_L, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 },
-    tabIndicator: { position: "absolute", bottom: -2, height: 2, width: "50%", background: `linear-gradient(90deg,transparent,${GOLD_L},transparent)`, transition: "left 0.3s cubic-bezier(0.4,0,0.2,1)", pointerEvents: "none" },
+    /* Tab switcher — glassmorphism pill */
+    tabSwitcher: { margin: "24px auto 0", maxWidth: 480, padding: "0 16px" },
+    tabTrack: {
+        position: "relative", display: "flex", alignItems: "center",
+        background: "rgba(255,255,255,0.06)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.12)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+        padding: 4,
+        overflow: "hidden",
+    },
+    tabSlider: {
+        position: "absolute", top: 4, bottom: 4,
+        width: "calc(50% - 6px)",
+        background: `linear-gradient(135deg, #C9A86A, ${GOLD_L})`,
+        borderRadius: 999,
+        boxShadow: "0 4px 20px rgba(201,168,106,0.5), 0 0 0 1px rgba(229,196,138,0.3)",
+        transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        pointerEvents: "none",
+    },
+    tabBtn: {
+        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        padding: "13px 16px", borderRadius: 999, border: "none",
+        background: "transparent", fontSize: 13, fontWeight: 700,
+        cursor: "pointer", transition: "color 0.3s ease", letterSpacing: "0.04em",
+        whiteSpace: "nowrap",
+    },
+    tabCount: { borderRadius: 999, padding: "2px 7px", fontSize: 11, fontWeight: 700 },
+    swipeHint: {
+        textAlign: "center", fontSize: 11, color: "rgba(167,161,154,0.4)",
+        margin: "8px 0 0", letterSpacing: "0.08em",
+        display: "none",
+    },
 
     /* Category banner */
     catBanner: { margin: "16px auto 0", maxWidth: 1200, padding: "0 16px" },

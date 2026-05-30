@@ -161,9 +161,9 @@ const Ticker = ({ text, color = "#E5C48A" }) => {
 
 /* ── HeroCanvas ── */
 const HeroCanvas = () => (
-    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "flex-start", pointerEvents: "none", overflow: "hidden" }}>
         <img src={heroBagImg} alt="" style={{
-            height: "92%", width: "auto", objectFit: "contain",
+            height: "100%", width: "auto", maxWidth: "55%", objectFit: "contain",
             filter: "drop-shadow(0 32px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 40px rgba(201,168,106,0.18))",
             animation: "heroBagFloat 6s ease-in-out infinite",
             transformOrigin: "center bottom",
@@ -278,7 +278,7 @@ const BagListing = () => {
             }
             @media (max-width:600px) {
                 .t-header      { padding:14px 16px !important; }
-                .t-hero-wrap   { min-height:320px !important; }
+                .t-hero-wrap   { min-height:380px !important; }
                 .t-hero-title  { font-size:1.9rem !important; letter-spacing:0.03em !important; }
                 .t-hero-sub    { font-size:13px !important; }
                 .t-filter-wrap { margin:10px !important; padding:16px !important; border-radius:16px !important; }

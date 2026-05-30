@@ -168,21 +168,26 @@ button {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
-/* Outer blurred rotating glow */
+/* Thin rotating border */
 button::before {
   content: "";
   position: absolute;
-  inset: -3px;
+  inset: -1.5px;
   border-radius: inherit;
   background: conic-gradient(
     from var(--tresor-angle) at 50% 50%,
     transparent 0deg,
-    rgba(201, 168, 106, 0.85) 50deg,
-    rgba(229, 196, 138, 1)    90deg,
-    rgba(245, 223, 160, 0.9) 120deg,
-    transparent               160deg
+    rgba(201, 168, 106, 0.9) 40deg,
+    rgba(229, 196, 138, 1)   70deg,
+    rgba(245, 223, 160, 1)   90deg,
+    transparent              130deg
   );
-  filter: blur(10px);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 1.5px;
   opacity: 0;
   transition: opacity 0.4s ease;
   animation: tresor-spin 3s linear infinite;

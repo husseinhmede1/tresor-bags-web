@@ -410,13 +410,41 @@ const BagListing = () => {
 
             {/* ── Tab Switcher ── */}
             <div style={S.tabSwitcher}>
-                {/* Glass pill track */}
-                <div style={S.tabTrack}>
-                    {/* Sliding gold pill indicator */}
-                    <div style={{
-                        ...S.tabSlider,
-                        left: activeTab === "items" ? 4 : "calc(50% + 2px)",
-                    }} />
+                <div
+                    style={S.tabTrack}
+                    onTouchStart={e => { swipeStartX.current = e.touches[0].clientX; }}
+                    onTouchMove={e => {
+                        if (swipeStartX.current === null) return;
+                        const diff = swipeStartX.current - e.touches[0].clientX;
+                        // live drag: show intermediate position
+                        const pill = e.currentTarget.querySelector(".tab-pill");
+                        if (!pill) return;
+                        const trackW = e.currentTarget.offsetWidth;
+                        const halfW = trackW / 2;
+                        const baseLeft = activeTab === "items" ? 4 : halfW + 2;
+                        const clamped = Math.max(4, Math.min(halfW + 2, baseLeft - diff));
+                        pill.style.transition = "none";
+                        pill.style.left = clamped + "px";
+                    }}
+                    onTouchEnd={e => {
+                        if (swipeStartX.current === null) return;
+                        const diff = swipeStartX.current - e.changedTouches[0].clientX;
+                        // reset pill animation
+                        const pill = e.currentTarget.querySelector(".tab-pill");
+                        if (pill) pill.style.transition = "";
+                        if (diff > 40) setActiveTab("categories");
+                        else if (diff < -40) setActiveTab("items");
+                        swipeStartX.current = null;
+                    }}
+                >
+                    {/* Sliding gold pill */}
+                    <div
+                        className="tab-pill"
+                        style={{
+                            ...S.tabSlider,
+                            left: activeTab === "items" ? 4 : "calc(50% + 2px)",
+                        }}
+                    />
                     {/* Items button */}
                     <button
                         onClick={() => setActiveTab("items")}
@@ -444,8 +472,6 @@ const BagListing = () => {
                         )}
                     </button>
                 </div>
-                {/* Swipe hint on mobile */}
-                <p style={S.swipeHint}>← swipe to switch →</p>
             </div>
 
             {/* ══════════ ITEMS TAB ══════════ */}

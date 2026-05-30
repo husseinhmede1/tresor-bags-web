@@ -157,7 +157,8 @@ const BagGallery = () => {
                         <img
                             src={selectedImage}
                             alt={bag.title}
-                            style={S.mainImg}
+                            style={{ ...S.mainImg, cursor: "zoom-in" }}
+                            onClick={() => window.open(selectedImage, "_self")}
                         />
                         <button
                             style={S.expandBtn}

@@ -5,6 +5,94 @@ import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
 
+/* ── Logo with animated zipper canvas overlay ── */
+const LogoWithZipper = ({ src }) => {
+    const canvasRef = useRef(null);
+    const rafRef = useRef(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const W = 320, H = 80;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.style.width = W + "px";
+        canvas.style.height = H + "px";
+        canvas.width = Math.round(W * dpr);
+        canvas.height = Math.round(H * dpr);
+        ctx.scale(dpr, dpr);
+
+        let t = 0, zp = 0, zd = 1;
+        const sparks = [];
+
+        const addSpark = (x, y) => sparks.push({
+            x, y,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 1.4) * 1.5,
+            life: 1,
+            r: Math.random() * 1.5 + 0.5,
+        });
+
+        const draw = () => {
+            t += 0.016;
+            zp += zd * 0.006;
+            if (zp >= 1) { zp = 1; zd = -1; }
+            if (zp <= 0) { zp = 0; zd = 1; }
+
+            ctx.clearRect(0, 0, W, H);
+            const zy = H - 6, zx1 = 4, zx2 = W - 4;
+            const headX = zx1 + (zx2 - zx1) * zp;
+
+            ctx.strokeStyle = "rgba(80,70,50,0.4)";
+            ctx.lineWidth = 2.5; ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(zx1, zy); ctx.lineTo(zx2, zy); ctx.stroke();
+
+            ctx.strokeStyle = "#dfa94b"; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(zx1, zy); ctx.lineTo(headX, zy); ctx.stroke();
+
+            for (let i = 0; i <= 20; i++) {
+                const tx = zx1 + (zx2 - zx1) * (i / 20), open = tx < headX;
+                ctx.fillStyle = open ? "rgba(223,169,75,0.75)" : "rgba(100,90,70,0.5)";
+                ctx.beginPath(); ctx.arc(tx, zy + (open ? -2.5 : 0), 1.6, 0, Math.PI * 2); ctx.fill();
+                if (open) { ctx.beginPath(); ctx.arc(tx, zy + 2.5, 1.6, 0, Math.PI * 2); ctx.fill(); }
+            }
+
+            const hg = ctx.createRadialGradient(headX, zy, 0, headX, zy, 9);
+            hg.addColorStop(0, "rgba(223,169,75,0.85)"); hg.addColorStop(1, "rgba(223,169,75,0)");
+            ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(headX, zy, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "#dfa94b"; ctx.beginPath(); ctx.arc(headX, zy, 3.5, 0, Math.PI * 2); ctx.fill();
+
+            const sx = ((t * 45) % (W + 60)) - 30;
+            const shg = ctx.createLinearGradient(sx - 20, 0, sx + 20, 0);
+            shg.addColorStop(0, "rgba(255,240,190,0)");
+            shg.addColorStop(0.5, "rgba(255,240,190,0.18)");
+            shg.addColorStop(1, "rgba(255,240,190,0)");
+            ctx.fillStyle = shg; ctx.fillRect(0, 0, W, H - 10);
+
+            if (Math.random() < 0.3) addSpark(headX + (Math.random() - 0.5) * 4, zy);
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const s = sparks[i];
+                s.x += s.vx; s.y += s.vy; s.vy += 0.06; s.life -= 0.05;
+                if (s.life <= 0) { sparks.splice(i, 1); continue; }
+                ctx.save(); ctx.globalAlpha = s.life;
+                ctx.fillStyle = "#e5c48a"; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+            }
+
+            rafRef.current = requestAnimationFrame(draw);
+        };
+        rafRef.current = requestAnimationFrame(draw);
+        return () => cancelAnimationFrame(rafRef.current);
+    }, []);
+
+    return (
+        <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            <img src={src} alt="Trésor Outlet Store"
+                style={{ height: 60, width: 120, objectFit: "contain", objectPosition: "left center", display: "block", borderRadius: "300px 300px 300px 300px" }} />
+            <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: 220, height: 40, pointerEvents: "none" }} />
+        </div>
+    );
+};
+
 /* ── Tokens ── */
 const GOLD   = "#dfa94b";
 const GOLD_L = "#E5C48A";
@@ -73,7 +161,7 @@ const Ticker = ({ text, color = "#E5C48A" }) => {
 
 /* ── HeroCanvas ── */
 const HeroCanvas = () => (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0 }}>
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", overflow: "hidden" }}>
         <img src={heroBagImg} alt="" style={{
             height: "92%", width: "auto", objectFit: "contain",
             filter: "drop-shadow(0 32px 64px rgba(0,0,0,0.85)) drop-shadow(0 0 40px rgba(201,168,106,0.18))",
@@ -111,8 +199,6 @@ const BagListing = () => {
 
     /* ── Tab: "items" | "categories" ── */
     const [activeTab, setActiveTab] = useState("items");
-    const tabRef = useRef(null);
-    const startXRef = useRef(null);
 
     /* ── Items state ── */
     const [bags, setBags] = useState([]);
@@ -208,15 +294,24 @@ const BagListing = () => {
         return () => document.head.removeChild(style);
     }, []);
 
-    /* ── Touch swipe on tab switcher ── */
-    const handleTouchStart = (e) => { startXRef.current = e.touches[0].clientX; };
-    const handleTouchEnd = (e) => {
-        if (startXRef.current === null) return;
-        const diff = startXRef.current - e.changedTouches[0].clientX;
-        if (diff > 50) setActiveTab("categories");
-        if (diff < -50) setActiveTab("items");
-        startXRef.current = null;
-    };
+    /* ── Global swipe handler (whole page) ── */
+    useEffect(() => {
+        let startX = null;
+        const onStart = (e) => { startX = e.touches[0].clientX; };
+        const onEnd = (e) => {
+            if (startX === null) return;
+            const diff = startX - e.changedTouches[0].clientX;
+            if (diff > 60) setActiveTab("categories");
+            if (diff < -60) setActiveTab("items");
+            startX = null;
+        };
+        document.addEventListener("touchstart", onStart, { passive: true });
+        document.addEventListener("touchend", onEnd, { passive: true });
+        return () => {
+            document.removeEventListener("touchstart", onStart);
+            document.removeEventListener("touchend", onEnd);
+        };
+    }, []);
 
     /* ── Fetch bags ── */
     const fetchBags = async () => {
@@ -325,12 +420,7 @@ const BagListing = () => {
             </div>
 
             {/* ── Tab Switcher ── */}
-            <div
-                style={S.tabSwitcher}
-                ref={tabRef}
-                onTouchStart={handleTouchStart}
-                onTouchEnd={handleTouchEnd}
-            >
+            <div style={S.tabSwitcher}>
                 <div style={S.tabTrack}>
                     <button
                         className="tab-btn"

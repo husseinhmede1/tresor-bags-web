@@ -555,9 +555,22 @@ const BagListing = () => {
                                             <div style={S.imgOverlay}><span style={S.viewLabel}>View Details</span></div>
                                         </div>
                                         <div style={S.cardBody}>
+                                            {/* Category badge */}
+                                            {bag.categoryId?.title && (
+                                                <span style={S.catBadge}>{bag.categoryId.title}</span>
+                                            )}
                                             <h3 style={S.cardTitle}>{bag.title}</h3>
                                             <p style={S.cardDesc}>{bag.description?.substring(0, 72)}…</p>
-                                            <p style={S.cardPrice}>${bag.price}</p>
+                                            {/* Price with discount */}
+                                            {bag.categoryId?.discount > 0 ? (
+                                                <div style={S.priceWrap}>
+                                                    <span style={S.cardPriceOld}>${bag.price}</span>
+                                                    <span style={S.cardPriceNew}>${(bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)}</span>
+                                                    <span style={S.discountBadge}>-{bag.categoryId.discount}%</span>
+                                                </div>
+                                            ) : (
+                                                <p style={S.cardPrice}>${bag.price}</p>
+                                            )}
                                             <button style={S.expandBtn} onClick={() => setExpandedBag(expandedBag === bag._id ? null : bag._id)}>
                                                 {expandedBag === bag._id ? "View Less ▲" : "View More ▼"}
                                             </button>
@@ -763,9 +776,14 @@ const S = {
     imgOverlay: { position: "absolute", inset: 0, background: "linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.75))", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 20, pointerEvents: "none" },
     viewLabel: { color: TEXT, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", padding: "8px 20px", borderRadius: 999, background: "rgba(223,169,75,0.22)", border: `1px solid rgba(223,169,75,0.3)` },
     cardBody: { padding: "20px 20px 24px" },
+    catBadge: { display: "inline-block", fontSize: 10, fontWeight: 700, color: GOLD_L, background: "rgba(229,196,138,0.1)", border: `1px solid rgba(229,196,138,0.2)`, borderRadius: 999, padding: "3px 10px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 },
     cardTitle: { fontSize: 17, fontWeight: 700, color: TEXT, margin: "0 0 8px" },
     cardDesc: { fontSize: 13, color: MUTED, margin: "0 0 12px", lineHeight: 1.6, minHeight: 42 },
     cardPrice: { fontSize: 20, fontWeight: 800, color: GOLD_L, margin: "0 0 14px" },
+    priceWrap: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", flexWrap: "wrap" },
+    cardPriceOld: { fontSize: 15, fontWeight: 600, color: "#FF6B6B", textDecoration: "line-through" },
+    cardPriceNew: { fontSize: 20, fontWeight: 800, color: GOLD_L },
+    discountBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: "#FF6B6B", borderRadius: 999, padding: "2px 8px" },
     expandBtn: { width: "100%", padding: "11px", background: "rgba(255,255,255,0.03)", color: TEXT, border: `1px solid rgba(229,196,138,0.18)`, borderRadius: 12, cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "background 0.2s" },
     details: { marginTop: 14, padding: 16, background: "rgba(255,255,255,0.025)", borderRadius: 12, border: `1px solid ${BORDER}` },
     detailRow: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${BORDER}`, fontSize: 13 },

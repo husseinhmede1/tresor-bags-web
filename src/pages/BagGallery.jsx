@@ -100,11 +100,23 @@ const BagGallery = () => {
 
                 {/* Bag Details */}
                 <div style={styles.detailsSection}>
+                    {/* Category badge */}
+                    {bag.categoryId?.title && (
+                        <span style={styles.catBadge}>{bag.categoryId.title}</span>
+                    )}
                     <h1 style={styles.title}>{bag.title}</h1>
                     <p style={styles.description}>{bag.description}</p>
 
                     <div style={styles.priceSection}>
-                        <p style={styles.price}>${bag.price}</p>
+                        {bag.categoryId?.discount > 0 ? (
+                            <div style={styles.priceRow}>
+                                <span style={styles.priceOld}>${bag.price}</span>
+                                <span style={styles.price}>${(bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)}</span>
+                                <span style={styles.discountBadge}>-{bag.categoryId.discount}%</span>
+                            </div>
+                        ) : (
+                            <p style={styles.price}>${bag.price}</p>
+                        )}
                     </div>
 
                     <div style={styles.specSection}>
@@ -286,6 +298,7 @@ const styles = {
         boxShadow: "0 30px 80px rgba(0,0,0,0.25)",
         border: "1px solid rgba(255,255,255,0.08)",
     },
+    catBadge: { display: "inline-block", fontSize: 11, fontWeight: 700, color: "#E5C48A", background: "rgba(229,196,138,0.1)", border: "1px solid rgba(229,196,138,0.2)", borderRadius: 999, padding: "4px 12px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 },
     title: {
         fontSize: "34px",
         fontWeight: "800",
@@ -306,12 +319,10 @@ const styles = {
         marginBottom: "24px",
         border: "1px solid rgba(229,196,138,0.16)",
     },
-    price: {
-        fontSize: "34px",
-        fontWeight: "800",
-        color: "#E5C48A",
-        margin: 0,
-    },
+    priceRow: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" },
+    priceOld: { fontSize: "22px", fontWeight: 600, color: "#FF6B6B", textDecoration: "line-through" },
+    price: { fontSize: "34px", fontWeight: "800", color: "#E5C48A", margin: 0 },
+    discountBadge: { fontSize: 13, fontWeight: 700, color: "#fff", background: "#FF6B6B", borderRadius: 999, padding: "4px 12px" },
     specSection: {},
     specTitle: {
         fontSize: "18px",

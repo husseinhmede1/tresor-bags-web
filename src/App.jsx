@@ -6,57 +6,23 @@ import BagGallery from "./pages/BagGallery";
 import Login from "./pages/Login";
 import AddBag from "./pages/AddBag";
 import EditBag from "./pages/EditBag";
-import AnimatedBagsBackground from "./components/AnimatedBagsBackground";
+import AddCategory from "./pages/AddCategory";
+import EditCategory from "./pages/EditCategory";
 
 const App = () => {
   return (
     <AuthProvider>
       <BrowserRouter>
-        {/* <AnimatedBagsBackground /> */}
         <Routes>
-
-          {/* Public listing */}
           <Route path="/" element={<BagListing />} />
-
-          {/* Public gallery view */}
           <Route path="/gallery/:id" element={<BagGallery />} />
-
-          {/* Admin login */}
           <Route path="/admin" element={<Login />} />
-
-          {/* Admin dashboard - same listing, admin mode active via context */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute>
-                <BagListing />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Add new bag */}
-          <Route
-            path="/admin/add"
-            element={
-              <ProtectedRoute>
-                <AddBag />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Edit bag */}
-          <Route
-            path="/admin/edit/:id"
-            element={
-              <ProtectedRoute>
-                <EditBag />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Fallback */}
+          <Route path="/admin/dashboard" element={<ProtectedRoute><BagListing /></ProtectedRoute>} />
+          <Route path="/admin/add" element={<ProtectedRoute><AddBag /></ProtectedRoute>} />
+          <Route path="/admin/edit/:id" element={<ProtectedRoute><EditBag /></ProtectedRoute>} />
+          <Route path="/admin/category/add" element={<ProtectedRoute><AddCategory /></ProtectedRoute>} />
+          <Route path="/admin/category/edit/:id" element={<ProtectedRoute><EditCategory /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
       </BrowserRouter>
     </AuthProvider>

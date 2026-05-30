@@ -2,6 +2,16 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBagById } from "../services/bagService";
 
+/* ── Tokens (mirrors BagListing) ── */
+const GOLD_L  = "#E5C48A";
+const GOLD_D  = "#C9A86A";
+const MUTED   = "#6B6560";
+const TEXT    = "#F5F1E8";
+const BORDER  = "rgba(255,255,255,0.06)";
+const BORDER_GOLD = "rgba(201,168,106,0.15)";
+const SERIF   = "'Cormorant Garamond', serif";
+const SANS    = "'Inter', sans-serif";
+
 const BagGallery = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -11,441 +21,446 @@ const BagGallery = () => {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        const fetchBag = async () => {
-            try {
-                const result = await getBagById(id);
+        const style = document.createElement("style");
+        style.textContent = `
+            @keyframes spin { to { transform: rotate(360deg); } }
+            .gallery-thumb { opacity: 0.45; transition: opacity 0.3s ease; cursor: pointer; }
+            .gallery-thumb:hover { opacity: 0.75; }
+            .gallery-thumb.active { opacity: 1; }
+            .expand-btn:hover { opacity: 0.6; }
+        `;
+        document.head.appendChild(style);
+        return () => document.head.removeChild(style);
+    }, []);
+
+    useEffect(() => {
+        getBagById(id)
+            .then(result => {
                 if (result.success) {
                     setBag(result.data);
                     setSelectedImage(result.data.mainImage);
-                } else {
-                    setError("Failed to load bag details");
-                }
-            } catch (err) {
-                setError(err.message || "Failed to fetch bag");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBag();
+                } else setError("Failed to load details");
+            })
+            .catch(err => setError(err.message || "Failed to fetch bag"))
+            .finally(() => setLoading(false));
     }, [id]);
 
-    const openFullImage = (url) => {
-        window.open(url, "_self");
-    };
+    if (loading) return (
+        <div style={S.stateWrap}>
+            <div style={S.spinner} />
+        </div>
+    );
 
-    if (loading) {
-        return (
-            <div style={styles.loadingContainer}>
-                <div style={styles.spinner}></div>
-                <p>Loading gallery...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div style={styles.errorContainer}>
-                <h2>Error</h2>
-                <p>{error}</p>
-                <button onClick={() => navigate("/")} style={styles.backBtn}>
-                    Go Back
-                </button>
-            </div>
-        );
-    }
-
-    if (!bag) {
-        return (
-            <div style={styles.errorContainer}>
-                <h2>Bag not found</h2>
-                <button onClick={() => navigate("/")} style={styles.backBtn}>
-                    Go Back
-                </button>
-            </div>
-        );
-    }
+    if (error || !bag) return (
+        <div style={S.stateWrap}>
+            <p style={S.stateText}>{error || "Piece not found"}</p>
+            <button onClick={() => navigate("/")} style={S.backLink}>← Return to collection</button>
+        </div>
+    );
 
     const allImages = [...new Set([...(bag.mainImage ? [bag.mainImage] : []), ...(bag.sideImages || [])])];
 
+    const specs = [
+        ["Height",   bag.dimensions?.height ? `${bag.dimensions.height} cm` : null],
+        ["Width",    bag.dimensions?.width  ? `${bag.dimensions.width} cm`  : null],
+        ["Depth",    bag.dimensions?.depth  ? `${bag.dimensions.depth} cm`  : null],
+        ["Weight",   bag.weight             ? `${bag.weight} kg`            : null],
+        ["Colour",   bag.color              || null],
+        ["Capacity", bag.capacity           || null],
+    ].filter(([, v]) => v);
+
+    const discountedPrice = bag.categoryId?.discount > 0
+        ? (bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)
+        : null;
+
     return (
-        <div style={styles.page}>
-            {/* Header */}
-            <header style={styles.header}>
-                <h1 style={styles.headerTitle}>TRÉSOR BAGS - Gallery</h1>
-                <button onClick={() => navigate("/")} style={styles.backBtn}>
-                    ← Back
-                </button>
+        <div style={S.page}>
+
+            {/* ── Header ── */}
+            <header style={S.header}>
+                <div style={S.headerLeft}>
+                    <button onClick={() => navigate("/")} style={S.backLink}>←</button>
+                    <span style={S.headerDivider} />
+                    <span style={S.headerBrand}>Trésor Bags</span>
+                </div>
+                <p style={S.headerLabel}>Gallery</p>
             </header>
 
-            <main style={styles.container}>
-                {/* Main Image Display */}
-                <div style={styles.mainImageSection}>
-                    <div style={styles.mainImageContainer}>
+            {/* ── Main layout ── */}
+            <div style={S.layout}>
+
+                {/* Left — image viewer */}
+                <div style={S.imageCol}>
+                    {/* Main image — no container box, bleeds on dark */}
+                    <div style={S.mainImgWrap}>
                         <img
                             src={selectedImage}
                             alt={bag.title}
-                            style={styles.mainImage}
+                            style={S.mainImg}
                         />
-                        {/* Fullscreen button on main image */}
                         <button
-                            style={styles.fullscreenBtn}
-                            onClick={() => openFullImage(selectedImage)}
-                            title="View full image"
+                            style={S.expandBtn}
+                            className="expand-btn"
+                            onClick={() => window.open(selectedImage, "_self")}
+                            title="View full"
                         >
-                            🔍
+                            ⤢
                         </button>
                     </div>
+
+                    {/* Thumbnail strip */}
+                    {allImages.length > 1 && (
+                        <div style={S.thumbStrip}>
+                            {allImages.map((img, i) => (
+                                <div key={i} style={S.thumbWrap}>
+                                    <img
+                                        src={img}
+                                        alt={`View ${i + 1}`}
+                                        className={`gallery-thumb${selectedImage === img ? " active" : ""}`}
+                                        style={S.thumb}
+                                        onClick={() => setSelectedImage(img)}
+                                    />
+                                    <button
+                                        style={S.thumbExpand}
+                                        onClick={() => window.open(img, "_self")}
+                                        title="View full"
+                                    >⤢</button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {/* Bag Details */}
-                <div style={styles.detailsSection}>
-                    {/* Category badge */}
-                    {bag.categoryId?.title && (
-                        <span style={styles.catBadge}>{bag.categoryId.title}</span>
-                    )}
-                    <h1 style={styles.title}>{bag.title}</h1>
-                    <p style={styles.description}>{bag.description}</p>
+                {/* Right — details */}
+                <div style={S.detailCol}>
 
-                    <div style={styles.priceSection}>
-                        {bag.categoryId?.discount > 0 ? (
-                            <div style={styles.priceRow}>
-                                <span style={styles.priceOld}>${bag.price}</span>
-                                <span style={styles.price}>${(bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)}</span>
-                                <span style={styles.discountBadge}>-{bag.categoryId.discount}%</span>
-                            </div>
+                    {/* Collection label */}
+                    {bag.categoryId?.title && (
+                        <p style={S.collectionLabel}>{bag.categoryId.title}</p>
+                    )}
+
+                    {/* Title */}
+                    <h1 style={S.title}>{bag.title}</h1>
+
+                    {/* Price */}
+                    <div style={S.priceWrap}>
+                        {discountedPrice ? (
+                            <>
+                                <span style={S.priceOld}>${bag.price}</span>
+                                <span style={S.priceFinal}>${discountedPrice}</span>
+                                <span style={S.discountLabel}>−{bag.categoryId.discount}%</span>
+                            </>
                         ) : (
-                            <p style={styles.price}>${bag.price}</p>
+                            <span style={S.priceFinal}>${bag.price}</span>
                         )}
                     </div>
 
-                    <div style={styles.specSection}>
-                        <h3 style={styles.specTitle}>Specifications</h3>
-                        <div style={styles.specGrid}>
-                            {bag.dimensions?.height && (
-                                <div style={styles.specItem}>
-                                    <span style={styles.specLabel}>Height:</span>
-                                    <span style={styles.specValue}>{bag.dimensions.height} cm</span>
-                                </div>
-                            )}
-                            {bag.dimensions?.width && (
-                                <div style={styles.specItem}>
-                                    <span style={styles.specLabel}>Width:</span>
-                                    <span style={styles.specValue}>{bag.dimensions.width} cm</span>
-                                </div>
-                            )}
-                            {bag.dimensions?.depth && (
-                                <div style={styles.specItem}>
-                                    <span style={styles.specLabel}>Depth:</span>
-                                    <span style={styles.specValue}>{bag.dimensions.depth} cm</span>
-                                </div>
-                            )}
-                            {bag.weight && (
-                                <div style={styles.specItem}>
-                                    <span style={styles.specLabel}>Weight:</span>
-                                    <span style={styles.specValue}>{bag.weight} kg</span>
-                                </div>
-                            )}
-                            {bag.color && (
-                                <div style={styles.specItem}>
-                                    <span style={styles.specLabel}>Color:</span>
-                                    <span style={styles.specValue}>{bag.color}</span>
-                                </div>
-                            )}
-                            {bag.capacity && (
-                                <div style={styles.specItem}>
-                                    <span style={styles.specLabel}>Capacity:</span>
-                                    <span style={styles.specValue}>{bag.capacity}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </main>
+                    {/* Divider */}
+                    <div style={S.divider} />
 
-            {/* Thumbnail Gallery */}
-            {allImages.length > 1 && (
-                <div style={styles.thumbnailSection}>
-                    <h3 style={styles.thumbnailTitle}>Gallery ({allImages.length} images)</h3>
-                    <div style={styles.thumbnailGrid}>
-                        {allImages.map((image, index) => (
-                            <div key={index} style={styles.thumbnailWrapper}>
-                                <img
-                                    src={image}
-                                    alt={`Gallery item ${index + 1}`}
-                                    style={{
-                                        ...styles.thumbnail,
-                                        ...(selectedImage === image && styles.activeThumbnail),
-                                    }}
-                                    onClick={() => setSelectedImage(image)}
-                                />
-                                {/* Fullscreen button on each thumbnail */}
-                                <button
-                                    style={styles.thumbFullscreenBtn}
-                                    onClick={() => openFullImage(image)}
-                                    title="View full image"
-                                >
-                                    🔍
-                                </button>
+                    {/* Description */}
+                    <p style={S.description}>{bag.description}</p>
+
+                    {/* Divider */}
+                    <div style={S.divider} />
+
+                    {/* Specifications — minimal grid */}
+                    {specs.length > 0 && (
+                        <div style={S.specSection}>
+                            <p style={S.specHeading}>Specifications</p>
+                            <div style={S.specsGrid}>
+                                {specs.map(([label, value], i) => (
+                                    <div key={label} style={{
+                                        ...S.specCell,
+                                        borderLeft: i % 3 !== 0 ? `1px solid ${BORDER_GOLD}` : "none",
+                                        borderTop: i >= 3 ? `1px solid ${BORDER_GOLD}` : "none",
+                                    }}>
+                                        <span style={S.specKey}>{label}</span>
+                                        <span style={S.specVal}>{value}</span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    )}
                 </div>
-            )}
+            </div>
         </div>
     );
 };
 
-const styles = {
+const S = {
     page: {
         minHeight: "100vh",
-        background: "transparent",
-        fontFamily: "'Inter', sans-serif",
-        color: "#F5F1E8",
+        background: "#080808",
+        color: TEXT,
+        fontFamily: SANS,
         position: "relative",
-        zIndex: 1,
     },
+
+    /* Header */
     header: {
         display: "flex",
-        justifyContent: "space-between",
         alignItems: "center",
-        padding: "24px 40px",
-        background: "rgba(10,10,10,0.92)",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        justifyContent: "space-between",
+        padding: "18px 40px",
+        background: "rgba(8,8,8,0.96)",
+        borderBottom: `1px solid ${BORDER}`,
         position: "sticky",
         top: 0,
         zIndex: 100,
-        backdropFilter: "blur(14px)",
+        backdropFilter: "blur(20px)",
     },
-    headerTitle: {
-        fontSize: "26px",
-        fontWeight: 800,
-        margin: 0,
-        color: "#E5C48A",
-        fontFamily: "'Cormorant Garamond', serif",
-        letterSpacing: "0.1em",
+    headerLeft: { display: "flex", alignItems: "center", gap: 16 },
+    backLink: {
+        background: "none",
+        border: "none",
+        color: MUTED,
+        fontSize: 18,
+        cursor: "pointer",
+        padding: 0,
+        lineHeight: 1,
+        fontFamily: SERIF,
+        transition: "color 0.2s",
+    },
+    headerDivider: {
+        display: "inline-block",
+        width: 1,
+        height: 14,
+        background: "rgba(255,255,255,0.1)",
+    },
+    headerBrand: {
+        fontFamily: SERIF,
+        fontSize: 15,
+        color: GOLD_L,
+        letterSpacing: "0.12em",
         textTransform: "uppercase",
     },
-    backBtn: {
-        padding: "10px 20px",
-        background: "transparent",
-        color: "#E5C48A",
-        border: "1px solid rgba(229,196,138,0.45)",
-        borderRadius: "999px",
-        cursor: "pointer",
-        fontSize: "13px",
-        fontWeight: "700",
-        transition: "all 0.3s ease",
+    headerLabel: {
+        fontFamily: SANS,
+        fontSize: 10,
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+        color: MUTED,
+        margin: 0,
     },
-    container: {
+
+    /* Layout */
+    layout: {
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-        gap: "32px",
-        padding: "32px",
-        maxWidth: "1400px",
-        margin: "0 auto",
+        gridTemplateColumns: "1fr 1fr",
+        minHeight: "calc(100vh - 57px)",
+        "@media(max-width:768px)": { gridTemplateColumns: "1fr" },
     },
-    mainImageSection: {
+
+    /* Image column */
+    imageCol: {
+        background: "#060606",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-    },
-    mainImageContainer: {
-        width: "100%",
-        maxWidth: "100%",
-        background: "rgba(255,255,255,0.04)",
-        borderRadius: "20px",
+        flexDirection: "column",
+        position: "sticky",
+        top: 57,
+        height: "calc(100vh - 57px)",
         overflow: "hidden",
-        boxShadow: "0 30px 70px rgba(0,0,0,0.25)",
-        aspectRatio: "1",
+    },
+    mainImgWrap: {
+        flex: 1,
+        position: "relative",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        border: "1px solid rgba(255,255,255,0.08)",
-        position: "relative",
+        overflow: "hidden",
     },
-    mainImage: {
+    mainImg: {
         width: "100%",
         height: "100%",
         objectFit: "contain",
-        padding: "20px",
+        padding: "32px",
+        transition: "opacity 0.3s ease",
     },
-    fullscreenBtn: {
+    expandBtn: {
         position: "absolute",
-        top: "12px",
-        right: "12px",
-        width: "36px",
-        height: "36px",
-        borderRadius: "50%",
-        background: "rgba(0,0,0,0.6)",
-        border: "1px solid rgba(229,196,138,0.5)",
-        color: "#E5C48A",
+        top: 16,
+        right: 16,
+        background: "none",
+        border: "none",
+        color: MUTED,
+        fontSize: 18,
         cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "16px",
-        backdropFilter: "blur(6px)",
-        transition: "all 0.2s ease",
-        zIndex: 10,
+        padding: 4,
         lineHeight: 1,
+        transition: "opacity 0.2s",
+        opacity: 0.5,
     },
-    detailsSection: {
-        background: "rgba(18,18,18,0.94)",
-        padding: "36px",
-        borderRadius: "24px",
-        boxShadow: "0 30px 80px rgba(0,0,0,0.25)",
-        border: "1px solid rgba(255,255,255,0.08)",
-    },
-    catBadge: { display: "inline-block", fontSize: 11, fontWeight: 700, color: "#E5C48A", background: "rgba(229,196,138,0.1)", border: "1px solid rgba(229,196,138,0.2)", borderRadius: 999, padding: "4px 12px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 },
-    title: {
-        fontSize: "34px",
-        fontWeight: "800",
-        color: "#F5F1E8",
-        margin: "0 0 18px",
-        fontFamily: "'Cormorant Garamond', serif",
-    },
-    description: {
-        fontSize: "15px",
-        color: "#A7A19A",
-        lineHeight: "1.8",
-        marginBottom: "28px",
-    },
-    priceSection: {
-        padding: "22px 24px",
-        background: "rgba(201,168,106,0.12)",
-        borderRadius: "18px",
-        marginBottom: "24px",
-        border: "1px solid rgba(229,196,138,0.16)",
-    },
-    priceRow: { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" },
-    priceOld: { fontSize: "22px", fontWeight: 600, color: "#FF6B6B", textDecoration: "line-through" },
-    price: { fontSize: "34px", fontWeight: "800", color: "#E5C48A", margin: 0 },
-    discountBadge: { fontSize: 13, fontWeight: 700, color: "#fff", background: "#FF6B6B", borderRadius: 999, padding: "4px 12px" },
-    specSection: {},
-    specTitle: {
-        fontSize: "18px",
-        fontWeight: "700",
-        color: "#F5F1E8",
-        marginBottom: "18px",
-    },
-    specGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-        gap: "14px",
-    },
-    specItem: {
+
+    /* Thumbnail strip */
+    thumbStrip: {
         display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        padding: "16px",
-        background: "rgba(255,255,255,0.04)",
-        borderRadius: "16px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        gap: 1,
+        borderTop: `1px solid ${BORDER}`,
+        background: BORDER,
+        overflow: "hidden",
+        flexShrink: 0,
     },
-    specLabel: {
-        fontSize: "12px",
-        fontWeight: "700",
-        color: "#A7A19A",
-        textTransform: "uppercase",
-        letterSpacing: "0.5px",
-    },
-    specValue: {
-        fontSize: "15px",
-        fontWeight: "600",
-        color: "#F5F1E8",
-    },
-    thumbnailSection: {
-        padding: "24px 32px 40px",
-        maxWidth: "1400px",
-        margin: "0 auto",
-    },
-    thumbnailTitle: {
-        fontSize: "16px",
-        fontWeight: "700",
-        color: "#F5F1E8",
-        marginBottom: "16px",
-    },
-    thumbnailGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-        gap: "16px",
-    },
-    thumbnailWrapper: {
+    thumbWrap: {
         position: "relative",
-        display: "inline-block",
-        width: "100%",
-    },
-    thumbnail: {
-        width: "100%",
+        flex: "1 1 0",
+        minWidth: 0,
         aspectRatio: "1",
+        overflow: "hidden",
+        background: "#060606",
+    },
+    thumb: {
+        width: "100%",
+        height: "100%",
         objectFit: "cover",
-        borderRadius: "14px",
-        cursor: "pointer",
-        transition: "all 0.3s ease",
-        border: "2px solid transparent",
-        opacity: 0.75,
         display: "block",
     },
-    activeThumbnail: {
-        opacity: 1,
-        border: "2px solid #E5C48A",
-        boxShadow: "0 14px 28px rgba(229,196,138,0.18)",
-    },
-    thumbFullscreenBtn: {
+    thumbExpand: {
         position: "absolute",
-        top: "6px",
-        right: "6px",
-        width: "26px",
-        height: "26px",
-        borderRadius: "50%",
-        background: "rgba(0,0,0,0.65)",
-        border: "1px solid rgba(229,196,138,0.5)",
-        color: "#E5C48A",
+        bottom: 4,
+        right: 4,
+        background: "none",
+        border: "none",
+        color: "rgba(229,196,138,0.5)",
+        fontSize: 12,
         cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: "12px",
-        backdropFilter: "blur(4px)",
-        transition: "all 0.2s ease",
-        zIndex: 10,
+        padding: 2,
         lineHeight: 1,
-        padding: 0,
+        opacity: 0,
+        transition: "opacity 0.2s",
     },
-    loadingContainer: {
+
+    /* Detail column */
+    detailCol: {
+        padding: "56px 48px",
+        overflowY: "auto",
+        borderLeft: `1px solid ${BORDER}`,
+    },
+    collectionLabel: {
+        fontSize: 9,
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+        color: MUTED,
+        margin: "0 0 16px",
+        fontFamily: SANS,
+    },
+    title: {
+        fontFamily: SERIF,
+        fontSize: "clamp(28px, 4vw, 42px)",
+        fontWeight: 400,
+        color: TEXT,
+        margin: "0 0 24px",
+        lineHeight: 1.15,
+        letterSpacing: "0.03em",
+    },
+
+    /* Price */
+    priceWrap: {
+        display: "flex",
+        alignItems: "baseline",
+        gap: 12,
+        marginBottom: 32,
+        flexWrap: "wrap",
+    },
+    priceOld: {
+        fontFamily: SERIF,
+        fontSize: 18,
+        color: MUTED,
+        textDecoration: "line-through",
+        fontWeight: 300,
+    },
+    priceFinal: {
+        fontFamily: SERIF,
+        fontSize: 28,
+        color: GOLD_L,
+        fontWeight: 300,
+        letterSpacing: "0.04em",
+    },
+    discountLabel: {
+        fontFamily: SANS,
+        fontSize: 10,
+        color: "#C9957A",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        alignSelf: "center",
+    },
+
+    /* Divider */
+    divider: {
+        height: 1,
+        background: BORDER,
+        margin: "28px 0",
+    },
+
+    /* Description */
+    description: {
+        fontFamily: SERIF,
+        fontSize: 15,
+        color: "rgba(245,241,232,0.65)",
+        lineHeight: 1.9,
+        fontStyle: "italic",
+        margin: 0,
+    },
+
+    /* Specs */
+    specSection: { marginTop: 0 },
+    specHeading: {
+        fontFamily: SANS,
+        fontSize: 9,
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+        color: MUTED,
+        margin: "0 0 20px",
+    },
+    specsGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+    },
+    specCell: {
+        padding: "16px 20px 16px 0",
+        display: "flex",
+        flexDirection: "column",
+        gap: 6,
+    },
+    specKey: {
+        fontFamily: SANS,
+        fontSize: 9,
+        color: MUTED,
+        letterSpacing: "0.16em",
+        textTransform: "uppercase",
+    },
+    specVal: {
+        fontFamily: SERIF,
+        fontSize: 16,
+        color: TEXT,
+        fontWeight: 300,
+        letterSpacing: "0.02em",
+    },
+
+    /* State screens */
+    stateWrap: {
+        minHeight: "100vh",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "100vh",
-        background: "transparent",
-        fontFamily: "'Inter', sans-serif",
-        color: "#A7A19A",
-        position: "relative",
-        zIndex: 1,
+        background: "#080808",
+        gap: 20,
     },
     spinner: {
-        width: "40px",
-        height: "40px",
-        border: "4px solid rgba(255,255,255,0.1)",
-        borderTop: "4px solid #E5C48A",
+        width: 24,
+        height: 24,
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderTop: `1px solid ${GOLD_D}`,
         borderRadius: "50%",
         animation: "spin 1s linear infinite",
-        marginBottom: "16px",
     },
-    errorContainer: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "transparent",
-        fontFamily: "'Inter', sans-serif",
-        color: "#F5F1E8",
-        position: "relative",
-        zIndex: 1,
+    stateText: {
+        fontFamily: SERIF,
+        fontSize: 18,
+        color: MUTED,
+        fontStyle: "italic",
+        margin: 0,
     },
 };
 

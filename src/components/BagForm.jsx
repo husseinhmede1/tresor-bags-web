@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getAllCategories } from "../services/categoryService";
 
 /* ── Field must live OUTSIDE BagForm so it isn't recreated on every render ── */
 const Field = ({ label, required, error, children }) => (
@@ -24,11 +25,13 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         weight: "",
         color: "",
         capacity: "",
+        categoryId: "",
     });
     const [errors, setErrors]                       = useState({});
     const [loading, setLoading]                     = useState(false);
     const [imagePreview, setImagePreview]           = useState("");
     const [sideImagePreviews, setSideImagePreviews] = useState([]);
+    const [categories, setCategories]               = useState([]);
 
     /* ── Global CSS ── */
     useEffect(() => {
@@ -40,6 +43,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
             .bf-upload:hover  { border-color: rgba(229,196,138,0.7) !important; background: rgba(229,196,138,0.06) !important; }
             .bf-add:hover     { border-color: rgba(229,196,138,0.7) !important; background: rgba(229,196,138,0.12) !important; }
             .bf-input:focus   { border-color: rgba(229,196,138,0.5) !important; background: rgba(229,196,138,0.04) !important; }
+            select.bf-input   { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23E5C48A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px !important; }
+            select.bf-input option { background: #111; color: #F5F1E8; }
             .bf-submit:hover  { box-shadow: 0 28px 56px rgba(201,168,106,0.36) !important; }
             .bf-cancel:hover  { background: rgba(255,255,255,0.08) !important; }
             .bf-logout:hover  { background: rgba(229,196,138,0.1) !important; }
@@ -69,11 +74,17 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
 
     useEffect(() => {
         if (initialData) {
-            setFormData(initialData);
+            setFormData({ ...initialData, categoryId: initialData.categoryId || "" });
             if (initialData.mainImage)  setImagePreview(initialData.mainImage);
             if (initialData.sideImages) setSideImagePreviews(initialData.sideImages);
         }
     }, [initialData]);
+
+    useEffect(() => {
+        getAllCategories({ limit: 100 }).then(res => {
+            if (res.success) setCategories(res.data);
+        }).catch(() => {});
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -290,6 +301,23 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                     <input className="bf-input" type="number" name="dimensions.depth"
                                         value={formData.dimensions.depth} onChange={handleChange}
                                         placeholder="0" min="0" style={S.input} />
+                                </Field>
+
+                                <Field label="Category">
+                                    <select
+                                        className="bf-input"
+                                        name="categoryId"
+                                        value={formData.categoryId || ""}
+                                        onChange={handleChange}
+                                        style={{ ...S.input, cursor: "pointer" }}
+                                    >
+                                        <option value="">— No category —</option>
+                                        {categories.map(cat => (
+                                            <option key={cat._id} value={cat._id}>
+                                                {cat.title}{cat.discount > 0 ? ` (${cat.discount}% off)` : ""}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </Field>
                             </div>
 

@@ -410,33 +410,7 @@ const BagListing = () => {
 
             {/* ── Tab Switcher ── */}
             <div style={S.tabSwitcher}>
-                <div
-                    style={S.tabTrack}
-                    onTouchStart={e => { swipeStartX.current = e.touches[0].clientX; }}
-                    onTouchMove={e => {
-                        if (swipeStartX.current === null) return;
-                        const diff = swipeStartX.current - e.touches[0].clientX;
-                        // live drag: show intermediate position
-                        const pill = e.currentTarget.querySelector(".tab-pill");
-                        if (!pill) return;
-                        const trackW = e.currentTarget.offsetWidth;
-                        const halfW = trackW / 2;
-                        const baseLeft = activeTab === "items" ? 4 : halfW + 2;
-                        const clamped = Math.max(4, Math.min(halfW + 2, baseLeft - diff));
-                        pill.style.transition = "none";
-                        pill.style.left = clamped + "px";
-                    }}
-                    onTouchEnd={e => {
-                        if (swipeStartX.current === null) return;
-                        const diff = swipeStartX.current - e.changedTouches[0].clientX;
-                        // reset pill animation
-                        const pill = e.currentTarget.querySelector(".tab-pill");
-                        if (pill) pill.style.transition = "";
-                        if (diff > 40) setActiveTab("categories");
-                        else if (diff < -40) setActiveTab("items");
-                        swipeStartX.current = null;
-                    }}
-                >
+                <div style={S.tabTrack}>
                     {/* Sliding gold pill */}
                     <div
                         className="tab-pill"

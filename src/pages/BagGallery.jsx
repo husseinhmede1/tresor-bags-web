@@ -157,8 +157,7 @@ const BagGallery = () => {
                         <img
                             src={selectedImage}
                             alt={bag.title}
-                            style={{ ...S.mainImg, cursor: "zoom-in" }}
-                            onClick={() => window.open(selectedImage, "_self")}
+                            style={S.mainImg}
                         />
                         <button
                             style={S.expandBtn}
@@ -188,13 +187,7 @@ const BagGallery = () => {
                                                 opacity: isActive ? 1 : 0.4,
                                                 transition: "opacity 0.3s ease",
                                             }}
-                                            onClick={() => {
-                                                if (isActive) {
-                                                    window.open(img, "_self");
-                                                } else {
-                                                    setSelectedImage(img);
-                                                }
-                                            }}
+                                            onClick={() => setSelectedImage(img)}
                                         />
                                         <button
                                             style={S.thumbExpand}

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import heroBagImg from "../assets/hero_final1.png";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
+import HeroParticleReveal from "../components/HeroParticleReveal";
 
 /* ── Logo with animated zipper canvas overlay ── */
 const LogoWithZipper = ({ src }) => {
@@ -192,6 +193,8 @@ const BagListing = () => {
 
     /* ── Tab: "items" | "categories" ── */
     const [activeTab, setActiveTab] = useState("items");
+    const [heroReady, setHeroReady] = useState(false);
+    const onHeroDone = useCallback(() => setHeroReady(true), []);
 
     /* ── Items state ── */
     const [bags, setBags] = useState([]);
@@ -401,7 +404,15 @@ const BagListing = () => {
             <div style={S.heroWrap} className="t-hero-wrap">
                 <HeroCanvas />
                 <div style={S.heroOverlay} />
-                <section style={S.heroSection}>
+                {/* Particle reveal animation */}
+                {!heroReady && <HeroParticleReveal onComplete={onHeroDone} />}
+                {/* Actual text — fades in after animation */}
+                <section style={{
+                    ...S.heroSection,
+                    opacity: heroReady ? 1 : 0,
+                    transform: heroReady ? "translateY(0)" : "translateY(10px)",
+                    transition: "opacity 0.8s ease, transform 0.8s ease",
+                }}>
                     <p style={S.heroEyebrow}>Curated luxury travel &amp; executive essentials</p>
                     <h2 style={S.heroTitle} className="t-hero-title">TRÉSOR BAGS COLLECTION</h2>
                     <p style={S.heroSub} className="t-hero-sub">Premium business, travel, and luxury bags designed for the modern executive.</p>

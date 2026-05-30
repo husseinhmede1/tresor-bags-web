@@ -185,13 +185,6 @@ const HeroCanvas = () => (
 );
 
 /* ── LogoWithZipper ── */
-const LogoWithZipper = ({ src }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flexShrink: 1 }}>
-        <img src={src} alt="Trésor" style={{ height: 44, width: 44, borderRadius: "50%", objectFit: "cover", border: `1px solid rgba(229,196,138,0.3)`, flexShrink: 0 }} onError={e => { e.target.style.display = "none"; }} />
-        <span style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: GOLD_L, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>Trésor Bags</span>
-    </div>
-);
-
 /* ══════════════════════════════════════════════════════ */
 const BagListing = () => {
     const { isAdmin, logout } = useAuth();

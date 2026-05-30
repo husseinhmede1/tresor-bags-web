@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -10,6 +11,19 @@ import AddCategory from "./pages/AddCategory";
 import EditCategory from "./pages/EditCategory";
 
 const App = () => {
+  /* ── Global mouse tracker for button glow effect ── */
+  useEffect(() => {
+    const onMove = (e) => {
+      const btn = e.target.closest("button");
+      if (!btn) return;
+      const r = btn.getBoundingClientRect();
+      btn.style.setProperty("--mx", `${e.clientX - r.left}px`);
+      btn.style.setProperty("--my", `${e.clientY - r.top}px`);
+    };
+    document.addEventListener("mousemove", onMove);
+    return () => document.removeEventListener("mousemove", onMove);
+  }, []);
+
   return (
     <AuthProvider>
       <BrowserRouter>

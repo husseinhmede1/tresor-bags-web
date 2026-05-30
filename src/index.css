@@ -151,9 +151,68 @@ html, body, #root {
   }
 }
 
-/* ── Smooth Transitions ── */
+/* ── Rotating gold glow button effect ── */
+@property --tresor-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes tresor-spin {
+  to { --tresor-angle: 360deg; }
+}
+
 button {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+/* Outer blurred rotating glow */
+button::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--tresor-angle) at 50% 50%,
+    transparent 0deg,
+    rgba(201, 168, 106, 0.85) 50deg,
+    rgba(229, 196, 138, 1)    90deg,
+    rgba(245, 223, 160, 0.9) 120deg,
+    transparent               160deg
+  );
+  filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: tresor-spin 3s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Inner mouse-follow radial glow */
+button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    80px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(201, 168, 106, 0.22),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+button:hover:not(:disabled)::before {
+  opacity: 1;
+}
+
+button:hover:not(:disabled)::after {
+  opacity: 1;
 }
 
 button:hover:not(:disabled) {

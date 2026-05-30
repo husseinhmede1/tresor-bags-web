@@ -28,6 +28,67 @@ const BagGallery = () => {
             .gallery-thumb:hover { opacity: 0.75; }
             .gallery-thumb.active { opacity: 1; }
             .expand-btn:hover { opacity: 0.6; }
+            .thumb-wrap:hover .thumb-expand { opacity: 1 !important; }
+
+            /* Spec cell borders — 3-col desktop */
+            .bg-spec-cell { border-left: none; border-top: none; }
+            .bg-specs-grid .bg-spec-cell:nth-child(3n+2),
+            .bg-specs-grid .bg-spec-cell:nth-child(3n+3) { border-left: 1px solid rgba(201,168,106,0.15); }
+            .bg-specs-grid .bg-spec-cell:nth-child(n+4) { border-top: 1px solid rgba(201,168,106,0.15); }
+
+            /* 2-col on mobile */
+            @media (max-width: 768px) {
+                .bg-specs-grid .bg-spec-cell:nth-child(3n+2),
+                .bg-specs-grid .bg-spec-cell:nth-child(3n+3) { border-left: none; }
+                .bg-specs-grid .bg-spec-cell:nth-child(n+4) { border-top: none; }
+                .bg-specs-grid .bg-spec-cell:nth-child(2n) { border-left: 1px solid rgba(201,168,106,0.15); }
+                .bg-specs-grid .bg-spec-cell:nth-child(n+3) { border-top: 1px solid rgba(201,168,106,0.15); }
+            }
+
+            /* ── Mobile: single-column vertical flow ── */
+            @media (max-width: 768px) {
+                .bg-layout {
+                    grid-template-columns: 1fr !important;
+                }
+                .bg-image-col {
+                    position: relative !important;
+                    top: 0 !important;
+                    height: auto !important;
+                    min-height: 320px !important;
+                }
+                .bg-main-img-wrap {
+                    min-height: 280px !important;
+                    max-height: 56vw !important;
+                }
+                .bg-detail-col {
+                    padding: 32px 20px 56px !important;
+                    border-left: none !important;
+                    border-top: 1px solid rgba(255,255,255,0.06) !important;
+                }
+                .bg-thumb-strip {
+                    gap: 6px !important;
+                    padding: 10px 12px !important;
+                    background: #060606 !important;
+                    border-top: 1px solid rgba(255,255,255,0.06) !important;
+                    flex-wrap: nowrap !important;
+                    overflow-x: auto !important;
+                    justify-content: flex-start !important;
+                }
+                .bg-thumb-wrap {
+                    flex: 0 0 72px !important;
+                    height: 72px !important;
+                    width: 72px !important;
+                    aspect-ratio: 1 !important;
+                    border-radius: 4px !important;
+                    overflow: hidden !important;
+                }
+                .bg-specs-grid {
+                    grid-template-columns: repeat(2, 1fr) !important;
+                }
+                .bg-header {
+                    padding: 14px 20px !important;
+                }
+            }
         `;
         document.head.appendChild(style);
         return () => document.head.removeChild(style);
@@ -77,7 +138,7 @@ const BagGallery = () => {
         <div style={S.page}>
 
             {/* ── Header ── */}
-            <header style={S.header}>
+            <header style={S.header} className="bg-header">
                 <div style={S.headerLeft}>
                     <button onClick={() => navigate("/")} style={S.backLink}>←</button>
                     <span style={S.headerDivider} />
@@ -87,12 +148,12 @@ const BagGallery = () => {
             </header>
 
             {/* ── Main layout ── */}
-            <div style={S.layout}>
+            <div style={S.layout} className="bg-layout">
 
                 {/* Left — image viewer */}
-                <div style={S.imageCol}>
-                    {/* Main image — no container box, bleeds on dark */}
-                    <div style={S.mainImgWrap}>
+                <div style={S.imageCol} className="bg-image-col">
+                    {/* Main image */}
+                    <div style={S.mainImgWrap} className="bg-main-img-wrap">
                         <img
                             src={selectedImage}
                             alt={bag.title}
@@ -110,29 +171,39 @@ const BagGallery = () => {
 
                     {/* Thumbnail strip */}
                     {allImages.length > 1 && (
-                        <div style={S.thumbStrip}>
-                            {allImages.map((img, i) => (
-                                <div key={i} style={S.thumbWrap}>
-                                    <img
-                                        src={img}
-                                        alt={`View ${i + 1}`}
-                                        className={`gallery-thumb${selectedImage === img ? " active" : ""}`}
-                                        style={S.thumb}
-                                        onClick={() => setSelectedImage(img)}
-                                    />
-                                    <button
-                                        style={S.thumbExpand}
-                                        onClick={() => window.open(img, "_self")}
-                                        title="View full"
-                                    >⤢</button>
-                                </div>
-                            ))}
+                        <div style={S.thumbStrip} className="bg-thumb-strip">
+                            {allImages.map((img, i) => {
+                                const isActive = selectedImage === img;
+                                return (
+                                    <div key={i} style={{
+                                        ...S.thumbWrap,
+                                        outline: isActive ? `1px solid ${GOLD_L}` : "1px solid transparent",
+                                    }} className="bg-thumb-wrap thumb-wrap">
+                                        <img
+                                            src={img}
+                                            alt={`View ${i + 1}`}
+                                            style={{
+                                                ...S.thumb,
+                                                opacity: isActive ? 1 : 0.4,
+                                                transition: "opacity 0.3s ease",
+                                            }}
+                                            onClick={() => setSelectedImage(img)}
+                                        />
+                                        <button
+                                            style={S.thumbExpand}
+                                            className="thumb-expand"
+                                            onClick={() => window.open(img, "_self")}
+                                            title="View full"
+                                        >⤢</button>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
 
                 {/* Right — details */}
-                <div style={S.detailCol}>
+                <div style={S.detailCol} className="bg-detail-col">
 
                     {/* Collection label */}
                     {bag.categoryId?.title && (
@@ -168,14 +239,10 @@ const BagGallery = () => {
                     {specs.length > 0 && (
                         <div style={S.specSection}>
                             <p style={S.specHeading}>Specifications</p>
-                            <div style={S.specsGrid}>
+                            <div style={S.specsGrid} className="bg-specs-grid">
                                 {specs.map(([label, value], i) => (
-                                    <div key={label} style={{
-                                        ...S.specCell,
-                                        borderLeft: i % 3 !== 0 ? `1px solid ${BORDER_GOLD}` : "none",
-                                        borderTop: i >= 3 ? `1px solid ${BORDER_GOLD}` : "none",
-                                    }}>
-                                        <span style={S.specKey}>{label}</span>
+                                    <div key={label} style={S.specCell} className={`bg-spec-cell spec-cell-${i}`}>
+                                        <span style={S.specKey}>{label.toUpperCase()}</span>
                                         <span style={S.specVal}>{value}</span>
                                     </div>
                                 ))}
@@ -295,25 +362,31 @@ const S = {
     /* Thumbnail strip */
     thumbStrip: {
         display: "flex",
-        gap: 1,
+        gap: 8,
+        padding: "12px",
         borderTop: `1px solid ${BORDER}`,
-        background: BORDER,
+        background: "#060606",
         overflow: "hidden",
         flexShrink: 0,
+        flexWrap: "wrap",
     },
     thumbWrap: {
         position: "relative",
         flex: "1 1 0",
-        minWidth: 0,
+        minWidth: 60,
+        maxWidth: 90,
         aspectRatio: "1",
         overflow: "hidden",
         background: "#060606",
+        borderRadius: 3,
+        cursor: "pointer",
     },
     thumb: {
         width: "100%",
         height: "100%",
         objectFit: "cover",
         display: "block",
+        cursor: "pointer",
     },
     thumbExpand: {
         position: "absolute",
@@ -332,7 +405,7 @@ const S = {
 
     /* Detail column */
     detailCol: {
-        padding: "56px 48px",
+        padding: "48px 48px 64px",
         overflowY: "auto",
         borderLeft: `1px solid ${BORDER}`,
     },
@@ -341,16 +414,17 @@ const S = {
         letterSpacing: "0.28em",
         textTransform: "uppercase",
         color: MUTED,
-        margin: "0 0 16px",
+        margin: "0 0 14px",
         fontFamily: SANS,
+        display: "block",
     },
     title: {
         fontFamily: SERIF,
-        fontSize: "clamp(28px, 4vw, 42px)",
+        fontSize: "clamp(26px, 3.5vw, 42px)",
         fontWeight: 400,
         color: TEXT,
-        margin: "0 0 24px",
-        lineHeight: 1.15,
+        margin: "0 0 28px",
+        lineHeight: 1.2,
         letterSpacing: "0.03em",
     },
 
@@ -389,7 +463,7 @@ const S = {
     divider: {
         height: 1,
         background: BORDER,
-        margin: "28px 0",
+        margin: "24px 0",
     },
 
     /* Description */
@@ -399,42 +473,43 @@ const S = {
         color: "rgba(245,241,232,0.65)",
         lineHeight: 1.9,
         fontStyle: "italic",
-        margin: 0,
+        margin: "0 0 4px",
     },
 
     /* Specs */
-    specSection: { marginTop: 0 },
+    specSection: { marginTop: 4 },
     specHeading: {
         fontFamily: SANS,
         fontSize: 9,
         letterSpacing: "0.28em",
         textTransform: "uppercase",
         color: MUTED,
-        margin: "0 0 20px",
+        margin: "0 0 16px",
     },
     specsGrid: {
         display: "grid",
         gridTemplateColumns: "repeat(3, 1fr)",
     },
     specCell: {
-        padding: "16px 20px 16px 0",
+        padding: "14px 16px 14px 0",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: 5,
     },
     specKey: {
         fontFamily: SANS,
-        fontSize: 9,
+        fontSize: 8,
         color: MUTED,
-        letterSpacing: "0.16em",
+        letterSpacing: "0.18em",
         textTransform: "uppercase",
     },
     specVal: {
         fontFamily: SERIF,
-        fontSize: 16,
+        fontSize: 15,
         color: TEXT,
         fontWeight: 300,
         letterSpacing: "0.02em",
+        whiteSpace: "nowrap",
     },
 
     /* State screens */

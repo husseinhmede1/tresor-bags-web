@@ -188,7 +188,13 @@ const BagGallery = () => {
                                                 opacity: isActive ? 1 : 0.4,
                                                 transition: "opacity 0.3s ease",
                                             }}
-                                            onClick={() => window.open(img, "_self")}
+                                            onClick={() => {
+                                                if (isActive) {
+                                                    window.open(img, "_self");
+                                                } else {
+                                                    setSelectedImage(img);
+                                                }
+                                            }}
                                         />
                                         <button
                                             style={S.thumbExpand}

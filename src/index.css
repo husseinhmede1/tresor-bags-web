@@ -283,23 +283,13 @@ body {
 
 @media (max-width: 1024px) {
   #root {
-    padding: 0 18px;
-  }
-  .t-header {
-    margin: 0 -18px;
-    padding-left: 18px !important;
-    padding-right: 18px !important;
+    padding: 0;
   }
 }
 
 @media (max-width: 768px) {
   #root {
-    padding: 0 12px;
-  }
-  .t-header {
-    margin: 0 -12px;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding: 0;
   }
 }
 

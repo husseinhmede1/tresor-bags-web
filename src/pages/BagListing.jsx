@@ -149,7 +149,30 @@ const BagListing = () => {
 
     const [activeTab, setActiveTab] = useState("items");
     const [heroReady, setHeroReady] = useState(false);
+    const [clipRadius, setClipRadius] = useState(0);   // 0 → 200 during burst
+    const [heroScale, setHeroScale] = useState(1);     // micro-scale pulse
+    const clipRafRef = useRef(null);
+
     const onHeroDone = useCallback(() => setHeroReady(true), []);
+
+    const onBurst = useCallback(({ maxRadius }) => {
+        /* Micro-scale pulse: expand then settle */
+        setHeroScale(1.028);
+        setTimeout(() => setHeroScale(1), 650);
+
+        /* Clip-path reveal from center outward, matching shockwave speed */
+        let r = 0;
+        const target = 200;
+        const step = target / (maxRadius / 16); // ~same speed as burstR grows
+        const animate = () => {
+            r = Math.min(r + step, target);
+            setClipRadius(r);
+            if (r < target) clipRafRef.current = requestAnimationFrame(animate);
+        };
+        clipRafRef.current = requestAnimationFrame(animate);
+    }, []);
+
+    useEffect(() => () => cancelAnimationFrame(clipRafRef.current), []);
 
     const [bags, setBags] = useState([]);
     const [loadingBags, setLoadingBags] = useState(true);
@@ -346,8 +369,21 @@ const BagListing = () => {
             <div style={S.heroWrap} className="t-hero-wrap">
                 <HeroCanvas />
                 <div style={S.heroOverlay} />
-                {!heroReady && <HeroParticleReveal onComplete={onHeroDone} />}
-                <section style={{ ...S.heroSection, opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(10px)", transition: "opacity 0.8s ease, transform 0.8s ease" }}>
+                {!heroReady && <HeroParticleReveal onComplete={onHeroDone} onBurst={onBurst} />}
+                <section style={{
+                    ...S.heroSection,
+                    /* Clip-path expands from center following the shockwave */
+                    clipPath: clipRadius > 0
+                        ? `circle(${clipRadius}% at 50% 45%)`
+                        : heroReady ? "circle(200% at 50% 45%)" : "circle(0% at 50% 45%)",
+                    /* Micro-scale burst then settle */
+                    transform: `scale(${heroScale})`,
+                    transformOrigin: "center center",
+                    transition: heroScale !== 1
+                        ? "transform 0.65s cubic-bezier(0.22,1,0.36,1)"
+                        : "transform 0.9s cubic-bezier(0.16,1,0.3,1)",
+                    willChange: "clip-path, transform",
+                }}>
                     <p style={S.heroEyebrow}>Curated luxury travel &amp; executive essentials</p>
                     <h2 style={S.heroTitle} className="t-hero-title">TRÉSOR BAGS COLLECTION</h2>
                     <p style={S.heroSub} className="t-hero-sub">Premium business, travel, and luxury bags designed for the modern executive.</p>

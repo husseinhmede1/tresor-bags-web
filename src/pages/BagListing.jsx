@@ -10,85 +10,53 @@ import HeroParticleReveal from "../components/HeroParticleReveal";
 const LogoWithZipper = ({ src }) => {
     const canvasRef = useRef(null);
     const rafRef = useRef(null);
-
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        const canvas = canvasRef.current; if (!canvas) return;
         const ctx = canvas.getContext("2d");
-        const W = 320, H = 80;
-        const dpr = window.devicePixelRatio || 1;
-        canvas.style.width = W + "px";
-        canvas.style.height = H + "px";
-        canvas.width = Math.round(W * dpr);
-        canvas.height = Math.round(H * dpr);
+        const W = 320, H = 80, dpr = window.devicePixelRatio || 1;
+        canvas.style.width = W + "px"; canvas.style.height = H + "px";
+        canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
         ctx.scale(dpr, dpr);
-
-        let t = 0, zp = 0, zd = 1;
-        const sparks = [];
-
-        const addSpark = (x, y) => sparks.push({
-            x, y,
-            vx: (Math.random() - 0.5) * 2,
-            vy: (Math.random() - 1.4) * 1.5,
-            life: 1,
-            r: Math.random() * 1.5 + 0.5,
-        });
-
+        let t = 0, zp = 0, zd = 1; const sparks = [];
+        const addSpark = (x, y) => sparks.push({ x, y, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 1.4) * 1.5, life: 1, r: Math.random() * 1.5 + 0.5 });
         const draw = () => {
-            t += 0.016;
-            zp += zd * 0.006;
-            if (zp >= 1) { zp = 1; zd = -1; }
-            if (zp <= 0) { zp = 0; zd = 1; }
-
+            t += 0.016; zp += zd * 0.006;
+            if (zp >= 1) { zp = 1; zd = -1; } if (zp <= 0) { zp = 0; zd = 1; }
             ctx.clearRect(0, 0, W, H);
-            const zy = H - 6, zx1 = 4, zx2 = W - 4;
-            const headX = zx1 + (zx2 - zx1) * zp;
-
-            ctx.strokeStyle = "rgba(80,70,50,0.4)";
-            ctx.lineWidth = 2.5; ctx.lineCap = "round";
+            const zy = H - 6, zx1 = 4, zx2 = W - 4, headX = zx1 + (zx2 - zx1) * zp;
+            ctx.strokeStyle = "rgba(80,70,50,0.4)"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
             ctx.beginPath(); ctx.moveTo(zx1, zy); ctx.lineTo(zx2, zy); ctx.stroke();
-
             ctx.strokeStyle = "#dfa94b"; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.moveTo(zx1, zy); ctx.lineTo(headX, zy); ctx.stroke();
-
             for (let i = 0; i <= 20; i++) {
                 const tx = zx1 + (zx2 - zx1) * (i / 20), open = tx < headX;
                 ctx.fillStyle = open ? "rgba(223,169,75,0.75)" : "rgba(100,90,70,0.5)";
                 ctx.beginPath(); ctx.arc(tx, zy + (open ? -2.5 : 0), 1.6, 0, Math.PI * 2); ctx.fill();
                 if (open) { ctx.beginPath(); ctx.arc(tx, zy + 2.5, 1.6, 0, Math.PI * 2); ctx.fill(); }
             }
-
             const hg = ctx.createRadialGradient(headX, zy, 0, headX, zy, 9);
             hg.addColorStop(0, "rgba(223,169,75,0.85)"); hg.addColorStop(1, "rgba(223,169,75,0)");
             ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(headX, zy, 9, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = "#dfa94b"; ctx.beginPath(); ctx.arc(headX, zy, 3.5, 0, Math.PI * 2); ctx.fill();
-
             const sx = ((t * 45) % (W + 60)) - 30;
             const shg = ctx.createLinearGradient(sx - 20, 0, sx + 20, 0);
-            shg.addColorStop(0, "rgba(255,240,190,0)");
-            shg.addColorStop(0.5, "rgba(255,240,190,0.18)");
-            shg.addColorStop(1, "rgba(255,240,190,0)");
+            shg.addColorStop(0, "rgba(255,240,190,0)"); shg.addColorStop(0.5, "rgba(255,240,190,0.18)"); shg.addColorStop(1, "rgba(255,240,190,0)");
             ctx.fillStyle = shg; ctx.fillRect(0, 0, W, H - 10);
-
             if (Math.random() < 0.3) addSpark(headX + (Math.random() - 0.5) * 4, zy);
             for (let i = sparks.length - 1; i >= 0; i--) {
-                const s = sparks[i];
-                s.x += s.vx; s.y += s.vy; s.vy += 0.06; s.life -= 0.05;
+                const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.vy += 0.06; s.life -= 0.05;
                 if (s.life <= 0) { sparks.splice(i, 1); continue; }
-                ctx.save(); ctx.globalAlpha = s.life;
-                ctx.fillStyle = "#e5c48a"; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                ctx.save(); ctx.globalAlpha = s.life; ctx.fillStyle = "#e5c48a";
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
             }
-
             rafRef.current = requestAnimationFrame(draw);
         };
         rafRef.current = requestAnimationFrame(draw);
         return () => cancelAnimationFrame(rafRef.current);
     }, []);
-
     return (
         <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
-            <img src={src} alt="Trésor Outlet Store"
-                style={{ height: 60, width: 120, objectFit: "contain", objectPosition: "left center", display: "block", borderRadius: "300px 300px 300px 300px" }} />
+            <img src={src} alt="Trésor Outlet Store" style={{ height: 60, width: 120, objectFit: "contain", objectPosition: "left center", display: "block", borderRadius: "300px" }} />
             <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: 220, height: 40, pointerEvents: "none" }} />
         </div>
     );
@@ -97,16 +65,27 @@ const LogoWithZipper = ({ src }) => {
 /* ── Tokens ── */
 const GOLD   = "#dfa94b";
 const GOLD_L = "#E5C48A";
+const GOLD_D = "#C9A86A";
 const BG     = "transparent";
-const CARD   = "#111111";
-const BORDER = "rgba(255,255,255,0.08)";
-const MUTED  = "#A7A19A";
+const CARD   = "#0e0e0e";
+const BORDER = "rgba(255,255,255,0.06)";
+const BORDER_GOLD = "rgba(201,168,106,0.18)";
+const MUTED  = "#6B6560";
 const TEXT   = "#F5F1E8";
+const SERIF  = "'Cormorant Garamond', serif";
+const SANS   = "'Inter', sans-serif";
 
 const inputBase = {
-    background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}`,
-    borderRadius: 14, color: TEXT, fontSize: 14, fontFamily: "inherit",
-    outline: "none", width: "100%", boxSizing: "border-box",
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid rgba(201,168,106,0.15)",
+    borderRadius: 0,
+    color: TEXT,
+    fontSize: 13,
+    fontFamily: SANS,
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+    letterSpacing: "0.04em",
 };
 
 /* ── SliderGroup ── */
@@ -130,8 +109,7 @@ const RevealCard = ({ children, index }) => {
         const el = ref.current; if (!el) return;
         const observer = new IntersectionObserver(([entry]) => {
             if (entry.isIntersecting) {
-                const delay = (index % 3) * 90;
-                el.style.transitionDelay = `${delay}ms`;
+                el.style.transitionDelay = `${(index % 3) * 80}ms`;
                 el.classList.add("card-revealed");
                 observer.unobserve(el);
             }
@@ -140,24 +118,6 @@ const RevealCard = ({ children, index }) => {
         return () => observer.disconnect();
     }, [index]);
     return <div ref={ref} className="card-reveal-wrapper">{children}</div>;
-};
-
-/* ── Ticker (scrolling text) ── */
-const Ticker = ({ text, color = "#E5C48A" }) => {
-    if (!text) return null;
-    const repeated = `${text}   •   ${text}   •   ${text}   •   `;
-    return (
-        <div style={{ overflow: "hidden", width: "100%" }}>
-            <div style={{
-                display: "inline-block",
-                whiteSpace: "nowrap",
-                animation: "tickerScroll 18s linear infinite",
-                color, fontSize: 13, fontWeight: 600,
-            }}>
-                {repeated}
-            </div>
-        </div>
-    );
 };
 
 /* ── HeroCanvas ── */
@@ -172,31 +132,25 @@ const HeroCanvas = () => (
         <style>{`
             @keyframes heroBagFloat {
                 0%   { transform: translateY(0px)   rotate(-1deg)  scale(1);     }
-                25%  { transform: translateY(-14px)  rotate(0.5deg) scale(1.012); }
-                50%  { transform: translateY(-22px)  rotate(1.5deg) scale(1.018); }
-                75%  { transform: translateY(-10px)  rotate(0.2deg) scale(1.008); }
-                100% { transform: translateY(0px)    rotate(-1deg)  scale(1);     }
+                25%  { transform: translateY(-14px) rotate(0.5deg) scale(1.012); }
+                50%  { transform: translateY(-22px) rotate(1.5deg) scale(1.018); }
+                75%  { transform: translateY(-10px) rotate(0.2deg) scale(1.008); }
+                100% { transform: translateY(0px)   rotate(-1deg)  scale(1);     }
             }
-            @keyframes tickerScroll {
-                0%   { transform: translateX(0); }
-                100% { transform: translateX(-33.33%); }
-            }
+            @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-33.33%); } }
         `}</style>
     </div>
 );
 
-/* ── LogoWithZipper ── */
-/* ══════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════ */
 const BagListing = () => {
     const { isAdmin, logout } = useAuth();
     const navigate = useNavigate();
 
-    /* ── Tab: "items" | "categories" ── */
     const [activeTab, setActiveTab] = useState("items");
     const [heroReady, setHeroReady] = useState(false);
     const onHeroDone = useCallback(() => setHeroReady(true), []);
 
-    /* ── Items state ── */
     const [bags, setBags] = useState([]);
     const [loadingBags, setLoadingBags] = useState(true);
     const [errorBags, setErrorBags] = useState("");
@@ -205,10 +159,8 @@ const BagListing = () => {
     const [bagTotal, setBagTotal] = useState(0);
     const LIMIT = 12;
 
-    /* ── Category filter on items ── */
-    const [selectedCategory, setSelectedCategory] = useState(null); // { _id, title, discount, note }
+    const [selectedCategory, setSelectedCategory] = useState(null);
 
-    /* ── Item filters ── */
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const debounceRef = useRef(null);
@@ -225,7 +177,6 @@ const BagListing = () => {
     const [expandedBag, setExpandedBag] = useState(null);
     const [filterOpen, setFilterOpen] = useState(false);
 
-    /* ── Category tab state ── */
     const [categories, setCategories] = useState([]);
     const [loadingCats, setLoadingCats] = useState(false);
     const [catSearch, setCatSearch] = useState("");
@@ -246,44 +197,38 @@ const BagListing = () => {
         catch { return "/tresor_icon.png"; }
     })();
 
-    /* ── Global CSS ── */
     useEffect(() => {
         const style = document.createElement("style");
         style.textContent = `
             *, *::before, *::after { box-sizing: border-box; }
-            .card-reveal-wrapper { opacity:0; transform:translateY(48px) scale(0.96); transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1); will-change:opacity,transform; }
-            .card-reveal-wrapper.card-revealed { opacity:1; transform:translateY(0) scale(1); }
-            input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:999px; background:rgba(223,169,75,0.2); outline:none; cursor:pointer; }
-            input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#dfa94b; border:3px solid rgba(223,169,75,0.35); box-shadow:0 0 10px rgba(223,169,75,0.4); cursor:pointer; }
-            input[type="range"]::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:#dfa94b; border:3px solid rgba(223,169,75,0.35); box-shadow:0 0 10px rgba(223,169,75,0.4); cursor:pointer; }
+            .card-reveal-wrapper { opacity:0; transform:translateY(36px); transition:opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1); }
+            .card-reveal-wrapper.card-revealed { opacity:1; transform:translateY(0); }
+            input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; height:1px; background:rgba(201,168,106,0.2); outline:none; cursor:pointer; }
+            input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#dfa94b; border:none; cursor:pointer; }
+            input[type="range"]::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:#dfa94b; border:none; cursor:pointer; }
             input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
             input[type="number"] { -moz-appearance:textfield; }
-            ::-webkit-scrollbar { width:6px; }
-            ::-webkit-scrollbar-track { background:#0a0a0a; }
-            ::-webkit-scrollbar-thumb { background:rgba(223,169,75,0.3); border-radius:999px; }
+            ::-webkit-scrollbar { width:4px; }
+            ::-webkit-scrollbar-track { background:transparent; }
+            ::-webkit-scrollbar-thumb { background:rgba(201,168,106,0.2); }
             @keyframes spin { to { transform:rotate(360deg); } }
-            .tresor-card:hover { transform:translateY(-5px) scale(1.01); box-shadow:0 48px 90px rgba(0,0,0,0.5) !important; }
-            .tresor-card:hover .tresor-img { transform:scale(1.05); }
-            .cat-card:hover { transform:translateY(-4px); box-shadow:0 32px 70px rgba(0,0,0,0.45) !important; border-color:rgba(229,196,138,0.25) !important; }
-            .tab-btn:hover { background:rgba(229,196,138,0.08) !important; }
+            .tresor-card { transition: transform 0.4s cubic-bezier(0.22,1,0.36,1) !important; }
+            .tresor-card:hover { transform:translateY(-6px) !important; }
+            .tresor-card:hover .tresor-img { transform:scale(1.06) !important; }
+            .cat-card:hover { transform:translateY(-4px) !important; opacity:0.88 !important; }
             @media (max-width:900px) {
-                .t-hero-title  { font-size:2.8rem !important; }
+                .t-hero-title  { font-size:2.6rem !important; }
                 .t-grid        { grid-template-columns:repeat(2,1fr) !important; }
                 .t-filter-grid { grid-template-columns:repeat(2,1fr) !important; }
                 .card-reveal-wrapper { transition-delay:0ms !important; }
             }
             @media (max-width:600px) {
-                .swipe-hint    { display:block !important; }
-                .t-header      { padding:14px 16px !important; }
+                .t-header      { padding:14px 20px !important; }
                 .t-hero-wrap   { min-height:420px !important; }
-                .t-hero-title  { font-size:1.9rem !important; letter-spacing:0.03em !important; }
-                .t-hero-sub    { font-size:13px !important; }
-                .t-filter-wrap { margin:10px !important; padding:16px !important; border-radius:16px !important; }
-                .t-filter-grid { grid-template-columns:1fr !important; gap:14px !important; }
-                .t-grid        { grid-template-columns:1fr !important; padding:0 10px !important; gap:16px !important; }
-                .t-pagination  { gap:6px !important; padding:24px 10px !important; }
-                .t-page-btn    { padding:8px 10px !important; font-size:11px !important; }
-                .t-badge       { display:none !important; }
+                .t-hero-title  { font-size:1.9rem !important; }
+                .t-filter-wrap { margin:8px !important; padding:20px 16px !important; }
+                .t-filter-grid { grid-template-columns:1fr !important; gap:20px !important; }
+                .t-grid        { grid-template-columns:1fr !important; padding:0 12px !important; gap:1px !important; }
                 .card-reveal-wrapper { transition-delay:0ms !important; }
             }
         `;
@@ -291,11 +236,7 @@ const BagListing = () => {
         return () => document.head.removeChild(style);
     }, []);
 
-    /* ── Swipe refs (avoid stale closure) ── */
     const swipeStartX = useRef(null);
-    const activeTabRef = useRef(activeTab);
-    useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
-
     const handleSwipeStart = (e) => { swipeStartX.current = e.touches[0].clientX; };
     const handleSwipeEnd = (e) => {
         if (swipeStartX.current === null) return;
@@ -305,7 +246,6 @@ const BagListing = () => {
         swipeStartX.current = null;
     };
 
-    /* ── Fetch bags ── */
     const fetchBags = async () => {
         setLoadingBags(true); setErrorBags("");
         try {
@@ -325,14 +265,12 @@ const BagListing = () => {
         finally { setLoadingBags(false); }
     };
 
-    /* ── Fetch categories ── */
     const fetchCategories = async () => {
         setLoadingCats(true);
         try {
             const result = await getAllCategories({ page: catPage, limit: CAT_LIMIT, search: catSearchQuery, hasDiscount: hasDiscount || undefined });
             setCategories(result.data); setCatTotalPages(result.totalPages); setCatTotal(result.total);
-        } catch {}
-        finally { setLoadingCats(false); }
+        } catch {} finally { setLoadingCats(false); }
     };
 
     const handleSearchChange = (e) => {
@@ -350,7 +288,6 @@ const BagListing = () => {
 
     useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory]);
     useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, activeTab]);
-
     useEffect(() => { setCatPage(1); }, [catSearchQuery, hasDiscount]);
     useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, activeTab]);
 
@@ -358,28 +295,34 @@ const BagListing = () => {
         if (!window.confirm("Delete this bag?")) return;
         try { await deleteBag(id); fetchBags(); } catch (err) { alert("Failed: " + err.message); }
     };
-
     const handleDeleteCategory = async (id, e) => {
         e.stopPropagation();
         if (!window.confirm("Delete this category?")) return;
         try { await deleteCategory(id); fetchCategories(); } catch (err) { alert("Failed: " + err.message); }
     };
-
     const resetFilters = () => {
         setSearchInput(""); setSearchQuery(""); clearTimeout(debounceRef.current);
         setMinPrice(""); setMaxPrice(""); setMinHeight(""); setMaxHeight("");
         setMinWidth(""); setMaxWidth(""); setMinWeight(""); setMaxWeight("");
         setColor(""); setCapacity("");
     };
+    const handleCategoryClick = (cat) => { setSelectedCategory(cat); setActiveTab("items"); };
+    const resetCategoryFilter = () => { setSelectedCategory(null); resetFilters(); };
 
-    const handleCategoryClick = (cat) => {
-        setSelectedCategory(cat);
-        setActiveTab("items");
-    };
-
-    const resetCategoryFilter = () => {
-        setSelectedCategory(null);
-        resetFilters();
+    /* Minimal pagination renderer */
+    const Pagination = ({ page, totalPages, setPage }) => {
+        if (totalPages <= 1) return null;
+        const pageStr = String(page).padStart(2, "0");
+        const totalStr = String(totalPages).padStart(2, "0");
+        return (
+            <div style={S.pagination}>
+                <button style={{ ...S.pageArrow, opacity: page === 1 ? 0.25 : 1 }}
+                    disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>←</button>
+                <span style={S.pageIndicator}>{pageStr} <span style={S.pageDivider}>/</span> {totalStr}</span>
+                <button style={{ ...S.pageArrow, opacity: page === totalPages ? 0.25 : 1 }}
+                    disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>→</button>
+            </div>
+        );
     };
 
     return (
@@ -391,9 +334,8 @@ const BagListing = () => {
                 <div style={S.headerRight}>
                     {isAdmin && (
                         <>
-                            <span style={S.adminBadge} className="t-badge">Admin</span>
-                            <button style={S.addBtn} onClick={() => navigate("/admin/add")}>+ Add Bag</button>
-                            <button style={{ ...S.addBtn, background: "rgba(229,196,138,0.12)", color: GOLD_L, border: `1px solid rgba(229,196,138,0.3)` }} onClick={() => navigate("/admin/category/add")}>+ Add Category</button>
+                            <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/category/add")}>Add Category</button>
                             <button style={S.logoutBtn} onClick={logout}>Logout</button>
                         </>
                     )}
@@ -404,82 +346,51 @@ const BagListing = () => {
             <div style={S.heroWrap} className="t-hero-wrap">
                 <HeroCanvas />
                 <div style={S.heroOverlay} />
-                {/* Particle reveal animation */}
                 {!heroReady && <HeroParticleReveal onComplete={onHeroDone} />}
-                {/* Actual text — fades in after animation */}
-                <section style={{
-                    ...S.heroSection,
-                    opacity: heroReady ? 1 : 0,
-                    transform: heroReady ? "translateY(0)" : "translateY(10px)",
-                    transition: "opacity 0.8s ease, transform 0.8s ease",
-                }}>
+                <section style={{ ...S.heroSection, opacity: heroReady ? 1 : 0, transform: heroReady ? "translateY(0)" : "translateY(10px)", transition: "opacity 0.8s ease, transform 0.8s ease" }}>
                     <p style={S.heroEyebrow}>Curated luxury travel &amp; executive essentials</p>
                     <h2 style={S.heroTitle} className="t-hero-title">TRÉSOR BAGS COLLECTION</h2>
                     <p style={S.heroSub} className="t-hero-sub">Premium business, travel, and luxury bags designed for the modern executive.</p>
                 </section>
             </div>
 
-            {/* ── Tab Switcher ── */}
+            {/* ── Tab Switcher — text-only with underline ── */}
             <div style={S.tabSwitcher}>
-                <div style={S.tabTrack}>
-                    {/* Sliding gold pill */}
-                    <div
-                        className="tab-pill"
-                        style={{
-                            ...S.tabSlider,
-                            left: activeTab === "items" ? 4 : "calc(50% + 2px)",
-                        }}
-                    />
-                    {/* Items button */}
-                    <button
-                        onClick={() => setActiveTab("items")}
-                        style={{ ...S.tabBtn, color: activeTab === "items" ? "#070707" : MUTED, zIndex: 1 }}
-                    >
-                        <span>🎒</span>
-                        <span>Items</span>
-                        {bagTotal > 0 && (
-                            <span style={{ ...S.tabCount, background: activeTab === "items" ? "rgba(0,0,0,0.18)" : "rgba(229,196,138,0.1)", color: activeTab === "items" ? "#070707" : GOLD_L }}>
-                                {bagTotal}
-                            </span>
-                        )}
-                    </button>
-                    {/* Categories button */}
-                    <button
-                        onClick={() => setActiveTab("categories")}
-                        style={{ ...S.tabBtn, color: activeTab === "categories" ? "#070707" : MUTED, zIndex: 1 }}
-                    >
-                        <span>🏷️</span>
-                        <span>Categories</span>
-                        {catTotal > 0 && (
-                            <span style={{ ...S.tabCount, background: activeTab === "categories" ? "rgba(0,0,0,0.18)" : "rgba(229,196,138,0.1)", color: activeTab === "categories" ? "#070707" : GOLD_L }}>
-                                {catTotal}
-                            </span>
-                        )}
-                    </button>
-                </div>
+                <button onClick={() => setActiveTab("items")} style={{ ...S.tabBtn, ...(activeTab === "items" ? S.tabBtnActive : {}) }}>
+                    ITEMS{bagTotal > 0 && <sup style={S.tabSup}>{bagTotal}</sup>}
+                </button>
+                <div style={S.tabDivider} />
+                <button onClick={() => setActiveTab("categories")} style={{ ...S.tabBtn, ...(activeTab === "categories" ? S.tabBtnActive : {}) }}>
+                    CATEGORIES{catTotal > 0 && <sup style={S.tabSup}>{catTotal}</sup>}
+                </button>
+            </div>
+            {/* Underline indicator */}
+            <div style={S.tabUnderlineTrack}>
+                <div style={{ ...S.tabUnderline, left: activeTab === "items" ? "0%" : "50%" }} />
             </div>
 
-            {/* ══════════ ITEMS TAB ══════════ */}
+            {/* ══════ ITEMS TAB ══════ */}
             {activeTab === "items" && (
                 <>
-                    {/* Category banner */}
+                    {/* Category editorial banner */}
                     {selectedCategory && (
                         <div style={S.catBanner}>
-                            <div style={S.catBannerLeft}>
-                                <div style={S.catBannerRow}>
-                                    <span style={S.catBannerTitle}>{selectedCategory.title}</span>
-                                    <button style={S.backArrowBtn} onClick={resetCategoryFilter} title="Back to all items">←</button>
+                            <div style={S.catBannerInner}>
+                                <div style={S.catBannerMeta}>
+                                    <p style={S.catBannerEyebrow}>Currently browsing</p>
+                                    <h2 style={S.catBannerTitle}>{selectedCategory.title}</h2>
+                                    {selectedCategory.discount > 0 ? (
+                                        <p style={S.catBannerDiscount}>
+                                            {selectedCategory.discount}% exclusive discount applied
+                                        </p>
+                                    ) : (
+                                        <p style={S.catBannerNoDiscount}>No discount on this collection</p>
+                                    )}
+                                    {selectedCategory.note && (
+                                        <p style={S.catBannerNote}>{selectedCategory.note}</p>
+                                    )}
                                 </div>
-                                <span style={S.catBannerDiscount}>
-                                    {selectedCategory.discount > 0
-                                        ? `${selectedCategory.discount}% discount`
-                                        : "No discount on this category"}
-                                </span>
-                                {selectedCategory.note && (
-                                    <div style={S.catBannerNoteTicker}>
-                                        <Ticker text={selectedCategory.note} color={MUTED} />
-                                    </div>
-                                )}
+                                <button style={S.backArrowBtn} onClick={resetCategoryFilter} title="Return to all items">←</button>
                             </div>
                         </div>
                     )}
@@ -488,13 +399,14 @@ const BagListing = () => {
                     <div style={S.filterWrap} className="t-filter-wrap">
                         <div style={S.searchRow}>
                             <div style={S.searchInputWrap}>
-                                <input type="text" placeholder="Search by title or description…"
-                                    value={searchInput} onChange={handleSearchChange} style={S.searchInput} />
+                                <input type="text"
+                                    placeholder="Search the collection…"
+                                    value={searchInput} onChange={handleSearchChange}
+                                    style={S.searchInput} />
                                 {searchInput !== searchQuery && <span style={S.searchSpinner} />}
                             </div>
                             <button onClick={() => setFilterOpen(o => !o)} style={S.collapseToggle}>
-                                <span style={S.collapseToggleIcon(filterOpen)}>⌃</span>
-                                <span>{filterOpen ? "Hide Filters" : "Show Filters"}</span>
+                                {filterOpen ? "— Less" : "+ Refine"}
                             </button>
                         </div>
 
@@ -502,54 +414,42 @@ const BagListing = () => {
                             <div style={S.collapseDivider} />
                             <div style={S.filterGrid} className="t-filter-grid">
                                 <div style={S.filterGroup}>
-                                    <label style={S.filterLabel}>Price Range ($)</label>
+                                    <label style={S.filterLabel}>Price  ($)</label>
                                     <div style={S.priceRow}>
-                                        <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={S.priceInput} />
-                                        <span style={S.dash}>—</span>
-                                        <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={S.priceInput} />
+                                        <input type="number" placeholder="From" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={S.priceInput} />
+                                        <span style={S.dash}>–</span>
+                                        <input type="number" placeholder="To" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={S.priceInput} />
                                     </div>
                                 </div>
                                 <SliderGroup label="Height (cm)" minVal={minHeight} maxVal={maxHeight} setMin={setMinHeight} setMax={setMaxHeight} range={HEIGHT_RANGE} unit="cm" />
                                 <SliderGroup label="Width (cm)"  minVal={minWidth}  maxVal={maxWidth}  setMin={setMinWidth}  setMax={setMaxWidth}  range={WIDTH_RANGE}  unit="cm" />
                                 <SliderGroup label="Weight (kg)" minVal={minWeight} maxVal={maxWeight} setMin={setMinWeight} setMax={setMaxWeight} range={WEIGHT_RANGE} unit="kg" />
                                 <div style={S.filterGroup}>
-                                    <label style={S.filterLabel}>Color</label>
-                                    <input type="text" placeholder="e.g., Black, Red" value={color} onChange={(e) => setColor(e.target.value)} style={S.textInput} />
+                                    <label style={S.filterLabel}>Colour</label>
+                                    <input type="text" placeholder="Noir, Ivory…" value={color} onChange={(e) => setColor(e.target.value)} style={S.textInput} />
                                 </div>
                                 <div style={S.filterGroup}>
                                     <label style={S.filterLabel}>Capacity</label>
-                                    <input type="text" placeholder="e.g., 20L, 30L" value={capacity} onChange={(e) => setCapacity(e.target.value)} style={S.textInput} />
+                                    <input type="text" placeholder="20L, 30L…" value={capacity} onChange={(e) => setCapacity(e.target.value)} style={S.textInput} />
                                 </div>
                             </div>
                             <div style={S.filterFooter}>
-                                <span style={S.resultCount}>{bagTotal} bag{bagTotal !== 1 ? "s" : ""} found</span>
-                                <button onClick={resetFilters} style={S.resetBtn}>Reset Filters</button>
+                                <button onClick={resetFilters} style={S.resetBtn}>Clear all</button>
                             </div>
                         </div>
-
-                        {!filterOpen && (
-                            <div style={{ padding: "10px 0 2px", display: "flex", justifyContent: "space-between" }}>
-                                <span style={S.resultCount}>{bagTotal} bag{bagTotal !== 1 ? "s" : ""} found</span>
-                            </div>
-                        )}
                     </div>
 
                     {errorBags && <div style={S.errorBox}>{errorBags}</div>}
 
-                    {bagTotalPages > 1 && (
-                        <div style={S.pagination} className="t-pagination">
-                            <button className="t-page-btn" onClick={() => setBagPage(p => Math.max(1, p - 1))} disabled={bagPage === 1} style={{ ...S.pageBtn, opacity: bagPage === 1 ? 0.4 : 1 }}>← Prev</button>
-                            {Array.from({ length: bagTotalPages }, (_, i) => i + 1).slice(Math.max(0, bagPage - 3), Math.min(bagTotalPages, bagPage + 3)).map(p => (
-                                <button key={p} className="t-page-btn" onClick={() => setBagPage(p)} style={{ ...S.pageBtn, ...(p === bagPage ? S.pageActive : {}) }}>{p}</button>
-                            ))}
-                            <button className="t-page-btn" onClick={() => setBagPage(p => Math.min(bagTotalPages, p + 1))} disabled={bagPage === bagTotalPages} style={{ ...S.pageBtn, opacity: bagPage === bagTotalPages ? 0.4 : 1 }}>Next →</button>
-                        </div>
-                    )}
+                    <Pagination page={bagPage} totalPages={bagTotalPages} setPage={setBagPage} />
 
                     {loadingBags ? (
-                        <div style={S.loadingBox}><div style={S.spinner} /><p style={{ color: MUTED, marginTop: 16 }}>Loading bags…</p></div>
+                        <div style={S.loadingBox}><div style={S.spinner} /></div>
                     ) : bags.length === 0 ? (
-                        <div style={S.emptyBox}><p style={{ fontSize: 40, marginBottom: 12 }}>🎒</p><p style={{ color: MUTED }}>No bags found. Try adjusting your filters.</p></div>
+                        <div style={S.emptyBox}>
+                            <p style={S.emptyTitle}>No pieces found</p>
+                            <p style={S.emptyMuted}>Refine your selection or explore our full collection.</p>
+                        </div>
                     ) : (
                         <main style={S.grid} className="t-grid">
                             {bags.map((bag, index) => (
@@ -561,34 +461,51 @@ const BagListing = () => {
                                                 <button style={S.deleteBtn} onClick={() => handleDelete(bag._id)}>🗑️</button>
                                             </div>
                                         )}
+                                        {/* Image — no bounding box, bleeds into card */}
                                         <div style={S.imgWrap} onClick={() => navigate(`/gallery/${bag._id}`)}>
                                             <img src={bag.mainImage} alt={bag.title} style={S.img} className="tresor-img" />
-                                            <div style={S.imgOverlay}><span style={S.viewLabel}>View Details</span></div>
+                                            <div style={S.imgOverlay}>
+                                                <span style={S.viewLabel}>Discover</span>
+                                            </div>
                                         </div>
+
                                         <div style={S.cardBody}>
-                                            {/* Category badge */}
                                             {bag.categoryId?.title && (
-                                                <span style={S.catBadge}>{bag.categoryId.title}</span>
+                                                <p style={S.catBadge}>{bag.categoryId.title}</p>
                                             )}
                                             <h3 style={S.cardTitle}>{bag.title}</h3>
-                                            <p style={S.cardDesc}>{bag.description?.substring(0, 72)}…</p>
-                                            {/* Price with discount */}
+                                            <p style={S.cardDesc}>{bag.description?.substring(0, 80)}…</p>
+
+                                            {/* Price */}
                                             {bag.categoryId?.discount > 0 ? (
                                                 <div style={S.priceWrap}>
                                                     <span style={S.cardPriceOld}>${bag.price}</span>
                                                     <span style={S.cardPriceNew}>${(bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)}</span>
-                                                    <span style={S.discountBadge}>-{bag.categoryId.discount}%</span>
+                                                    <span style={S.discountLabel}>−{bag.categoryId.discount}%</span>
                                                 </div>
                                             ) : (
                                                 <p style={S.cardPrice}>${bag.price}</p>
                                             )}
-                                            <button style={S.expandBtn} onClick={() => setExpandedBag(expandedBag === bag._id ? null : bag._id)}>
-                                                {expandedBag === bag._id ? "View Less ▲" : "View More ▼"}
+
+                                            {/* Accordion — minimal specs grid */}
+                                            <button style={S.expandBtn}
+                                                onClick={() => setExpandedBag(expandedBag === bag._id ? null : bag._id)}>
+                                                {expandedBag === bag._id ? "— specifications" : "+ specifications"}
                                             </button>
                                             {expandedBag === bag._id && (
-                                                <div style={S.details}>
-                                                    {[["Height", `${bag.dimensions?.height || "N/A"} cm`], ["Width", `${bag.dimensions?.width || "N/A"} cm`], ["Depth", `${bag.dimensions?.depth || "N/A"} cm`], ["Weight", `${bag.weight || "N/A"} kg`], ["Color", bag.color], ["Capacity", bag.capacity || "N/A"]].map(([k, v]) => (
-                                                        <div key={k} style={S.detailRow}><span style={S.detailKey}>{k}</span><span style={S.detailVal}>{v}</span></div>
+                                                <div style={S.specsGrid}>
+                                                    {[
+                                                        ["H", `${bag.dimensions?.height || "—"} cm`],
+                                                        ["W", `${bag.dimensions?.width  || "—"} cm`],
+                                                        ["D", `${bag.dimensions?.depth  || "—"} cm`],
+                                                        ["Wt", `${bag.weight || "—"} kg`],
+                                                        ["Colour", bag.color || "—"],
+                                                        ["Vol", bag.capacity || "—"],
+                                                    ].map(([k, v]) => (
+                                                        <div key={k} style={S.specCell}>
+                                                            <span style={S.specKey}>{k}</span>
+                                                            <span style={S.specVal}>{v}</span>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             )}
@@ -598,85 +515,70 @@ const BagListing = () => {
                             ))}
                         </main>
                     )}
+
+                    <Pagination page={bagPage} totalPages={bagTotalPages} setPage={setBagPage} />
                 </>
             )}
 
-            {/* ══════════ CATEGORIES TAB ══════════ */}
+            {/* ══════ CATEGORIES TAB ══════ */}
             {activeTab === "categories" && (
                 <>
-                    {/* Category search + discount filter */}
                     <div style={S.filterWrap} className="t-filter-wrap">
                         <div style={S.searchRow}>
                             <div style={S.searchInputWrap}>
-                                <input type="text" placeholder="Search categories…"
+                                <input type="text" placeholder="Search collections…"
                                     value={catSearch} onChange={handleCatSearchChange} style={S.searchInput} />
                                 {catSearch !== catSearchQuery && <span style={S.searchSpinner} />}
                             </div>
-                            {/* Round checkbox — has discount */}
                             <label style={S.discountToggle}>
                                 <div style={{ ...S.roundCheck, ...(hasDiscount ? S.roundCheckActive : {}) }}
                                     onClick={() => setHasDiscount(v => !v)}>
                                     {hasDiscount && <span style={S.roundCheckMark}>✓</span>}
                                 </div>
-                                <span style={{ fontSize: 13, color: MUTED, whiteSpace: "nowrap" }}>With discount</span>
+                                <span style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", letterSpacing: "0.08em", textTransform: "uppercase" }}>On offer</span>
                             </label>
-                        </div>
-                        <div style={{ padding: "10px 0 2px" }}>
-                            <span style={S.resultCount}>{catTotal} categor{catTotal !== 1 ? "ies" : "y"} found</span>
                         </div>
                     </div>
 
-                    {catTotalPages > 1 && (
-                        <div style={S.pagination} className="t-pagination">
-                            <button className="t-page-btn" onClick={() => setCatPage(p => Math.max(1, p - 1))} disabled={catPage === 1} style={{ ...S.pageBtn, opacity: catPage === 1 ? 0.4 : 1 }}>← Prev</button>
-                            {Array.from({ length: catTotalPages }, (_, i) => i + 1).slice(Math.max(0, catPage - 3), Math.min(catTotalPages, catPage + 3)).map(p => (
-                                <button key={p} className="t-page-btn" onClick={() => setCatPage(p)} style={{ ...S.pageBtn, ...(p === catPage ? S.pageActive : {}) }}>{p}</button>
-                            ))}
-                            <button className="t-page-btn" onClick={() => setCatPage(p => Math.min(catTotalPages, p + 1))} disabled={catPage === catTotalPages} style={{ ...S.pageBtn, opacity: catPage === catTotalPages ? 0.4 : 1 }}>Next →</button>
-                        </div>
-                    )}
+                    <Pagination page={catPage} totalPages={catTotalPages} setPage={setCatPage} />
 
                     {loadingCats ? (
-                        <div style={S.loadingBox}><div style={S.spinner} /><p style={{ color: MUTED, marginTop: 16 }}>Loading categories…</p></div>
+                        <div style={S.loadingBox}><div style={S.spinner} /></div>
                     ) : categories.length === 0 ? (
-                        <div style={S.emptyBox}><p style={{ fontSize: 40, marginBottom: 12 }}>🏷️</p><p style={{ color: MUTED }}>No categories found.</p></div>
+                        <div style={S.emptyBox}>
+                            <p style={S.emptyTitle}>No collections found</p>
+                        </div>
                     ) : (
                         <main style={S.catGrid}>
                             {categories.map((cat, index) => (
                                 <RevealCard key={cat._id} index={index}>
-                                    <div
-                                        style={S.catCard}
-                                        className="cat-card"
-                                        onClick={() => handleCategoryClick(cat)}
-                                    >
-                                        {/* Admin actions */}
+                                    <div style={S.catCard} className="cat-card" onClick={() => handleCategoryClick(cat)}>
                                         {isAdmin && (
                                             <div style={S.adminActions}>
                                                 <button style={S.editBtn} onClick={e => { e.stopPropagation(); navigate(`/admin/category/edit/${cat._id}`); }}>✏️</button>
                                                 <button style={S.deleteBtn} onClick={e => handleDeleteCategory(cat._id, e)}>🗑️</button>
                                             </div>
                                         )}
-                                        {/* Title */}
-                                        <h3 style={S.catCardTitle}>{cat.title}</h3>
-                                        {/* Discount ticker */}
-                                        <div style={S.catDiscountTicker}>
-                                            <Ticker
-                                                text={cat.discount > 0 ? `${cat.discount}% DISCOUNT` : "No discount"}
-                                                color={cat.discount > 0 ? "#FF6B6B" : MUTED}
-                                            />
-                                        </div>
-                                        {/* Note ticker */}
-                                        {cat.note && (
-                                            <div style={S.catNoteTicker}>
-                                                <Ticker text={cat.note} color={MUTED} />
-                                            </div>
+                                        {/* Editorial discount headline */}
+                                        {cat.discount > 0 && (
+                                            <p style={S.catDiscountHeadline}>
+                                                {cat.discount}
+                                                <span style={S.catDiscountPct}>%</span>
+                                            </p>
                                         )}
-                                        <p style={S.catCardHint}>Click to view bags →</p>
+                                        <h3 style={S.catCardTitle}>{cat.title}</h3>
+                                        {cat.discount > 0 && (
+                                            <p style={S.catDiscountSub}>Exclusive discount on this collection</p>
+                                        )}
+                                        {cat.note && <p style={S.catNote}>{cat.note}</p>}
+                                        <p style={S.catCardHint}>Explore →</p>
                                     </div>
                                 </RevealCard>
                             ))}
                         </main>
                     )}
+
+                    <Pagination page={catPage} totalPages={catTotalPages} setPage={setCatPage} />
                 </>
             )}
         </div>
@@ -684,133 +586,120 @@ const BagListing = () => {
 };
 
 const S = {
-    page: { minHeight: "100vh", background: BG, color: TEXT, fontFamily: "'Inter',sans-serif", paddingBottom: 60, overflowX: "hidden", position: "relative", zIndex: 1 },
-    header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "rgba(7,7,7,0.94)", borderBottom: `1px solid ${BORDER}`, position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px)", gap: 12 },
-    headerRight: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" },
-    adminBadge: { background: "rgba(223,169,75,0.12)", color: GOLD_L, padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", border: `1px solid rgba(223,169,75,0.22)`, whiteSpace: "nowrap" },
-    addBtn: { background: `linear-gradient(135deg,#C9A86A,${GOLD_L})`, color: "#070707", border: "none", padding: "9px 18px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" },
-    logoutBtn: { background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, padding: "9px 30px", borderRadius: 999, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" },
+    page: { minHeight: "100vh", background: BG, color: TEXT, fontFamily: SANS, paddingBottom: 80, overflowX: "hidden", position: "relative", zIndex: 1 },
 
+    /* Header */
+    header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "rgba(7,7,7,0.96)", borderBottom: "1px solid rgba(201,168,106,0.08)", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px)", gap: 12 },
+    headerRight: { display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "flex-end" },
+    addBtn: { background: "transparent", color: GOLD_L, border: "none", borderBottom: `1px solid rgba(229,196,138,0.4)`, padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
+    addBtnSecondary: { background: "transparent", color: MUTED, border: "none", borderBottom: "1px solid rgba(167,161,154,0.25)", padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
+    logoutBtn: { background: "transparent", color: MUTED, border: "none", padding: "4px 0", fontSize: 11, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase" },
+
+    /* Hero */
     heroWrap: { position: "relative", minHeight: 460, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" },
     heroOverlay: { position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(7,7,7,0.55) 0%,rgba(7,7,7,0.22) 40%,rgba(7,7,7,0.22) 60%,rgba(7,7,7,0.7) 100%)", zIndex: 1, pointerEvents: "none" },
     heroSection: { position: "relative", zIndex: 2, textAlign: "center", padding: "60px 24px", maxWidth: 760 },
-    heroEyebrow: { fontSize: 11, letterSpacing: "0.38em", textTransform: "uppercase", color: "rgba(201,168,106,0.75)", margin: "0 0 16px" },
-    heroTitle: { fontSize: "3.6rem", lineHeight: 1.04, margin: "0 0 16px", fontFamily: "'Cormorant Garamond',serif", letterSpacing: "0.07em", background: "linear-gradient(135deg,#8B6914 0%,#C9A84C 25%,#E8C96A 45%,#F5DFA0 55%,#C9A84C 75%,#8B6914 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", textShadow: "none", fontWeight: 700 },
-    heroSub: { fontSize: 15, color: "#D8C9A1", lineHeight: 1.8, margin: 0, textShadow: "0 1px 10px rgba(0,0,0,0.6)" },
+    heroEyebrow: { fontSize: 10, letterSpacing: "0.42em", textTransform: "uppercase", color: "rgba(201,168,106,0.6)", margin: "0 0 20px", fontFamily: SANS },
+    heroTitle: { fontSize: "3.6rem", lineHeight: 1.04, margin: "0 0 20px", fontFamily: SERIF, letterSpacing: "0.07em", background: "linear-gradient(135deg,#8B6914 0%,#C9A84C 25%,#E8C96A 45%,#F5DFA0 55%,#C9A84C 75%,#8B6914 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", fontWeight: 700 },
+    heroSub: { fontSize: 14, color: "rgba(216,201,161,0.7)", lineHeight: 1.9, margin: 0, fontStyle: "italic", fontFamily: SERIF, letterSpacing: "0.02em" },
 
-    /* Tab switcher — glassmorphism pill */
-    tabSwitcher: { margin: "24px auto 0", maxWidth: 480, padding: "0 16px" },
-    tabTrack: {
-        position: "relative", display: "flex", alignItems: "center",
-        background: "rgba(255,255,255,0.06)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.12)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
-        padding: 4,
-        overflow: "hidden",
-    },
-    tabSlider: {
-        position: "absolute", top: 4, bottom: 4,
-        width: "calc(50% - 6px)",
-        background: `linear-gradient(135deg, #C9A86A, ${GOLD_L})`,
-        borderRadius: 999,
-        boxShadow: "0 4px 20px rgba(201,168,106,0.5), 0 0 0 1px rgba(229,196,138,0.3)",
-        transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-        pointerEvents: "none",
-    },
-    tabBtn: {
-        flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-        padding: "13px 16px", borderRadius: 999, border: "none",
-        background: "transparent", fontSize: 13, fontWeight: 700,
-        cursor: "pointer", transition: "color 0.3s ease", letterSpacing: "0.04em",
-        whiteSpace: "nowrap",
-    },
-    tabCount: { borderRadius: 999, padding: "2px 7px", fontSize: 11, fontWeight: 700 },
-    swipeHint: {
-        textAlign: "center", fontSize: 11, color: "rgba(167,161,154,0.4)",
-        margin: "8px 0 0", letterSpacing: "0.08em",
-        display: "none",
-    },
+    /* Tab switcher — text only */
+    tabSwitcher: { display: "flex", alignItems: "center", justifyContent: "center", gap: 48, padding: "32px 24px 0", maxWidth: 1200, margin: "0 auto", position: "relative" },
+    tabBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", color: MUTED, padding: "4px 0", transition: "color 0.3s ease", fontFamily: SANS, textTransform: "uppercase", position: "relative" },
+    tabBtnActive: { color: GOLD_L },
+    tabSup: { fontSize: 9, verticalAlign: "super", marginLeft: 3, color: GOLD_D, fontWeight: 400 },
+    tabDivider: { width: 1, height: 12, background: "rgba(201,168,106,0.2)" },
+    tabUnderlineTrack: { position: "relative", maxWidth: 1200, margin: "6px auto 0", height: 1, background: "rgba(255,255,255,0.04)", overflow: "visible" },
+    tabUnderline: { position: "absolute", top: 0, width: "50%", height: 1, background: `linear-gradient(90deg, transparent, ${GOLD_L}, transparent)`, transition: "left 0.4s cubic-bezier(0.4,0,0.2,1)" },
 
-    /* Category banner */
-    catBanner: { margin: "16px auto 0", maxWidth: 1200, padding: "0 16px" },
-    catBannerLeft: { background: "rgba(16,16,16,0.97)", borderRadius: 16, border: `1px solid rgba(229,196,138,0.18)`, padding: "18px 24px", display: "flex", flexDirection: "column", gap: 6 },
-    catBannerRow: { display: "flex", alignItems: "center", justifyContent: "space-between" },
-    catBannerTitle: { fontSize: 22, fontWeight: 800, color: TEXT, fontFamily: "'Cormorant Garamond',serif", letterSpacing: "0.06em" },
-    backArrowBtn: { background: "rgba(229,196,138,0.1)", border: `1px solid rgba(229,196,138,0.3)`, color: GOLD_L, borderRadius: 999, width: 36, height: 36, cursor: "pointer", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-    catBannerDiscount: { fontSize: 14, fontWeight: 700, color: "#FF6B6B" },
-    catBannerNoteTicker: { overflow: "hidden", marginTop: 4 },
+    /* Category editorial banner */
+    catBanner: { maxWidth: 1200, margin: "32px auto 0", padding: "0 16px" },
+    catBannerInner: { borderTop: `1px solid ${BORDER_GOLD}`, borderBottom: `1px solid ${BORDER_GOLD}`, padding: "28px 0", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24 },
+    catBannerMeta: { display: "flex", flexDirection: "column", gap: 6 },
+    catBannerEyebrow: { fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: MUTED, margin: 0, fontFamily: SANS },
+    catBannerTitle: { fontSize: 28, fontWeight: 400, color: TEXT, margin: 0, fontFamily: SERIF, letterSpacing: "0.06em" },
+    catBannerDiscount: { fontSize: 12, color: "#C9957A", letterSpacing: "0.1em", textTransform: "uppercase", margin: 0, fontFamily: SANS },
+    catBannerNoDiscount: { fontSize: 12, color: MUTED, letterSpacing: "0.08em", margin: 0, fontFamily: SANS },
+    catBannerNote: { fontSize: 13, color: MUTED, fontStyle: "italic", fontFamily: SERIF, margin: 0, maxWidth: 480, lineHeight: 1.7 },
+    backArrowBtn: { background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 20, flexShrink: 0, padding: 0, lineHeight: 1 },
 
     /* Filters */
-    filterWrap: { margin: "16px auto 0", padding: "20px", background: "rgba(16,16,16,0.97)", borderRadius: 20, border: `1px solid ${BORDER}`, boxShadow: "0 24px 60px rgba(0,0,0,0.22)", maxWidth: 1200 },
-    collapseToggle: { display: "flex", alignItems: "center", gap: 7, padding: "12px 20px", borderRadius: 12, cursor: "pointer", background: "rgba(229,196,138,0.07)", border: `1px solid rgba(229,196,138,0.25)`, color: GOLD_L, fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.25s ease" },
-    collapseToggleIcon: (open) => ({ display: "inline-block", transform: open ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)", fontSize: 16, lineHeight: 1 }),
-    collapseBody: (open) => ({ overflow: "hidden", maxHeight: open ? "600px" : "0px", opacity: open ? 1 : 0, transition: "max-height 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease" }),
-    collapseDivider: { height: 1, background: `linear-gradient(90deg,transparent,rgba(229,196,138,0.2),transparent)`, margin: "16px 0" },
-    searchRow: { display: "flex", gap: 10, marginBottom: 0, alignItems: "center" },
+    filterWrap: { margin: "20px auto 0", padding: "20px 24px", background: "transparent", borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, maxWidth: 1200 },
+    collapseToggle: { background: "none", border: "none", cursor: "pointer", fontSize: 11, color: MUTED, letterSpacing: "0.14em", textTransform: "uppercase", padding: "4px 0", fontFamily: SANS, flexShrink: 0, whiteSpace: "nowrap" },
+    collapseBody: (open) => ({ overflow: "hidden", maxHeight: open ? "600px" : "0px", opacity: open ? 1 : 0, transition: "max-height 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease" }),
+    collapseDivider: { height: "1px", background: BORDER, margin: "16px 0" },
+    searchRow: { display: "flex", gap: 20, alignItems: "center" },
     searchInputWrap: { flex: 1, position: "relative", display: "flex", alignItems: "center" },
-    searchInput: { ...inputBase, padding: "14px 44px 14px 18px", borderRadius: 14, fontSize: 14 },
-    searchSpinner: { position: "absolute", right: 14, width: 16, height: 16, border: "2px solid rgba(223,169,75,0.2)", borderTop: `2px solid ${GOLD}`, borderRadius: "50%", animation: "spin 0.7s linear infinite", pointerEvents: "none" },
-    filterGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 20 },
-    filterGroup: { display: "flex", flexDirection: "column", gap: 8 },
-    filterLabel: { fontSize: 11, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" },
-    priceRow: { display: "flex", alignItems: "center", gap: 8 },
-    priceInput: { ...inputBase, flex: 1, minWidth: 0, padding: "12px 10px", textAlign: "center" },
-    dash: { color: "#5C5A55", fontSize: 18, flexShrink: 0 },
-    textInput: { ...inputBase, padding: "12px 14px" },
+    searchInput: { ...inputBase, padding: "10px 36px 10px 0", background: "transparent", borderLeft: "none", borderRight: "none", borderTop: "none", borderRadius: 0 },
+    searchSpinner: { position: "absolute", right: 0, width: 14, height: 14, border: "1px solid rgba(201,168,106,0.2)", borderTop: `1px solid ${GOLD}`, borderRadius: "50%", animation: "spin 0.7s linear infinite", pointerEvents: "none" },
+    filterGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "20px 32px", marginBottom: 16 },
+    filterGroup: { display: "flex", flexDirection: "column", gap: 10 },
+    filterLabel: { fontSize: 9, fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.16em" },
+    priceRow: { display: "flex", alignItems: "center", gap: 10 },
+    priceInput: { ...inputBase, flex: 1, minWidth: 0, padding: "8px 0", textAlign: "center", background: "transparent", borderLeft: "none", borderRight: "none", borderTop: "none", borderRadius: 0 },
+    dash: { color: MUTED, fontSize: 14, flexShrink: 0 },
+    textInput: { ...inputBase, padding: "8px 0", background: "transparent", borderLeft: "none", borderRight: "none", borderTop: "none", borderRadius: 0 },
     sliderGroup: { display: "flex", flexDirection: "column", gap: 8 },
-    sliderValues: { display: "flex", justifyContent: "space-between", color: MUTED, fontSize: 11 },
-    filterFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, paddingTop: 4 },
-    resultCount: { color: MUTED, fontSize: 12 },
-    resetBtn: { background: "transparent", color: GOLD_L, border: `1px solid rgba(229,196,138,0.4)`, borderRadius: 999, padding: "9px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
+    sliderValues: { display: "flex", justifyContent: "space-between", color: MUTED, fontSize: 10, letterSpacing: "0.06em" },
+    filterFooter: { display: "flex", justifyContent: "flex-end", paddingTop: 4 },
+    resetBtn: { background: "none", border: "none", color: MUTED, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", cursor: "pointer", padding: "4px 0", fontFamily: SANS, borderBottom: "1px solid rgba(107,101,96,0.3)" },
 
     /* Discount round checkbox */
-    discountToggle: { display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 },
-    roundCheck: { width: 24, height: 24, borderRadius: "50%", border: `2px solid rgba(229,196,138,0.4)`, background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 },
-    roundCheckActive: { background: `linear-gradient(135deg,#C9A86A,${GOLD_L})`, border: "none" },
-    roundCheckMark: { color: "#070707", fontSize: 13, fontWeight: 900, lineHeight: 1 },
+    discountToggle: { display: "flex", alignItems: "center", gap: 10, cursor: "pointer", flexShrink: 0 },
+    roundCheck: { width: 16, height: 16, borderRadius: "50%", border: "1px solid rgba(201,168,106,0.3)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.2s", flexShrink: 0 },
+    roundCheckActive: { background: GOLD_D, border: `1px solid ${GOLD_D}` },
+    roundCheckMark: { color: "#070707", fontSize: 9, fontWeight: 900, lineHeight: 1 },
 
-    /* Bag grid */
-    errorBox: { margin: "16px auto", padding: 16, background: "rgba(184,58,58,0.1)", color: TEXT, borderRadius: 14, border: "1px solid rgba(184,58,58,0.22)", fontSize: 13, maxWidth: 1200 },
-    loadingBox: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400 },
-    spinner: { width: 40, height: 40, border: "4px solid rgba(255,255,255,0.08)", borderTop: `4px solid ${GOLD}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" },
-    emptyBox: { textAlign: "center", padding: "60px 24px" },
-    grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 24, padding: "16px 16px 0", marginBottom: 40, maxWidth: 1240, marginLeft: "auto", marginRight: "auto" },
-    card: { background: CARD, borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,0.3)", position: "relative", transition: "transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease", border: `1px solid ${BORDER}` },
-    adminActions: { position: "absolute", top: 14, right: 14, display: "flex", gap: 8, zIndex: 10 },
-    editBtn: { background: "rgba(255,255,255,0.1)", border: `1px solid rgba(229,196,138,0.2)`, borderRadius: 10, padding: "8px 10px", cursor: "pointer", fontSize: 13, color: TEXT },
-    deleteBtn: { background: "rgba(184,58,58,0.12)", border: "1px solid rgba(184,58,58,0.25)", borderRadius: 10, padding: "8px 10px", cursor: "pointer", fontSize: 13, color: TEXT },
-    imgWrap: { position: "relative", overflow: "hidden", height: 260, cursor: "pointer" },
-    img: { width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.45s cubic-bezier(0.22,1,0.36,1)", display: "block" },
-    imgOverlay: { position: "absolute", inset: 0, background: "linear-gradient(180deg,transparent 40%,rgba(0,0,0,0.75))", display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 20, pointerEvents: "none" },
-    viewLabel: { color: TEXT, fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", padding: "8px 20px", borderRadius: 999, background: "rgba(223,169,75,0.22)", border: `1px solid rgba(223,169,75,0.3)` },
-    cardBody: { padding: "20px 20px 24px" },
-    catBadge: { display: "inline-block", fontSize: 10, fontWeight: 700, color: GOLD_L, background: "rgba(229,196,138,0.1)", border: `1px solid rgba(229,196,138,0.2)`, borderRadius: 999, padding: "3px 10px", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 },
-    cardTitle: { fontSize: 17, fontWeight: 700, color: TEXT, margin: "0 0 8px" },
-    cardDesc: { fontSize: 13, color: MUTED, margin: "0 0 12px", lineHeight: 1.6, minHeight: 42 },
-    cardPrice: { fontSize: 20, fontWeight: 800, color: GOLD_L, margin: "0 0 14px" },
-    priceWrap: { display: "flex", alignItems: "center", gap: 8, margin: "0 0 14px", flexWrap: "wrap" },
-    cardPriceOld: { fontSize: 15, fontWeight: 600, color: "#FF6B6B", textDecoration: "line-through" },
-    cardPriceNew: { fontSize: 20, fontWeight: 800, color: GOLD_L },
-    discountBadge: { fontSize: 11, fontWeight: 700, color: "#fff", background: "#FF6B6B", borderRadius: 999, padding: "2px 8px" },
-    expandBtn: { width: "100%", padding: "11px", background: "rgba(255,255,255,0.03)", color: TEXT, border: `1px solid rgba(229,196,138,0.18)`, borderRadius: 12, cursor: "pointer", fontSize: 12, fontWeight: 700, transition: "background 0.2s" },
-    details: { marginTop: 14, padding: 16, background: "rgba(255,255,255,0.025)", borderRadius: 12, border: `1px solid ${BORDER}` },
-    detailRow: { display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${BORDER}`, fontSize: 13 },
-    detailKey: { fontWeight: 700, color: "#D8C9A1" },
-    detailVal: { color: MUTED },
-    pagination: { display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "24px 16px", flexWrap: "wrap" },
-    pageBtn: { padding: "10px 14px", background: "rgba(255,255,255,0.04)", color: TEXT, border: `1px solid ${BORDER}`, borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, transition: "all 0.2s" },
-    pageActive: { background: GOLD_L, color: "#070707", borderColor: GOLD_L },
+    /* State boxes */
+    errorBox: { margin: "16px auto", padding: "12px 24px", color: "#C9957A", fontSize: 12, letterSpacing: "0.06em", maxWidth: 1200, borderLeft: "1px solid rgba(201,149,122,0.4)" },
+    loadingBox: { display: "flex", justifyContent: "center", alignItems: "center", minHeight: 320 },
+    spinner: { width: 24, height: 24, border: "1px solid rgba(255,255,255,0.06)", borderTop: `1px solid ${GOLD}`, borderRadius: "50%", animation: "spin 1s linear infinite" },
+    emptyBox: { textAlign: "center", padding: "80px 24px" },
+    emptyTitle: { fontFamily: SERIF, fontSize: 22, fontWeight: 400, color: "rgba(245,241,232,0.4)", margin: "0 0 8px", letterSpacing: "0.04em" },
+    emptyMuted: { fontSize: 12, color: MUTED, letterSpacing: "0.06em" },
+
+    /* Pagination — minimal arrows */
+    pagination: { display: "flex", justifyContent: "center", alignItems: "center", gap: 24, padding: "28px 16px" },
+    pageArrow: { background: "none", border: "none", color: GOLD_L, fontSize: 18, cursor: "pointer", padding: "4px 8px", transition: "opacity 0.2s", fontFamily: SERIF },
+    pageIndicator: { fontSize: 11, color: MUTED, letterSpacing: "0.18em", fontFamily: SANS },
+    pageDivider: { color: "rgba(107,101,96,0.4)", margin: "0 6px" },
+
+    /* Product grid */
+    grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: "1px", padding: "0", marginBottom: 0, maxWidth: 1240, marginLeft: "auto", marginRight: "auto", background: BORDER },
+    card: { background: CARD, overflow: "hidden", position: "relative", transition: "transform 0.4s cubic-bezier(0.22,1,0.36,1)" },
+    adminActions: { position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 10 },
+    editBtn: { background: "rgba(0,0,0,0.5)", border: "none", borderRadius: 6, padding: "6px 8px", cursor: "pointer", fontSize: 12, color: TEXT, backdropFilter: "blur(8px)" },
+    deleteBtn: { background: "rgba(0,0,0,0.5)", border: "none", borderRadius: 6, padding: "6px 8px", cursor: "pointer", fontSize: 12, color: "#C9957A", backdropFilter: "blur(8px)" },
+    imgWrap: { position: "relative", overflow: "hidden", height: 300, cursor: "pointer", background: "#0a0a0a" },
+    img: { width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.6s cubic-bezier(0.22,1,0.36,1)", display: "block" },
+    imgOverlay: { position: "absolute", inset: 0, background: "linear-gradient(180deg,transparent 50%,rgba(7,7,7,0.85) 100%)", display: "flex", alignItems: "flex-end", justifyContent: "flex-start", padding: "20px", opacity: 0, transition: "opacity 0.35s ease", pointerEvents: "none" },
+    viewLabel: { color: GOLD_L, fontSize: 10, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", fontFamily: SANS },
+    cardBody: { padding: "20px 20px 24px", borderTop: `1px solid ${BORDER}` },
+    catBadge: { fontSize: 9, fontWeight: 600, color: MUTED, letterSpacing: "0.2em", textTransform: "uppercase", margin: "0 0 8px", fontFamily: SANS },
+    cardTitle: { fontSize: 16, fontWeight: 400, color: TEXT, margin: "0 0 6px", fontFamily: SERIF, letterSpacing: "0.03em", lineHeight: 1.3 },
+    cardDesc: { fontSize: 12, color: MUTED, margin: "0 0 14px", lineHeight: 1.7, minHeight: 40, fontStyle: "italic", fontFamily: SERIF },
+    cardPrice: { fontSize: 18, fontWeight: 300, color: GOLD_L, margin: "0 0 16px", fontFamily: SERIF, letterSpacing: "0.04em" },
+    priceWrap: { display: "flex", alignItems: "baseline", gap: 10, margin: "0 0 16px", flexWrap: "wrap" },
+    cardPriceOld: { fontSize: 13, color: MUTED, textDecoration: "line-through", fontFamily: SERIF },
+    cardPriceNew: { fontSize: 18, fontWeight: 300, color: GOLD_L, fontFamily: SERIF },
+    discountLabel: { fontSize: 9, color: "#C9957A", letterSpacing: "0.1em", textTransform: "uppercase" },
+    expandBtn: { background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", padding: "0 0 2px", borderBottom: "1px solid rgba(107,101,96,0.25)", fontFamily: SANS, display: "block", marginBottom: 14 },
+
+    /* Specs — 3-column minimal grid */
+    specsGrid: { display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "1px", background: BORDER, borderTop: `1px solid ${BORDER}`, marginTop: 12 },
+    specCell: { background: CARD, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 3 },
+    specKey: { fontSize: 9, color: MUTED, letterSpacing: "0.14em", textTransform: "uppercase" },
+    specVal: { fontSize: 12, color: TEXT, fontFamily: SERIF, fontWeight: 300 },
 
     /* Category grid */
-    catGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 24, padding: "16px 16px 0", marginBottom: 40, maxWidth: 1240, marginLeft: "auto", marginRight: "auto" },
-    catCard: { background: CARD, borderRadius: 20, padding: "28px 24px", border: `1px solid ${BORDER}`, boxShadow: "0 20px 50px rgba(0,0,0,0.3)", cursor: "pointer", position: "relative", transition: "transform 0.35s cubic-bezier(0.22,1,0.36,1), box-shadow 0.35s ease, border-color 0.3s ease", overflow: "hidden", minHeight: 160 },
-    catCardTitle: { fontSize: 22, fontWeight: 800, color: TEXT, margin: "0 0 14px", fontFamily: "'Cormorant Garamond',serif", letterSpacing: "0.05em", paddingRight: 80 },
-    catDiscountTicker: { overflow: "hidden", marginBottom: 8 },
-    catNoteTicker: { overflow: "hidden", marginBottom: 8 },
-    catCardHint: { fontSize: 11, color: "rgba(167,161,154,0.5)", margin: "12px 0 0", fontStyle: "italic" },
+    catGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: "1px", padding: 0, marginBottom: 0, maxWidth: 1240, marginLeft: "auto", marginRight: "auto", background: BORDER },
+    catCard: { background: CARD, padding: "40px 32px", cursor: "pointer", position: "relative", transition: "transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease", minHeight: 200 },
+    catDiscountHeadline: { fontFamily: SERIF, fontSize: 64, fontWeight: 300, color: "rgba(201,168,106,0.12)", margin: "0 0 4px", lineHeight: 1, letterSpacing: "-0.02em" },
+    catDiscountPct: { fontSize: 32, verticalAlign: "super" },
+    catCardTitle: { fontSize: 22, fontWeight: 400, color: TEXT, margin: "0 0 10px", fontFamily: SERIF, letterSpacing: "0.04em" },
+    catDiscountSub: { fontSize: 10, color: "#C9957A", letterSpacing: "0.14em", textTransform: "uppercase", margin: "0 0 12px", fontFamily: SANS },
+    catNote: { fontSize: 13, color: MUTED, fontStyle: "italic", fontFamily: SERIF, lineHeight: 1.7, margin: "0 0 16px", maxWidth: 320 },
+    catCardHint: { fontSize: 10, color: "rgba(107,101,96,0.5)", margin: "16px 0 0", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: SANS },
 };
 
 export default BagListing;

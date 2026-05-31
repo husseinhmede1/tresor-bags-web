@@ -368,7 +368,7 @@ const BagListing = () => {
 
             {/* ── Hero ── */}
             {/* ── 3D Hero Carousel ── */}
-            <HeroCarousel3D bags={bags} />
+            <HeroCarousel3D />
 
             {/* ── Tab Switcher — text-only with underline ── */}
             <div style={S.tabSwitcher}>

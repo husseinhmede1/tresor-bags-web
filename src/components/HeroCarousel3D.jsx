@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getAllBags } from "../services/bagService";
 
 /* ── Per-slide luxury dark palettes ── */
 const PALETTES = [
@@ -88,13 +89,21 @@ const SlideImg = ({ src, alt, mode, dir, floating }) => {
 };
 
 /* ══════════════════════════════════════════════════════ */
-const HeroCarousel3D = ({ bags }) => {
+const HeroCarousel3D = () => {
+    const [bags, setBags]       = useState([]);
     const [idx, setIdx]         = useState(0);
     const [nextIdx, setNextIdx] = useState(null);
     const [dir, setDir]         = useState("next");
     const [sliding, setSliding] = useState(false);
     const autoRef               = useRef(null);
     const timerRef              = useRef(null);
+
+    /* Fetch all bags independently */
+    useEffect(() => {
+        getAllBags({ limit: 100 })
+            .then(res => { if (res.success) setBags(res.data); })
+            .catch(() => {});
+    }, []);
 
     const pal = PALETTES[idx % PALETTES.length];
 

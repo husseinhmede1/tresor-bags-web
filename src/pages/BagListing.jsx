@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
 import HeroParticleReveal from "../components/HeroParticleReveal";
+import HeroCarousel3D from "../components/HeroCarousel3D";
 
 /* ── Logo with animated zipper canvas overlay ── */
 const LogoWithZipper = ({ src }) => {
@@ -366,29 +367,8 @@ const BagListing = () => {
             </header>
 
             {/* ── Hero ── */}
-            <div style={S.heroWrap} className="t-hero-wrap">
-                <HeroCanvas />
-                <div style={S.heroOverlay} />
-                {!heroReady && <HeroParticleReveal onComplete={onHeroDone} onBurst={onBurst} />}
-                <section style={{
-                    ...S.heroSection,
-                    /* Clip-path expands from center following the shockwave */
-                    clipPath: clipRadius > 0
-                        ? `circle(${clipRadius}% at 50% 45%)`
-                        : heroReady ? "circle(200% at 50% 45%)" : "circle(0% at 50% 45%)",
-                    /* Micro-scale burst then settle */
-                    transform: `scale(${heroScale})`,
-                    transformOrigin: "center center",
-                    transition: heroScale !== 1
-                        ? "transform 0.65s cubic-bezier(0.22,1,0.36,1)"
-                        : "transform 0.9s cubic-bezier(0.16,1,0.3,1)",
-                    willChange: "clip-path, transform",
-                }}>
-                    <p style={S.heroEyebrow}>Curated luxury travel &amp; executive essentials</p>
-                    <h2 style={S.heroTitle} className="t-hero-title">TRÉSOR BAGS COLLECTION</h2>
-                    <p style={S.heroSub} className="t-hero-sub">Premium business, travel, and luxury bags designed for the modern executive.</p>
-                </section>
-            </div>
+            {/* ── 3D Hero Carousel ── */}
+            <HeroCarousel3D bags={bags} />
 
             {/* ── Tab Switcher — text-only with underline ── */}
             <div style={S.tabSwitcher}>

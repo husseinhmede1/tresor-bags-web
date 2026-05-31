@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import heroBagImg from "../assets/hero_final1.png";
+import heroFinal2 from "../assets/hero_final2.png";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
 import HeroParticleReveal from "../components/HeroParticleReveal";
-import HeroCarousel3D from "../components/HeroCarousel3D";
 
 /* ── Logo with animated zipper canvas overlay ── */
 const LogoWithZipper = ({ src }) => {
@@ -367,8 +367,136 @@ const BagListing = () => {
             </header>
 
             {/* ── Hero ── */}
-            {/* ── 3D Hero Carousel ── */}
-            <HeroCarousel3D />
+            {/* ── Static Hero Image ── */}
+            <div style={{
+                position: "relative",
+                minHeight: 520,
+                background: "#0D0A0E",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                perspective: "1400px",
+            }}>
+                {/* ── Radial glow ── */}
+                <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "radial-gradient(ellipse 70% 60% at 62% 38%, rgba(180,120,220,0.07), transparent)",
+                    pointerEvents: "none",
+                    zIndex: 0,
+                }} />
+
+                {/* ── Bottom fade ── */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 180,
+                    background: "linear-gradient(to top, #0D0A0E 0%, transparent 100%)",
+                    pointerEvents: "none",
+                    zIndex: 0,
+                }} />
+
+                {/* ── Top edge vignette ── */}
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 100,
+                    background: "linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)",
+                    pointerEvents: "none",
+                    zIndex: 0,
+                }} />
+
+                {/* ── Hero text ── */}
+                <section style={{
+                    position: "absolute",
+                    zIndex: 3,
+                    textAlign: "center",
+                    padding: "0 24px",
+                    maxWidth: 760,
+                    width: "100%",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    pointerEvents: "none",
+                }}>
+                    <p style={{
+                        fontSize: 10,
+                        letterSpacing: "0.44em",
+                        textTransform: "uppercase",
+                        color: "rgba(201,168,106,0.45)",
+                        margin: "0 0 20px",
+                        fontFamily: "'Inter', sans-serif",
+                    }}>
+                        Curated luxury travel &amp; executive essentials
+                    </p>
+                    <h2 style={{
+                        fontSize: "clamp(1.9rem, 5.5vw, 3.8rem)",
+                        lineHeight: 1.04,
+                        margin: "0 0 18px",
+                        fontFamily: "'Cormorant Garamond', serif",
+                        letterSpacing: "0.07em",
+                        background: "linear-gradient(135deg,#8B6914 0%,#C9A84C 25%,#E8C96A 45%,#F5DFA0 55%,#C9A84C 75%,#8B6914 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        fontWeight: 700,
+                    }}>
+                        TRÉSOR BAGS<br />COLLECTION
+                    </h2>
+                    <p style={{
+                        fontSize: 13,
+                        color: "rgba(216,201,161,0.5)",
+                        lineHeight: 1.9,
+                        margin: 0,
+                        fontStyle: "italic",
+                        fontFamily: "'Cormorant Garamond', serif",
+                        letterSpacing: "0.02em",
+                    }}>
+                        Premium business, travel, and luxury bags<br />designed for the modern executive.
+                    </p>
+                </section>
+
+                {/* ── Hero image ── */}
+                <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1,
+                }}>
+                    <img
+                        src={heroFinal2}
+                        alt="Trésor Bags Collection"
+                        style={{
+                            position: "absolute",
+                            height: "clamp(260px, 58vh, 440px)",
+                            width: "auto",
+                            maxWidth: "58%",
+                            objectFit: "contain",
+                            animation: "h3dFloat 6s ease-in-out infinite",
+                            filter: "drop-shadow(0 44px 88px rgba(0,0,0,0.82)) drop-shadow(0 0 56px rgba(201,168,106,0.1))",
+                            userSelect: "none",
+                            pointerEvents: "none",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                        }}
+                    />
+                </div>
+            </div>
+            <style>{`
+                @keyframes h3dFloat {
+                    0%,100% { transform: translateX(-50%) translateY(0px)  rotate(-0.5deg) scale(1);     }
+                    25%     { transform: translateX(-50%) translateY(-18px) rotate(0.4deg)  scale(1.014); }
+                    50%     { transform: translateX(-50%) translateY(-28px) rotate(1deg)    scale(1.019); }
+                    75%     { transform: translateX(-50%) translateY(-12px) rotate(0.2deg)  scale(1.009); }
+                }
+            `}</style>
 
             {/* ── Tab Switcher — text-only with underline ── */}
             <div style={S.tabSwitcher}>

@@ -1,5 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { getAllBags } from "../services/bagService";
+import bag1 from "../assets/bag1.png";
+import bag2 from "../assets/bag2.png";
+import bag3 from "../assets/bag3.png";
+import bag4 from "../assets/bag4.png";
+import bag5 from "../assets/bag5.png";
+import bag6 from "../assets/bag6.png";
+import bag7 from "../assets/bag7.png";
+import bag8 from "../assets/bag8.png";
+import heroFinal2 from "../assets/hero_final2.png";
+
+const STATIC_BAGS = [
+    { mainImage: heroFinal2, title: "Signature Travel Bag" },
+    { mainImage: bag1, title: "Executive Carryall" },
+    { mainImage: bag2, title: "Luxury Weekender" },
+    { mainImage: bag3, title: "City Tote" },
+    { mainImage: bag4, title: "Urban Backpack" },
+    { mainImage: bag5, title: "Slim Briefcase" },
+    { mainImage: bag6, title: "Weekend Duffle" },
+    { mainImage: bag7, title: "Convertible Satchel" },
+    { mainImage: bag8, title: "Modern Travel Pack" },
+];
 
 /* ── Per-slide luxury dark palettes ── */
 const PALETTES = [
@@ -90,25 +110,18 @@ const SlideImg = ({ src, alt, mode, dir, floating }) => {
 
 /* ══════════════════════════════════════════════════════ */
 const HeroCarousel3D = () => {
-    const [bags, setBags]       = useState([]);
     const [idx, setIdx]         = useState(0);
     const [nextIdx, setNextIdx] = useState(null);
     const [dir, setDir]         = useState("next");
     const [sliding, setSliding] = useState(false);
     const autoRef               = useRef(null);
     const timerRef              = useRef(null);
-
-    /* Fetch all bags independently */
-    useEffect(() => {
-        getAllBags({ limit: 100 })
-            .then(res => { if (res.success) setBags(res.data); })
-            .catch(() => {});
-    }, []);
+    const bags = STATIC_BAGS;
 
     const pal = PALETTES[idx % PALETTES.length];
 
     const go = useCallback((newIdx, direction) => {
-        if (sliding || !bags?.length || newIdx === idx) return;
+        if (sliding || !bags.length || newIdx === idx) return;
         clearTimeout(timerRef.current);
         clearInterval(autoRef.current);
 
@@ -123,8 +136,7 @@ const HeroCarousel3D = () => {
             // Restart auto-advance
             startAuto();
         }, DURATION + 60);
-    // eslint-disable-next-line
-    }, [sliding, bags, idx]);
+    }, [sliding, idx, bags.length]);
 
     const goNext = useCallback(() => {
         if (!bags?.length) return;
@@ -140,7 +152,7 @@ const HeroCarousel3D = () => {
         clearInterval(autoRef.current);
         autoRef.current = setInterval(() => {
             setIdx(prev => {
-                const n = (prev + 1) % (bags?.length || 1);
+                const n = (prev + 1) % bags.length;
                 setDir("next");
                 setNextIdx(n);
                 setSliding(true);
@@ -153,12 +165,12 @@ const HeroCarousel3D = () => {
                 return prev; // state set inside timeout
             });
         }, 5500);
-    }, [bags]);
+    }, [bags.length]);
 
     useEffect(() => {
-        if (bags?.length) startAuto();
+        if (bags.length) startAuto();
         return () => { clearInterval(autoRef.current); clearTimeout(timerRef.current); };
-    }, [bags, startAuto]);
+    }, [bags.length, startAuto]);
 
     if (!bags?.length) {
         return <div style={{ minHeight: 520, background: "#080808" }} />;
@@ -228,7 +240,7 @@ const HeroCarousel3D = () => {
                 {/* ── BEHIND layer: hero text ── */}
                 <section style={{
                     position:  "absolute",
-                    zIndex:    1,
+                    zIndex:    3,
                     textAlign: "center",
                     padding:   "0 24px",
                     maxWidth:  760,
@@ -275,7 +287,7 @@ const HeroCarousel3D = () => {
                 <div style={{
                     position: "absolute", inset: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    zIndex: 2,
+                    zIndex: 1,
                 }}>
                     {/* Current (exiting when sliding) */}
                     <SlideImg

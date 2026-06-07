@@ -373,23 +373,19 @@ const BagListing = () => {
     };
 
     return (
-        <div
-            style={{
-                ...S.page,
-                animation: pageRevealed ? "pageReveal 0.7s cubic-bezier(0.22,1,0.36,1) forwards" : "none",
-                opacity: pageRevealed ? undefined : (showModal ? 0.15 : 1),
-            }}
-            onTouchStart={handleSwipeStart}
-            onTouchEnd={handleSwipeEnd}
-        >
+        <div style={S.page} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
             <style>{`
                 @keyframes pageReveal {
-                    from { opacity: 0.15; filter: blur(6px); transform: scale(0.99); }
-                    to   { opacity: 1;    filter: blur(0px); transform: scale(1);    }
+                    from { opacity: 0; filter: blur(8px); transform: scale(0.985); }
+                    to   { opacity: 1; filter: blur(0px); transform: scale(1);     }
+                }
+                .page-content-wrap {
+                    animation: ${pageRevealed ? "pageReveal 0.75s cubic-bezier(0.22,1,0.36,1) forwards" : "none"};
+                    opacity: ${showModal && !pageRevealed ? "0" : "1"};
                 }
             `}</style>
 
-            {/* ── Type Selector Modal ── */}
+            {/* ── Type Selector Modal — rendered outside the dimmed content ── */}
             {showModal && (
                 <TypeSelectorModal
                     onStart={handleModalStart}
@@ -398,6 +394,9 @@ const BagListing = () => {
             )}
 
             {/* ── Header ── */}
+            {/* ── All page content — hidden while modal is open, revealed after ── */}
+            <div className="page-content-wrap">
+
             <header style={S.header} className="t-header">
                 <LogoWithZipper src={LOGO_SRC} />
                 <div style={S.headerRight} className="t-header-right">
@@ -816,6 +815,8 @@ const BagListing = () => {
                     <Pagination page={catPage} totalPages={catTotalPages} setPage={setCatPage} />
                 </>
             )}
+
+            </div>{/* end page-content-wrap */}
         </div>
     );
 };

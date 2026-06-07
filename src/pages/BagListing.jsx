@@ -366,6 +366,14 @@ const BagListing = () => {
     return (
         <div style={S.page} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
 
+            {/* ── Type Selector Modal ── */}
+            {showModal && (
+                <TypeSelectorModal
+                    onStart={handleModalStart}
+                    onSkip={handleModalSkip}
+                />
+            )}
+
             {/* ── Header ── */}
             <header style={S.header} className="t-header">
                 <LogoWithZipper src={LOGO_SRC} />

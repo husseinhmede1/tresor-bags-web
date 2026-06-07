@@ -9,6 +9,8 @@ import AddBag from "./pages/AddBag";
 import EditBag from "./pages/EditBag";
 import AddCategory from "./pages/AddCategory";
 import EditCategory from "./pages/EditCategory";
+import AddType from "./pages/AddType";
+import EditType from "./pages/EditType";
 
 const App = () => {
   /* ── Global mouse tracker for button glow effect ── */
@@ -36,6 +38,8 @@ const App = () => {
           <Route path="/admin/edit/:id" element={<ProtectedRoute><EditBag /></ProtectedRoute>} />
           <Route path="/admin/category/add" element={<ProtectedRoute><AddCategory /></ProtectedRoute>} />
           <Route path="/admin/category/edit/:id" element={<ProtectedRoute><EditCategory /></ProtectedRoute>} />
+          <Route path="/admin/type/add" element={<ProtectedRoute><AddType /></ProtectedRoute>} />
+          <Route path="/admin/type/edit/:id" element={<ProtectedRoute><EditType /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

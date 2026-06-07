@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import heroBagImg from "../assets/hero_final1.png";
-import heroFinal2 from "../assets/hero_final2.png";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
 import HeroParticleReveal from "../components/HeroParticleReveal";
+import TypeSelectorModal from "../components/TypeSelectorModal";
 
 /* ── Logo with animated zipper canvas overlay ── */
 const LogoWithZipper = ({ src }) => {
@@ -148,6 +148,19 @@ const BagListing = () => {
     const { isAdmin, logout } = useAuth();
     const navigate = useNavigate();
 
+    /* ── Type selector modal ── */
+    const [showModal, setShowModal]       = useState(true);
+    const [selectedType, setSelectedType] = useState(null); // null = all
+
+    const handleModalStart = (type) => {
+        setSelectedType(type);
+        setShowModal(false);
+    };
+    const handleModalSkip = () => {
+        setSelectedType(null);
+        setShowModal(false);
+    };
+
     const [activeTab, setActiveTab] = useState("items");
     const [heroReady, setHeroReady] = useState(false);
     const [clipRadius, setClipRadius] = useState(0);   // 0 → 200 during burst
@@ -282,6 +295,7 @@ const BagListing = () => {
                 ...(minWeight && { minWeight }), ...(maxWeight && { maxWeight }),
                 ...(color && { color }), ...(capacity && { capacity }),
                 ...(selectedCategory && { categoryId: selectedCategory._id }),
+                ...(selectedType && { typeId: selectedType._id }),
             };
             const result = await getAllBags(params);
             setBags(result.data); setBagTotalPages(result.totalPages); setBagTotal(result.total);
@@ -292,7 +306,7 @@ const BagListing = () => {
     const fetchCategories = async () => {
         setLoadingCats(true);
         try {
-            const result = await getAllCategories({ page: catPage, limit: CAT_LIMIT, search: catSearchQuery, hasDiscount: hasDiscount || undefined });
+            const result = await getAllCategories({ page: catPage, limit: CAT_LIMIT, search: catSearchQuery, hasDiscount: hasDiscount || undefined, ...(selectedType && { typeId: selectedType._id }) });
             setCategories(result.data); setCatTotalPages(result.totalPages); setCatTotal(result.total);
         } catch {} finally { setLoadingCats(false); }
     };
@@ -311,9 +325,9 @@ const BagListing = () => {
     };
 
     useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory]);
-    useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, activeTab]);
+    useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedType, activeTab]);
     useEffect(() => { setCatPage(1); }, [catSearchQuery, hasDiscount]);
-    useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, activeTab]);
+    useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, selectedType, activeTab]);
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this bag?")) return;

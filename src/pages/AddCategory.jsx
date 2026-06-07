@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { createCategory } from "../services/categoryService";
+import { getAllTypes } from "../services/typeService";
 
 const GOLD = "#dfa94b";
 const GOLD_L = "#E5C48A";
@@ -13,9 +14,14 @@ const TEXT = "#F5F1E8";
 const AddCategory = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
-    const [form, setForm] = useState({ title: "", discount: "", note: "" });
+    const [form, setForm] = useState({ title: "", discount: "", note: "", typeId: "" });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [types, setTypes] = useState([]);
+
+    useEffect(() => {
+        getAllTypes().then(res => { if (res.success) setTypes(res.data); }).catch(() => {});
+    }, []);
 
     useEffect(() => {
         const style = document.createElement("style");
@@ -33,6 +39,7 @@ const AddCategory = () => {
     const validate = () => {
         const e = {};
         if (!form.title.trim()) e.title = "Title is required";
+        if (!form.typeId) e.typeId = "Type is required";
         if (form.discount !== "" && (isNaN(form.discount) || form.discount < 0 || form.discount > 100))
             e.discount = "Discount must be between 0 and 100";
         setErrors(e);
@@ -48,6 +55,7 @@ const AddCategory = () => {
                 title: form.title.trim(),
                 discount: form.discount === "" ? 0 : Number(form.discount),
                 note: form.note.trim(),
+                typeId: form.typeId || null,
             };
             const result = await createCategory(payload);
             if (result.success) navigate("/admin/dashboard");
@@ -76,6 +84,23 @@ const AddCategory = () => {
                     {errors.submit && <div style={S.errorBox}>{errors.submit}</div>}
 
                     <form onSubmit={handleSubmit}>
+                        {/* Type */}
+                        <div style={S.formGroup}>
+                            <label style={S.label}>Type <span style={S.req}>*</span></label>
+                            <select
+                                className="cf-input"
+                                value={form.typeId}
+                                onChange={e => { setForm(p => ({ ...p, typeId: e.target.value })); setErrors(p => { const n={...p}; delete n.typeId; return n; }); }}
+                                style={{ ...S.input, cursor: "pointer", appearance: "none", WebkitAppearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23E5C48A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36, ...(errors.typeId ? S.inputErr : {}) }}
+                            >
+                                <option value="">— Select a type —</option>
+                                {types.map(t => (
+                                    <option key={t._id} value={t._id} style={{ background: "#111", color: "#F5F1E8" }}>{t.title}</option>
+                                ))}
+                            </select>
+                            {errors.typeId && <p style={S.fieldError}>{errors.typeId}</p>}
+                        </div>
+
                         {/* Title */}
                         <div style={S.formGroup}>
                             <label style={S.label}>Title <span style={S.req}>*</span></label>

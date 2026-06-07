@@ -485,7 +485,7 @@ const BagListing = () => {
                     zIndex: 1,
                 }}>
                     <img
-                        src={heroFinal2}
+                        src={heroBagImg}
                         alt="Trésor Bags Collection"
                         style={{
                             position: "absolute",

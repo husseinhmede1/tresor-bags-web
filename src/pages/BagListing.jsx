@@ -151,14 +151,21 @@ const BagListing = () => {
     /* ── Type selector modal ── */
     const [showModal, setShowModal]       = useState(true);
     const [selectedType, setSelectedType] = useState(null); // null = all
+    const [pageRevealed, setPageRevealed] = useState(false);
+
+    const revealPage = () => {
+        setShowModal(false);
+        // slight delay so modal exit animation finishes first
+        setTimeout(() => setPageRevealed(true), 50);
+    };
 
     const handleModalStart = (type) => {
         setSelectedType(type);
-        setShowModal(false);
+        revealPage();
     };
     const handleModalSkip = () => {
         setSelectedType(null);
-        setShowModal(false);
+        revealPage();
     };
 
     const [activeTab, setActiveTab] = useState("items");
@@ -366,7 +373,21 @@ const BagListing = () => {
     };
 
     return (
-        <div style={S.page} onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
+        <div
+            style={{
+                ...S.page,
+                animation: pageRevealed ? "pageReveal 0.7s cubic-bezier(0.22,1,0.36,1) forwards" : "none",
+                opacity: pageRevealed ? undefined : (showModal ? 0.15 : 1),
+            }}
+            onTouchStart={handleSwipeStart}
+            onTouchEnd={handleSwipeEnd}
+        >
+            <style>{`
+                @keyframes pageReveal {
+                    from { opacity: 0.15; filter: blur(6px); transform: scale(0.99); }
+                    to   { opacity: 1;    filter: blur(0px); transform: scale(1);    }
+                }
+            `}</style>
 
             {/* ── Type Selector Modal ── */}
             {showModal && (

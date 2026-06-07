@@ -19,12 +19,19 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
     const navigate = useNavigate();
 
     const [types, setTypes]               = useState([]);
-    const [selected, setSelected]         = useState(null); // type object
-    const [mediaPhase, setMediaPhase]     = useState("video"); // "video" | "logo"
+    const [selected, setSelected]         = useState(null);
+    const [mediaPhase, setMediaPhase]     = useState("video");
     const [logoSrc, setLogoSrc]           = useState("");
     const [logoVisible, setLogoVisible]   = useState(false);
     const [loading, setLoading]           = useState(true);
+    const [isExiting, setIsExiting]       = useState(false); // drives exit animation
     const videoRef                        = useRef(null);
+
+    /* Helper: play exit then call a callback */
+    const exitThen = (cb) => {
+        setIsExiting(true);
+        setTimeout(cb, 600); // matches tsmExit duration
+    };
 
     useEffect(() => {
         getAllTypes()
@@ -52,11 +59,11 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
 
     const handleStart = () => {
         if (!selected) return;
-        onStart(selected);
+        exitThen(() => onStart(selected));
     };
 
     const handleSkip = () => {
-        onSkip();
+        exitThen(() => onSkip());
     };
 
     const handleDeleteType = async (e, id) => {
@@ -79,8 +86,11 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
         const s = document.createElement("style");
         s.id = "tsm-keyframes";
         s.textContent = `
-            @keyframes spin { to { transform: rotate(360deg); } }
-            @keyframes tsmFadeIn { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+            @keyframes spin        { to { transform: rotate(360deg); } }
+            @keyframes tsmFadeIn   { from { opacity:0; transform:scale(0.97) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
+            @keyframes tsmFadeOut  { from { opacity:1; transform:scale(1)    translateY(0);    } to { opacity:0; transform:scale(1.04) translateY(-10px); } }
+            @keyframes tsmOverlayOut { from { opacity:1; backdrop-filter:blur(14px); } to { opacity:0; backdrop-filter:blur(0px); } }
+            @keyframes tsmReveal   { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
             .tsm-type-box:hover { border-color: rgba(201,168,106,0.4) !important; background: rgba(201,168,106,0.05) !important; }
             .tsm-add-box:hover  { border-color: rgba(201,168,106,0.35) !important; background: rgba(201,168,106,0.04) !important; }
             .tsm-start-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,168,106,0.35) !important; }
@@ -91,8 +101,19 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
     }, []);
 
     return (
-        <div style={S.overlay}>
-            <div style={S.modal}>
+        <div style={{
+            ...S.overlay,
+            animation: isExiting
+                ? "tsmOverlayOut 0.6s cubic-bezier(0.4,0,1,1) forwards"
+                : "none",
+            pointerEvents: isExiting ? "none" : "auto",
+        }}>
+            <div style={{
+                ...S.modal,
+                animation: isExiting
+                    ? "tsmFadeOut 0.55s cubic-bezier(0.4,0,1,1) forwards"
+                    : "tsmFadeIn 0.45s cubic-bezier(0.22,1,0.36,1)",
+            }}>
 
                 {/* ── TOP 50%: Media (video or logo) ── */}
                 <div style={S.mediaWrap}>

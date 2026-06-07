@@ -74,6 +74,22 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
         } catch { alert("Failed to delete type"); }
     };
 
+    /* Inject keyframes */
+    useEffect(() => {
+        const s = document.createElement("style");
+        s.id = "tsm-keyframes";
+        s.textContent = `
+            @keyframes spin { to { transform: rotate(360deg); } }
+            @keyframes tsmFadeIn { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+            .tsm-type-box:hover { border-color: rgba(201,168,106,0.4) !important; background: rgba(201,168,106,0.05) !important; }
+            .tsm-add-box:hover  { border-color: rgba(201,168,106,0.35) !important; background: rgba(201,168,106,0.04) !important; }
+            .tsm-start-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,168,106,0.35) !important; }
+            .tsm-close-btn:hover { background: rgba(201,168,106,0.12) !important; color: #E5C48A !important; }
+        `;
+        if (!document.getElementById("tsm-keyframes")) document.head.appendChild(s);
+        return () => { const el = document.getElementById("tsm-keyframes"); if (el) el.remove(); };
+    }, []);
+
     return (
         <div style={S.overlay}>
             <div style={S.modal}>
@@ -119,9 +135,9 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                         )}
                     </div>
 
-                    {/* Admin-only close button — users must pick a type and press Start */}
+                    {/* Admin-only close button */}
                     {isAdmin && (
-                        <button onClick={handleSkip} style={S.closeBtn} title="Skip">✕</button>
+                        <button onClick={handleSkip} style={S.closeBtn} className="tsm-close-btn" title="Browse all">✕</button>
                     )}
                 </div>
 
@@ -142,6 +158,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                 {types.map(type => (
                                     <div
                                         key={type._id}
+                                        className="tsm-type-box"
                                         style={{
                                             ...S.typeBox,
                                             ...(selected?._id === type._id ? S.typeBoxActive : {}),
@@ -181,6 +198,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                 {/* Admin: Add new type box */}
                                 {isAdmin && (
                                     <div
+                                        className="tsm-add-box"
                                         style={S.typeBoxAdd}
                                         onClick={() => navigate("/admin/type/add")}
                                         title="Add new type"
@@ -203,12 +221,14 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                             )}
                         </div>
                         <button
+                            className="tsm-start-btn"
                             onClick={handleStart}
                             disabled={!selected}
                             style={{
                                 ...S.startBtn,
-                                opacity: selected ? 1 : 0.35,
+                                opacity: selected ? 1 : 0.28,
                                 cursor: selected ? "pointer" : "not-allowed",
+                                pointerEvents: selected ? "auto" : "none",
                             }}
                         >
                             Enter Collection →
@@ -221,33 +241,38 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
 }
 
 /* ── Styles ── */
+const MODAL_H = "min(92vh, 680px)";
+const MEDIA_H = "min(46vh, 340px)";
+
 const S = {
     overlay: {
         position: "fixed", inset: 0,
-        background: "rgba(0,0,0,0.88)",
-        backdropFilter: "blur(12px)",
+        background: "rgba(0,0,0,0.92)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
         zIndex: 9999,
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 16,
+        padding: "16px",
     },
     modal: {
-        width: "100%",
-        maxWidth: 640,
-        maxHeight: "92vh",
+        width: "min(640px, 100%)",
+        height: MODAL_H,
         background: BG,
         border: `1px solid ${BORDER}`,
-        borderRadius: 2,
+        borderRadius: 3,
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        boxShadow: "0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(201,168,106,0.1)",
+        boxShadow: "0 40px 120px rgba(0,0,0,0.95), 0 0 0 1px rgba(201,168,106,0.08)",
+        animation: "tsmFadeIn 0.35s cubic-bezier(0.22,1,0.36,1)",
     },
 
     /* Media top half */
     mediaWrap: {
         position: "relative",
-        flex: "0 0 50%",
-        background: "#050505",
+        flexShrink: 0,
+        height: MEDIA_H,
+        background: "#030303",
         overflow: "hidden",
     },
     mediaFill: {
@@ -299,16 +324,18 @@ const S = {
 
     /* Bottom half */
     bottomWrap: {
-        flex: "0 0 50%",
+        flex: 1,
         display: "flex", flexDirection: "column",
-        padding: "20px 24px 0",
+        padding: "18px 24px 0",
         overflowY: "auto",
         background: BG,
+        minHeight: 0,
     },
     selectLabel: {
         fontFamily: SANS, fontSize: 10,
         letterSpacing: "0.22em", textTransform: "uppercase",
-        color: MUTED, margin: "0 0 14px",
+        color: MUTED, margin: "0 0 12px",
+        flexShrink: 0,
     },
 
     /* Types grid */

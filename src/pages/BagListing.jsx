@@ -393,24 +393,7 @@ const BagListing = () => {
                 />
             )}
 
-            {/* ── Header ── */}
-            {/* ── All page content — hidden while modal is open, revealed after ── */}
-            <div className="page-content-wrap">
-
-            <header style={S.header} className="t-header">
-                <LogoWithZipper src={LOGO_SRC} />
-                <div style={S.headerRight} className="t-header-right">
-                    {isAdmin && (
-                        <>
-                            <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/category/add")}>Add Category</button>
-                            <button style={S.logoutBtn} onClick={logout}>Logout</button>
-                        </>
-                    )}
-                </div>
-            </header>
-
-            {/* ── Floating "Choose Type" pill — bottom-left, never overlaps header ── */}
+            {/* ── Floating "Choose Type" pill — outside page-content-wrap so position:fixed works ── */}
             <button
                 onClick={() => setShowModal(true)}
                 title="Switch collection type"
@@ -439,22 +422,34 @@ const BagListing = () => {
                     whiteSpace: "nowrap",
                 }}
             >
-                {/* Gold dot indicator */}
                 <span style={{
                     width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
                     background: selectedType ? GOLD_D : "rgba(107,101,96,0.5)",
                     boxShadow: selectedType ? `0 0 6px ${GOLD_D}` : "none",
                     transition: "background 0.25s",
                 }} />
-
-                {/* Type logo thumbnail if selected */}
                 {selectedType?.logo && (
                     <img src={selectedType.logo} alt="" style={{ width: 16, height: 16, objectFit: "contain", borderRadius: 2, flexShrink: 0 }} />
                 )}
-
                 {selectedType ? selectedType.title : "All Types"}
                 <span style={{ fontSize: 7, opacity: 0.45 }}>▼</span>
             </button>
+
+            {/* ── All page content — hidden while modal is open, revealed after ── */}
+            <div className="page-content-wrap">
+
+            <header style={S.header} className="t-header">
+                <LogoWithZipper src={LOGO_SRC} />
+                <div style={S.headerRight} className="t-header-right">
+                    {isAdmin && (
+                        <>
+                            <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/category/add")}>Add Category</button>
+                            <button style={S.logoutBtn} onClick={logout}>Logout</button>
+                        </>
+                    )}
+                </div>
+            </header>
 
             {/* ── Hero ── */}
             {/* ── Static Hero Image ── */}

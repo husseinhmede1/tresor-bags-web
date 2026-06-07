@@ -260,7 +260,9 @@ const BagListing = () => {
                 .card-reveal-wrapper { transition-delay:0ms !important; }
             }
             @media (max-width:600px) {
-                .t-header      { padding:14px 20px !important; }
+                .t-header      { padding:10px 14px !important; flex-wrap:nowrap !important; overflow:hidden; }
+                .t-header-right { gap:8px !important; flex-wrap:nowrap !important; }
+                .t-header-right button { font-size:9px !important; letter-spacing:0.08em !important; padding:5px 8px !important; white-space:nowrap !important; }
                 .t-hero-wrap   { min-height:420px !important; }
                 .t-hero-title  { font-size:1.9rem !important; }
                 .t-filter-wrap { margin:8px !important; padding:20px 16px !important; }
@@ -377,7 +379,7 @@ const BagListing = () => {
             {/* ── Header ── */}
             <header style={S.header} className="t-header">
                 <LogoWithZipper src={LOGO_SRC} />
-                <div style={S.headerRight}>
+                <div style={S.headerRight} className="t-header-right">
                     {/* Choose / switch type button — always visible */}
                     <button
                         onClick={() => setShowModal(true)}
@@ -788,8 +790,8 @@ const S = {
     page: { minHeight: "100vh", background: BG, color: TEXT, fontFamily: SANS, paddingBottom: 80, overflowX: "hidden", position: "relative", zIndex: 1 },
 
     /* Header */
-    header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "rgba(7,7,7,0.96)", borderBottom: "1px solid rgba(201,168,106,0.08)", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px)", gap: 12 },
-    headerRight: { display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "flex-end" },
+    header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "rgba(7,7,7,0.96)", borderBottom: "1px solid rgba(201,168,106,0.08)", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px)", gap: 12, flexWrap: "nowrap", overflow: "hidden" },
+    headerRight: { display: "flex", alignItems: "center", gap: 16, flexWrap: "nowrap", justifyContent: "flex-end", flexShrink: 1, minWidth: 0 },
     addBtn: { background: "transparent", color: GOLD_L, border: "none", borderBottom: `1px solid rgba(229,196,138,0.4)`, padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
     addBtnSecondary: { background: "transparent", color: MUTED, border: "none", borderBottom: "1px solid rgba(167,161,154,0.25)", padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
     logoutBtn: { background: "transparent", color: MUTED, border: "none", padding: "4px 0", fontSize: 11, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase" },

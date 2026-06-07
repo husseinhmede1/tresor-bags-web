@@ -380,39 +380,6 @@ const BagListing = () => {
             <header style={S.header} className="t-header">
                 <LogoWithZipper src={LOGO_SRC} />
                 <div style={S.headerRight} className="t-header-right">
-                    {/* Choose / switch type button — always visible */}
-                    <button
-                        onClick={() => setShowModal(true)}
-                        title="Choose collection type"
-                        style={{
-                            display: "flex", alignItems: "center", gap: 7,
-                            background: "rgba(201,168,106,0.06)",
-                            border: "1px solid rgba(201,168,106,0.22)",
-                            borderRadius: 2,
-                            padding: "7px 13px",
-                            cursor: "pointer",
-                            fontFamily: SANS,
-                            fontSize: 10,
-                            letterSpacing: "0.18em",
-                            textTransform: "uppercase",
-                            color: selectedType ? GOLD_L : MUTED,
-                            transition: "background 0.2s, border-color 0.2s, color 0.2s",
-                            flexShrink: 0,
-                            whiteSpace: "nowrap",
-                        }}
-                    >
-                        {/* Small type logo thumbnail if one is selected */}
-                        {selectedType?.logo && (
-                            <img
-                                src={selectedType.logo}
-                                alt=""
-                                style={{ width: 16, height: 16, objectFit: "contain", borderRadius: 1, flexShrink: 0 }}
-                            />
-                        )}
-                        {selectedType ? selectedType.title : "All Types"}
-                        <span style={{ fontSize: 8, opacity: 0.5, marginLeft: 2 }}>▼</span>
-                    </button>
-
                     {isAdmin && (
                         <>
                             <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
@@ -422,6 +389,52 @@ const BagListing = () => {
                     )}
                 </div>
             </header>
+
+            {/* ── Floating "Choose Type" pill — bottom-left, never overlaps header ── */}
+            <button
+                onClick={() => setShowModal(true)}
+                title="Switch collection type"
+                style={{
+                    position: "fixed",
+                    bottom: 24,
+                    left: 20,
+                    zIndex: 200,
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: "rgba(8,8,8,0.92)",
+                    border: `1px solid rgba(201,168,106,${selectedType ? "0.45" : "0.2"})`,
+                    borderRadius: 100,
+                    padding: "10px 18px 10px 14px",
+                    cursor: "pointer",
+                    fontFamily: SANS,
+                    fontSize: 10,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: selectedType ? GOLD_L : MUTED,
+                    backdropFilter: "blur(16px)",
+                    WebkitBackdropFilter: "blur(16px)",
+                    boxShadow: selectedType
+                        ? "0 8px 32px rgba(201,168,106,0.18), 0 2px 8px rgba(0,0,0,0.6)"
+                        : "0 4px 20px rgba(0,0,0,0.5)",
+                    transition: "border-color 0.25s, color 0.25s, box-shadow 0.25s",
+                    whiteSpace: "nowrap",
+                }}
+            >
+                {/* Gold dot indicator */}
+                <span style={{
+                    width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                    background: selectedType ? GOLD_D : "rgba(107,101,96,0.5)",
+                    boxShadow: selectedType ? `0 0 6px ${GOLD_D}` : "none",
+                    transition: "background 0.25s",
+                }} />
+
+                {/* Type logo thumbnail if selected */}
+                {selectedType?.logo && (
+                    <img src={selectedType.logo} alt="" style={{ width: 16, height: 16, objectFit: "contain", borderRadius: 2, flexShrink: 0 }} />
+                )}
+
+                {selectedType ? selectedType.title : "All Types"}
+                <span style={{ fontSize: 7, opacity: 0.45 }}>▼</span>
+            </button>
 
             {/* ── Hero ── */}
             {/* ── Static Hero Image ── */}

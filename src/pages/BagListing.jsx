@@ -378,6 +378,39 @@ const BagListing = () => {
             <header style={S.header} className="t-header">
                 <LogoWithZipper src={LOGO_SRC} />
                 <div style={S.headerRight}>
+                    {/* Choose / switch type button — always visible */}
+                    <button
+                        onClick={() => setShowModal(true)}
+                        title="Choose collection type"
+                        style={{
+                            display: "flex", alignItems: "center", gap: 7,
+                            background: "rgba(201,168,106,0.06)",
+                            border: "1px solid rgba(201,168,106,0.22)",
+                            borderRadius: 2,
+                            padding: "7px 13px",
+                            cursor: "pointer",
+                            fontFamily: SANS,
+                            fontSize: 10,
+                            letterSpacing: "0.18em",
+                            textTransform: "uppercase",
+                            color: selectedType ? GOLD_L : MUTED,
+                            transition: "background 0.2s, border-color 0.2s, color 0.2s",
+                            flexShrink: 0,
+                            whiteSpace: "nowrap",
+                        }}
+                    >
+                        {/* Small type logo thumbnail if one is selected */}
+                        {selectedType?.logo && (
+                            <img
+                                src={selectedType.logo}
+                                alt=""
+                                style={{ width: 16, height: 16, objectFit: "contain", borderRadius: 1, flexShrink: 0 }}
+                            />
+                        )}
+                        {selectedType ? selectedType.title : "All Types"}
+                        <span style={{ fontSize: 8, opacity: 0.5, marginLeft: 2 }}>▼</span>
+                    </button>
+
                     {isAdmin && (
                         <>
                             <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>

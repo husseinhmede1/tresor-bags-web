@@ -144,7 +144,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                 {/* ── BOTTOM 50%: Type selector + footer ── */}
                 <div style={S.bottomWrap}>
                     <p style={S.selectLabel}>
-                        {selected ? `Selected: ${selected.title}` : "Choose your collection"}
+                        {selected ? `Selected: ${selected.title}` : "Choose your type"}
                     </p>
 
                     {/* Type boxes grid */}
@@ -231,7 +231,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                 pointerEvents: selected ? "auto" : "none",
                             }}
                         >
-                            Enter Collection →
+                            Enter Type →
                         </button>
                     </div>
                 </div>

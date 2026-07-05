@@ -1,28 +1,30 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
     const { login, isAdmin } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+    const from = location.state?.from || "/admin/dashboard";
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Already logged in → go straight to admin listing
+    // Already logged in → go to intended destination
     if (isAdmin) {
-        navigate("/admin/dashboard", { replace: true });
+        navigate(from, { replace: true });
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
-        
+
         const success = login(password);
         if (success) {
-            navigate("/admin/dashboard");
+            navigate(from, { replace: true });
         } else {
             setError("Invalid credentials. Please try again.");
         }

@@ -21,3 +21,8 @@ export const confirmOrder = async (token) => {
     const res = await api.patch(`/orders/${token}/confirm`);
     return res.data.data;
 };
+
+export const cancelOrder = async (token) => {
+    const res = await api.patch(`/orders/${token}/cancel`);
+    return res.data.data;
+};

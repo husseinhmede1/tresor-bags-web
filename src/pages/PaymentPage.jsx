@@ -50,30 +50,34 @@ export default function PaymentPage() {
   function buildMessage(confirmToken) {
     const confirmLink = `https://tresorbags.com/admin/order/${confirmToken}`;
     const lines = [];
-    lines.push('🛍️ NEW ORDER - Trésor Bags');
+    lines.push('NEW ORDER - Tresor Bags');
     lines.push('');
-    lines.push(`👤 Customer: ${delivery.name} ${delivery.surname}`);
-    lines.push(`📞 Phone: ${delivery.phonePrefix}${delivery.phoneNumber}`);
-    lines.push(`📧 Email: ${delivery.email}`);
-    lines.push(`📍 Address: ${delivery.address}, ${delivery.locality}, ${delivery.district}, ${delivery.region}`);
-    lines.push(`ℹ️ Notes: ${delivery.moreInfo?.trim() || 'None'}`);
+    lines.push(`Customer: ${delivery.name} ${delivery.surname}`);
+    lines.push(`Phone: ${delivery.phonePrefix}${delivery.phoneNumber}`);
+    lines.push(`Email: ${delivery.email}`);
+    lines.push(`Address: ${delivery.address}, ${delivery.locality}, ${delivery.district}, ${delivery.region}`);
+    if (delivery.moreInfo?.trim()) {
+      lines.push(`Notes: ${delivery.moreInfo.trim()}`);
+    }
     lines.push('');
-    lines.push('🛒 Items:');
+    lines.push('Items:');
     cartItems.forEach(({ bag, quantity }) => {
       const discount = bag.categoryId?.discount ?? 0;
       const unit = bag.price * (1 - discount / 100);
       const subtotal = unit * quantity;
-      lines.push(`• ${bag.title} x${quantity} — ${fmt(subtotal)}`);
+      lines.push(`- ${bag.title} x${quantity} = ${fmt(subtotal)}`);
     });
     lines.push('');
     if (totalSavings > 0) {
-      lines.push(`💰 Total Savings: ${fmt(totalSavings)}`);
+      lines.push(`Total Savings: ${fmt(totalSavings)}`);
     }
-    lines.push(`💳 Grand Total: ${fmt(totalPrice)}`);
+    lines.push(`Grand Total: ${fmt(totalPrice)}`);
     lines.push('');
-    lines.push('💳 Payment: Whish Transfer to +961 78987288');
-    lines.push('');
-    lines.push(`✅ Confirm payment received:\n${confirmLink}`);
+    lines.push('Payment: Whish Transfer to +961 78 987 288');
+    if (confirmToken) {
+      lines.push('');
+      lines.push(`Confirm payment received: ${confirmLink}`);
+    }
     return lines.join('\n');
   }
 
@@ -106,7 +110,6 @@ export default function PaymentPage() {
       const msg = buildMessage(confirmToken);
       const encoded = encodeURIComponent(msg);
       window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
-      setTimeout(() => window.open(`https://wa.me/96178985529?text=${encoded}`, '_blank'), 1000);
 
       clearCart();
       sessionStorage.removeItem('tresor-delivery');
@@ -117,7 +120,6 @@ export default function PaymentPage() {
       const msg = buildMessage('');
       const encoded = encodeURIComponent(msg);
       window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
-      setTimeout(() => window.open(`https://wa.me/96178985529?text=${encoded}`, '_blank'), 1000);
       clearCart();
       sessionStorage.removeItem('tresor-delivery');
       setSuccess(true);

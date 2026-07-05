@@ -156,10 +156,8 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                         )}
                     </div>
 
-                    {/* Admin-only close button */}
-                    {isAdmin && (
-                        <button onClick={handleSkip} style={S.closeBtn} className="tsm-close-btn" title="Browse all">✕</button>
-                    )}
+                    {/* Close / skip button — visible to all */}
+                    <button onClick={handleSkip} style={S.closeBtn} className="tsm-close-btn" title="Browse all">✕</button>
                 </div>
 
                 {/* ── BOTTOM 50%: Type selector + footer ── */}

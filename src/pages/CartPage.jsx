@@ -195,7 +195,7 @@ export default function CartPage() {
             {/* Actions */}
             <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
               <button
-                onClick={() => { clearCart(); navigate('/'); }}
+                onClick={() => navigate('/')}
                 style={btnSecondary}
               >
                 Cancel

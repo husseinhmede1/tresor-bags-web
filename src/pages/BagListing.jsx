@@ -152,8 +152,9 @@ const BagListing = () => {
 
     /* ── Type selector modal ── */
     const alreadySeen = sessionStorage.getItem('tresor-modal-seen') === '1';
+    const savedType = (() => { try { const t = sessionStorage.getItem('tresor-selected-type'); return t ? JSON.parse(t) : null; } catch { return null; } })();
     const [showModal, setShowModal]       = useState(!alreadySeen);
-    const [selectedType, setSelectedType] = useState(null); // null = all
+    const [selectedType, setSelectedType] = useState(savedType);
     const [pageRevealed, setPageRevealed] = useState(alreadySeen);
 
     const revealPage = () => {
@@ -164,10 +165,12 @@ const BagListing = () => {
 
     const handleModalStart = (type) => {
         setSelectedType(type);
+        sessionStorage.setItem('tresor-selected-type', JSON.stringify(type));
         revealPage();
     };
     const handleModalSkip = () => {
         setSelectedType(null);
+        sessionStorage.removeItem('tresor-selected-type');
         revealPage();
     };
 

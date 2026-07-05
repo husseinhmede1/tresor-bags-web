@@ -8,6 +8,7 @@ const ScrollToTop = () => {
   return null;
 };
 import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import BagListing from "./pages/BagListing";
 import BagGallery from "./pages/BagGallery";
@@ -18,6 +19,9 @@ import AddCategory from "./pages/AddCategory";
 import EditCategory from "./pages/EditCategory";
 import AddType from "./pages/AddType";
 import EditType from "./pages/EditType";
+import CartPage from "./pages/CartPage";
+import DeliveryPage from "./pages/DeliveryPage";
+import PaymentPage from "./pages/PaymentPage";
 
 const App = () => {
   /* ── Global mouse tracker for button glow effect ── */
@@ -34,24 +38,29 @@ const App = () => {
   }, []);
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<BagListing />} />
-          <Route path="/gallery/:id" element={<BagGallery />} />
-          <Route path="/admin" element={<Login />} />
-          <Route path="/admin/dashboard" element={<ProtectedRoute><BagListing /></ProtectedRoute>} />
-          <Route path="/admin/add" element={<ProtectedRoute><AddBag /></ProtectedRoute>} />
-          <Route path="/admin/edit/:id" element={<ProtectedRoute><EditBag /></ProtectedRoute>} />
-          <Route path="/admin/category/add" element={<ProtectedRoute><AddCategory /></ProtectedRoute>} />
-          <Route path="/admin/category/edit/:id" element={<ProtectedRoute><EditCategory /></ProtectedRoute>} />
-          <Route path="/admin/type/add" element={<ProtectedRoute><AddType /></ProtectedRoute>} />
-          <Route path="/admin/type/edit/:id" element={<ProtectedRoute><EditType /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <CartProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/" element={<BagListing />} />
+            <Route path="/gallery/:id" element={<BagGallery />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout/delivery" element={<DeliveryPage />} />
+            <Route path="/checkout/payment" element={<PaymentPage />} />
+            <Route path="/admin" element={<Login />} />
+            <Route path="/admin/dashboard" element={<ProtectedRoute><BagListing /></ProtectedRoute>} />
+            <Route path="/admin/add" element={<ProtectedRoute><AddBag /></ProtectedRoute>} />
+            <Route path="/admin/edit/:id" element={<ProtectedRoute><EditBag /></ProtectedRoute>} />
+            <Route path="/admin/category/add" element={<ProtectedRoute><AddCategory /></ProtectedRoute>} />
+            <Route path="/admin/category/edit/:id" element={<ProtectedRoute><EditCategory /></ProtectedRoute>} />
+            <Route path="/admin/type/add" element={<ProtectedRoute><AddType /></ProtectedRoute>} />
+            <Route path="/admin/type/edit/:id" element={<ProtectedRoute><EditType /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </CartProvider>
   );
 };
 

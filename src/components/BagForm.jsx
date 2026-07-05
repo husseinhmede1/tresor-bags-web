@@ -26,6 +26,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         color: "",
         capacity: "",
         categoryId: "",
+        stock: "",
     });
     const [errors, setErrors]                       = useState({});
     const [loading, setLoading]                     = useState(false);
@@ -297,11 +298,18 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                     </Field>
                                 </div>
 
-                                <Field label="Depth (cm)">
-                                    <input className="bf-input" type="number" name="dimensions.depth"
-                                        value={formData.dimensions.depth} onChange={handleChange}
-                                        placeholder="0" min="0" style={S.input} />
-                                </Field>
+                                <div style={S.twoCol} className="bf-2col">
+                                    <Field label="Depth (cm)">
+                                        <input className="bf-input" type="number" name="dimensions.depth"
+                                            value={formData.dimensions.depth} onChange={handleChange}
+                                            placeholder="0" min="0" style={S.input} />
+                                    </Field>
+                                    <Field label="Stock (units)">
+                                        <input className="bf-input" type="number" name="stock"
+                                            value={formData.stock} onChange={handleChange}
+                                            placeholder="0" min="0" style={S.input} />
+                                    </Field>
+                                </div>
 
                                 <Field label="Category">
                                     <select

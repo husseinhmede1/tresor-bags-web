@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import heroBagImg from "../assets/hero_final1.png";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
@@ -146,6 +147,7 @@ const HeroCanvas = () => (
 /* ══════════════════════════════════════════ */
 const BagListing = () => {
     const { isAdmin, logout } = useAuth();
+    const { getQuantity, setQuantity, totalItems } = useCart();
     const navigate = useNavigate();
 
     /* ── Type selector modal ── */
@@ -448,6 +450,14 @@ const BagListing = () => {
                             <button style={S.logoutBtn} onClick={logout}>Logout</button>
                         </>
                     )}
+                    <button style={S.cartBtn} onClick={() => navigate("/cart")} title="Shopping Bag">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <path d="M16 10a4 4 0 01-8 0"/>
+                        </svg>
+                        {totalItems > 0 && <span style={S.cartBadge}>{totalItems > 99 ? "99+" : totalItems}</span>}
+                    </button>
                 </div>
             </header>
 
@@ -681,7 +691,10 @@ const BagListing = () => {
                         </div>
                     ) : (
                         <main style={S.grid} className="t-grid">
-                            {bags.map((bag, index) => (
+                            {bags.map((bag, index) => {
+                                const qty = getQuantity(bag._id);
+                                const outOfStock = (bag.stock ?? 0) <= 0;
+                                return (
                                 <RevealCard key={bag._id} index={index}>
                                     <div style={S.card} className="tresor-card">
                                         {isAdmin && (
@@ -716,6 +729,25 @@ const BagListing = () => {
                                                 <p style={S.cardPrice}>${bag.price}</p>
                                             )}
 
+                                            {/* Quantity selector */}
+                                            {outOfStock ? (
+                                                <p style={S.outOfStock}>Out of stock</p>
+                                            ) : (
+                                                <div style={S.qtyRow}>
+                                                    <button
+                                                        style={{ ...S.qtyBtn, opacity: qty <= 0 ? 0.3 : 1 }}
+                                                        onClick={(e) => { e.stopPropagation(); setQuantity(bag, qty - 1); }}
+                                                        disabled={qty <= 0}
+                                                    >−</button>
+                                                    <span style={S.qtyNum}>{qty}</span>
+                                                    <button
+                                                        style={{ ...S.qtyBtn, opacity: qty >= bag.stock ? 0.3 : 1 }}
+                                                        onClick={(e) => { e.stopPropagation(); setQuantity(bag, qty + 1); }}
+                                                        disabled={qty >= bag.stock}
+                                                    >+</button>
+                                                </div>
+                                            )}
+
                                             {/* Accordion — minimal specs grid */}
                                             <button style={S.expandBtn}
                                                 onClick={() => setExpandedBag(expandedBag === bag._id ? null : bag._id)}>
@@ -741,7 +773,8 @@ const BagListing = () => {
                                         </div>
                                     </div>
                                 </RevealCard>
-                            ))}
+                                );
+                            })}
                         </main>
                     )}
 
@@ -825,6 +858,14 @@ const S = {
     addBtn: { background: "transparent", color: GOLD_L, border: "none", borderBottom: `1px solid rgba(229,196,138,0.4)`, padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
     addBtnSecondary: { background: "transparent", color: MUTED, border: "none", borderBottom: "1px solid rgba(167,161,154,0.25)", padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
     logoutBtn: { background: "transparent", color: MUTED, border: "none", padding: "4px 0", fontSize: 11, cursor: "pointer", letterSpacing: "0.1em", textTransform: "uppercase" },
+    cartBtn: { position: "relative", background: "none", border: "none", color: GOLD_L, cursor: "pointer", padding: "6px 8px", lineHeight: 1, flexShrink: 0, display: "flex", alignItems: "center" },
+    cartBadge: { position: "absolute", top: 0, right: 0, background: GOLD_D, color: "#070707", borderRadius: "50%", width: 17, height: 17, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800, fontFamily: SANS, pointerEvents: "none" },
+
+    /* Quantity selector */
+    qtyRow: { display: "flex", alignItems: "center", margin: "10px 0 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,106,0.18)", borderRadius: 8, overflow: "hidden", width: "fit-content" },
+    qtyBtn: { background: "none", border: "none", color: GOLD_L, cursor: "pointer", fontSize: 18, padding: "4px 14px", fontWeight: 300, lineHeight: 1, fontFamily: SERIF, transition: "opacity 0.2s" },
+    qtyNum: { fontSize: 13, color: TEXT, minWidth: 28, textAlign: "center", fontFamily: SANS, padding: "4px 0", userSelect: "none" },
+    outOfStock: { fontSize: 10, color: "#C9957A", letterSpacing: "0.12em", textTransform: "uppercase", margin: "10px 0 12px", fontFamily: SANS },
 
     /* Hero */
     heroWrap: { position: "relative", minHeight: 460, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" },

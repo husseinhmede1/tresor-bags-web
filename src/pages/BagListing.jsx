@@ -159,8 +159,9 @@ const BagListing = () => {
 
     const revealPage = () => {
         sessionStorage.setItem('tresor-modal-seen', '1');
+        window.scrollTo({ top: 0, behavior: "instant" });
         setShowModal(false);
-        setTimeout(() => { setPageRevealed(true); window.scrollTo({ top: 0, behavior: "instant" }); }, 50);
+        setTimeout(() => setPageRevealed(true), 50);
     };
 
     const handleModalStart = (type) => {

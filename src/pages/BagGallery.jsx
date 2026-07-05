@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBagById } from "../services/bagService";
+import { useCart } from "../context/CartContext";
 
 /* ── Tokens (mirrors BagListing) ── */
 const GOLD_L  = "#E5C48A";
@@ -15,6 +16,7 @@ const SANS    = "'Inter', sans-serif";
 const BagGallery = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { getQuantity, setQuantity } = useCart();
     const [bag, setBag] = useState(null);
     const [selectedImage, setSelectedImage] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -225,6 +227,68 @@ const BagGallery = () => {
                             <span style={S.priceFinal}>${bag.price}</span>
                         )}
                     </div>
+
+                    {/* Qty selector */}
+                    {(() => {
+                        const outOfStock = (bag.stock ?? 0) <= 0;
+                        const qty = getQuantity(bag._id);
+                        const maxStock = bag.stock ?? 0;
+                        return outOfStock ? (
+                            <div style={{
+                                display: 'inline-block',
+                                fontSize: 11, letterSpacing: '0.14em',
+                                textTransform: 'uppercase', color: MUTED,
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: 8, padding: '8px 18px',
+                                marginBottom: 32,
+                            }}>
+                                Out of Stock
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 32, width: 'fit-content' }}>
+                                <button
+                                    onClick={() => setQuantity(bag, qty - 1)}
+                                    disabled={qty <= 0}
+                                    style={{
+                                        width: 36, height: 36,
+                                        background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(201,168,106,0.2)',
+                                        borderRight: 'none',
+                                        borderRadius: '8px 0 0 8px',
+                                        color: qty <= 0 ? MUTED : GOLD_L,
+                                        fontSize: 18, cursor: qty <= 0 ? 'default' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'background 0.15s',
+                                    }}
+                                >−</button>
+                                <div style={{
+                                    width: 44, height: 36,
+                                    background: 'rgba(255,255,255,0.04)',
+                                    border: '1px solid rgba(201,168,106,0.2)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontFamily: SANS, fontSize: 14, color: TEXT,
+                                    letterSpacing: '0.04em',
+                                }}>
+                                    {qty}
+                                </div>
+                                <button
+                                    onClick={() => setQuantity(bag, qty + 1)}
+                                    disabled={qty >= maxStock}
+                                    style={{
+                                        width: 36, height: 36,
+                                        background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(201,168,106,0.2)',
+                                        borderLeft: 'none',
+                                        borderRadius: '0 8px 8px 0',
+                                        color: qty >= maxStock ? MUTED : GOLD_L,
+                                        fontSize: 18, cursor: qty >= maxStock ? 'default' : 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        transition: 'background 0.15s',
+                                    }}
+                                >+</button>
+                            </div>
+                        );
+                    })()}
 
                     {/* Divider */}
                     <div style={S.divider} />

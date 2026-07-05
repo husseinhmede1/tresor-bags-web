@@ -151,13 +151,14 @@ const BagListing = () => {
     const navigate = useNavigate();
 
     /* ── Type selector modal ── */
-    const [showModal, setShowModal]       = useState(true);
+    const alreadySeen = sessionStorage.getItem('tresor-modal-seen') === '1';
+    const [showModal, setShowModal]       = useState(!alreadySeen);
     const [selectedType, setSelectedType] = useState(null); // null = all
-    const [pageRevealed, setPageRevealed] = useState(false);
+    const [pageRevealed, setPageRevealed] = useState(alreadySeen);
 
     const revealPage = () => {
+        sessionStorage.setItem('tresor-modal-seen', '1');
         setShowModal(false);
-        // slight delay so modal exit animation finishes first
         setTimeout(() => setPageRevealed(true), 50);
     };
 

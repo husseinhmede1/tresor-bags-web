@@ -25,13 +25,16 @@ export function CartProvider({ children }) {
   }, [items]);
 
   function setQuantity(bag, qty) {
+    const id = bag._id || bag.id;
     setItems(prev => {
       const next = { ...prev };
       if (qty <= 0) {
-        delete next[bag.id];
+        delete next[id];
       } else {
-        const capped = Math.min(qty, bag.stock ?? Infinity);
-        next[bag.id] = { bag, quantity: capped };
+        const maxStock = typeof bag.stock === 'number' ? bag.stock : Infinity;
+        const capped = Math.min(qty, maxStock);
+        if (capped <= 0) { delete next[id]; return next; }
+        next[id] = { bag, quantity: capped };
       }
       return next;
     });

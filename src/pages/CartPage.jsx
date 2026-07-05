@@ -88,7 +88,7 @@ export default function CartPage() {
                   >
                     {/* Image */}
                     <img
-                      src={bag.imageUrl || bag.image || ''}
+                      src={bag.mainImage || bag.imageUrl || bag.image || ''}
                       alt={bag.title || bag.name}
                       style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, flexShrink: 0, background: '#111' }}
                     />

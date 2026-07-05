@@ -781,8 +781,6 @@ const BagListing = () => {
                             })}
                         </main>
                     )}
-
-                    <Pagination page={bagPage} totalPages={bagTotalPages} setPage={setBagPage} />
                 </>
             )}
 
@@ -843,8 +841,6 @@ const BagListing = () => {
                             ))}
                         </main>
                     )}
-
-                    <Pagination page={catPage} totalPages={catTotalPages} setPage={setCatPage} />
                 </>
             )}
 

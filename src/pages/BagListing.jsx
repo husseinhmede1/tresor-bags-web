@@ -157,11 +157,18 @@ const BagListing = () => {
     const [selectedType, setSelectedType] = useState(savedType);
     const [pageRevealed, setPageRevealed] = useState(alreadySeen);
 
+    useEffect(() => {
+        if (pageRevealed) {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        }
+    }, [pageRevealed]);
+
     const revealPage = () => {
         sessionStorage.setItem('tresor-modal-seen', '1');
-        window.scrollTo({ top: 0, behavior: "instant" });
         setShowModal(false);
-        setTimeout(() => setPageRevealed(true), 50);
+        setTimeout(() => setPageRevealed(true), 650);
     };
 
     const handleModalStart = (type) => {

@@ -28,36 +28,36 @@ function customerPhone(delivery) {
 function buildConfirmMessage(order) {
   const d = order.delivery || {};
   const lines = [
-    `✅ Your Trésor Bags order has been confirmed!`,
+    `Your Tresor Bags order has been confirmed!`,
     ``,
-    `Hi ${d.name || ''} ${d.surname || ''}`.trim() + `,`,
+    `Hi ${`${d.name || ''} ${d.surname || ''}`.trim()},`,
     `We've received your payment and your order is being prepared.`,
     ``,
-    `🛍️ Items ordered:`,
+    `Items ordered:`,
   ];
   (order.items || []).forEach(item => {
-    lines.push(`• ${item.title} ×${item.quantity} — $${fmt(item.subtotal)}`);
+    lines.push(`- ${item.title} x${item.quantity} = $${fmt(item.subtotal)}`);
   });
   lines.push(``);
-  lines.push(`💳 Total Paid: $${fmt(order.total)}`);
+  lines.push(`Total Paid: $${fmt(order.total)}`);
   lines.push(``);
-  lines.push(`📦 Delivering to: ${d.address || ''}, ${d.locality || ''}, ${d.district || ''}, ${d.region || ''}`);
+  lines.push(`Delivering to: ${d.address || ''}, ${d.locality || ''}, ${d.district || ''}, ${d.region || ''}`);
   lines.push(``);
-  lines.push(`We'll contact you soon to arrange delivery. Thank you for shopping with Trésor Bags! 🙏`);
+  lines.push(`We will contact you soon to arrange delivery. Thank you for shopping with Tresor Bags!`);
   return lines.join('\n');
 }
 
 function buildCancelMessage(order) {
   const d = order.delivery || {};
   const lines = [
-    `❌ Your Trésor Bags order has been cancelled.`,
+    `Your Tresor Bags order has been cancelled.`,
     ``,
-    `Hi ${d.name || ''} ${d.surname || ''}`.trim() + `,`,
+    `Hi ${`${d.name || ''} ${d.surname || ''}`.trim()},`,
     `Unfortunately your order has been cancelled. This may be due to stock unavailability or payment issues.`,
     ``,
     `Please contact us for more information or to place a new order.`,
     ``,
-    `Thank you for your understanding. — Trésor Bags`,
+    `Thank you for your understanding. - Tresor Bags`,
   ];
   return lines.join('\n');
 }

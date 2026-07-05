@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { createOrder } from '../services/orderService';
 
 const C = {
   BG: '#080808',
@@ -46,7 +47,8 @@ export default function PaymentPage() {
 
   if (!delivery) return null;
 
-  function buildMessage() {
+  function buildMessage(confirmToken) {
+    const confirmLink = `https://tresorbags.com/admin/order/${confirmToken}`;
     const lines = [];
     lines.push('🛍️ NEW ORDER - Trésor Bags');
     lines.push('');
@@ -61,7 +63,7 @@ export default function PaymentPage() {
       const discount = bag.categoryId?.discount ?? 0;
       const unit = bag.price * (1 - discount / 100);
       const subtotal = unit * quantity;
-      lines.push(`• ${bag.title || bag.name} x${quantity} — ${fmt(subtotal)}`);
+      lines.push(`• ${bag.title} x${quantity} — ${fmt(subtotal)}`);
     });
     lines.push('');
     if (totalSavings > 0) {
@@ -70,31 +72,57 @@ export default function PaymentPage() {
     lines.push(`💳 Grand Total: ${fmt(totalPrice)}`);
     lines.push('');
     lines.push('💳 Payment: Whish Transfer to +961 78987288');
+    lines.push('');
+    lines.push(`✅ Confirm payment received:\n${confirmLink}`);
     return lines.join('\n');
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     if (confirming) return;
     setConfirming(true);
+    try {
+      // Build order payload
+      const orderItems = cartItems.map(({ bag, quantity }) => {
+        const discount = bag.categoryId?.discount ?? 0;
+        const unit = bag.price * (1 - discount / 100);
+        return {
+          bagId: bag._id,
+          title: bag.title,
+          mainImage: bag.mainImage || '',
+          price: bag.price,
+          discount,
+          quantity,
+          subtotal: parseFloat((unit * quantity).toFixed(2)),
+        };
+      });
+      const result = await createOrder({
+        items: orderItems,
+        delivery,
+        total: parseFloat(totalPrice.toFixed(2)),
+        savings: parseFloat(totalSavings.toFixed(2)),
+      });
+      const confirmToken = result.data?.confirmToken || '';
 
-    const msg = buildMessage();
-    const encoded = encodeURIComponent(msg);
+      const msg = buildMessage(confirmToken);
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
+      setTimeout(() => window.open(`https://wa.me/96178985529?text=${encoded}`, '_blank'), 1000);
 
-    window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
-
-    setTimeout(() => {
-      window.open(`https://wa.me/96178985529?text=${encoded}`, '_blank');
-    }, 1000);
-
-    setTimeout(() => {
       clearCart();
       sessionStorage.removeItem('tresor-delivery');
       setSuccess(true);
-    }, 500);
-
-    setTimeout(() => {
-      navigate('/');
-    }, 1500);
+      setTimeout(() => navigate('/'), 2500);
+    } catch {
+      // Even if order creation fails, still send WhatsApp without confirm link
+      const msg = buildMessage('');
+      const encoded = encodeURIComponent(msg);
+      window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
+      setTimeout(() => window.open(`https://wa.me/96178985529?text=${encoded}`, '_blank'), 1000);
+      clearCart();
+      sessionStorage.removeItem('tresor-delivery');
+      setSuccess(true);
+      setTimeout(() => navigate('/'), 2500);
+    }
   }
 
   if (success) {
@@ -156,7 +184,7 @@ export default function PaymentPage() {
                 return (
                   <div key={bag.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <img
-                      src={bag.imageUrl || bag.image || ''}
+                      src={bag.mainImage || bag.imageUrl || ''}
                       alt={bag.title || bag.name}
                       style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 3, flexShrink: 0, background: '#111' }}
                     />

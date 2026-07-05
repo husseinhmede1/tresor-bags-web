@@ -14,10 +14,10 @@ export const createOrder = async (data) => {
 
 export const getOrderByToken = async (token) => {
     const res = await api.get(`/orders/${token}`);
-    return res.data;
+    return res.data.data;
 };
 
 export const confirmOrder = async (token) => {
     const res = await api.patch(`/orders/${token}/confirm`);
-    return res.data;
+    return res.data.data;
 };

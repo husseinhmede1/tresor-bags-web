@@ -357,14 +357,7 @@ export default function AdminOrderPage() {
   };
 
   const isConfirmed = order?.status === 'confirmed';
-
-  const savings = order?.items
-    ? order.items.reduce((acc, item) => {
-        const orig = parseFloat(item.originalPrice || item.price || 0);
-        const sale = parseFloat(item.price || 0);
-        return acc + (orig - sale) * (item.quantity || 1);
-      }, 0)
-    : 0;
+  const savings = order?.savings || 0;
 
   return (
     <>
@@ -442,19 +435,19 @@ export default function AdminOrderPage() {
 
                 {(order.items || []).map((item, i) => (
                   <div key={item._id || i} style={styles.itemRow}>
-                    {item.image ? (
-                      <img src={item.image} alt={item.title} style={styles.itemImg} />
+                    {item.mainImage ? (
+                      <img src={item.mainImage} alt={item.title} style={styles.itemImg} />
                     ) : (
                       <div style={styles.itemImgPlaceholder}>🛍</div>
                     )}
                     <div style={styles.itemInfo}>
-                      <div style={styles.itemTitle}>{item.title || item.name}</div>
+                      <div style={styles.itemTitle}>{item.title}</div>
                       <div style={styles.itemMeta}>
-                        ${fmt(item.price)} × {item.quantity || 1}
+                        ${fmt(item.subtotal / (item.quantity || 1))} × {item.quantity || 1}
                       </div>
                     </div>
                     <div style={styles.itemSubtotal}>
-                      ${fmt(parseFloat(item.price) * (item.quantity || 1))}
+                      ${fmt(item.subtotal)}
                     </div>
                   </div>
                 ))}
@@ -478,72 +471,21 @@ export default function AdminOrderPage() {
               <div style={styles.card}>
                 <div style={styles.cardLabel}>Delivering To</div>
 
-                <div style={styles.deliveryRow}>
-                  <span style={styles.deliveryLabel}>Name</span>
-                  <span style={styles.deliveryValue}>
-                    {[order.shipping?.firstName, order.shipping?.lastName]
-                      .filter(Boolean)
-                      .join(' ') ||
-                      order.shipping?.name ||
-                      '—'}
-                  </span>
-                </div>
-
-                {(order.shipping?.phone || order.shipping?.phoneNumber) && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>Phone</span>
-                    <span style={styles.deliveryValue}>
-                      {order.shipping?.phonePrefix || order.shipping?.prefix
-                        ? `${order.shipping.phonePrefix || order.shipping.prefix} `
-                        : ''}
-                      {order.shipping?.phone || order.shipping?.phoneNumber}
-                    </span>
+                {[
+                  ['Name',     `${order.delivery?.name || ''} ${order.delivery?.surname || ''}`.trim()],
+                  ['Phone',    `${order.delivery?.phonePrefix || ''} ${order.delivery?.phoneNumber || ''}`.trim()],
+                  ['Email',    order.delivery?.email],
+                  ['Address',  order.delivery?.address],
+                  ['Locality', order.delivery?.locality],
+                  ['District', order.delivery?.district],
+                  ['Region',   order.delivery?.region],
+                  ['Notes',    order.delivery?.moreInfo],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <div key={label} style={styles.deliveryRow}>
+                    <span style={styles.deliveryLabel}>{label}</span>
+                    <span style={styles.deliveryValue}>{value}</span>
                   </div>
-                )}
-
-                {order.shipping?.email && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>Email</span>
-                    <span style={styles.deliveryValue}>{order.shipping.email}</span>
-                  </div>
-                )}
-
-                {order.shipping?.address && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>Address</span>
-                    <span style={styles.deliveryValue}>{order.shipping.address}</span>
-                  </div>
-                )}
-
-                {(order.shipping?.locality || order.shipping?.city) && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>Locality</span>
-                    <span style={styles.deliveryValue}>
-                      {order.shipping?.locality || order.shipping?.city}
-                    </span>
-                  </div>
-                )}
-
-                {order.shipping?.district && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>District</span>
-                    <span style={styles.deliveryValue}>{order.shipping.district}</span>
-                  </div>
-                )}
-
-                {order.shipping?.region && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>Region</span>
-                    <span style={styles.deliveryValue}>{order.shipping.region}</span>
-                  </div>
-                )}
-
-                {order.shipping?.moreInfo && (
-                  <div style={styles.deliveryRow}>
-                    <span style={styles.deliveryLabel}>More Info</span>
-                    <span style={styles.deliveryValue}>{order.shipping.moreInfo}</span>
-                  </div>
-                )}
+                ))}
               </div>
 
               {/* Action area */}

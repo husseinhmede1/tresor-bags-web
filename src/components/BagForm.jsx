@@ -28,16 +28,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         categoryId: "",
         stock: "",
         productCategory: "",
-        subcategory: "",
         gender: "",
     });
 
-    const SUBCATEGORY_MAP = {
-        Luggage:     ["Carry-On Standard", "Carry-On Large", "Carry-On Compact", "Checked Medium", "Checked Large", "Checked Extra Large"],
-        Backpacks:   ["Travel", "Laptop", "Active"],
-        Bags:        ["Crossbody", "Laptop", "Duffels & Weekenders", "Totes & Satchels", "Briefcases", "Slings & Waist Packs"],
-        Accessories: ["Wallets & Card Cases", "Toiletry/Cosmetic Bags", "Phone Cases & Travel Tech", "Packing Organization", "Belts", "Eyewear", "Fragrance", "Outerwear", "Umbrellas"],
-    };
     const [errors, setErrors]                       = useState({});
     const [loading, setLoading]                     = useState(false);
     const [imagePreview, setImagePreview]           = useState("");
@@ -89,7 +82,6 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                 ...initialData,
                 categoryId: initialData.categoryId || "",
                 productCategory: initialData.productCategory || "",
-                subcategory: initialData.subcategory || "",
                 gender: initialData.gender || "",
             });
             if (initialData.mainImage)  setImagePreview(initialData.mainImage);
@@ -333,10 +325,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                             className="bf-input"
                                             name="productCategory"
                                             value={formData.productCategory || ""}
-                                            onChange={(e) => {
-                                                handleChange(e);
-                                                setFormData(p => ({ ...p, subcategory: "" }));
-                                            }}
+                                            onChange={handleChange}
                                             style={{ ...S.input, cursor: "pointer" }}
                                         >
                                             <option value="">— Select category —</option>
@@ -361,23 +350,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                     </Field>
                                 </div>
 
-                                <Field label="Sub-category">
-                                    <select
-                                        className="bf-input"
-                                        name="subcategory"
-                                        value={formData.subcategory || ""}
-                                        onChange={handleChange}
-                                        disabled={!formData.productCategory}
-                                        style={{ ...S.input, cursor: formData.productCategory ? "pointer" : "not-allowed", opacity: formData.productCategory ? 1 : 0.5 }}
-                                    >
-                                        <option value="">— Select sub-category —</option>
-                                        {(SUBCATEGORY_MAP[formData.productCategory] || []).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                </Field>
-
-                                <Field label="Discount Category">
+                                <Field label="Type">
                                     <select
                                         className="bf-input"
                                         name="categoryId"
@@ -385,7 +358,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                         onChange={handleChange}
                                         style={{ ...S.input, cursor: "pointer" }}
                                     >
-                                        <option value="">— No discount category —</option>
+                                        <option value="">— No type —</option>
                                         {categories.map(cat => (
                                             <option key={cat._id} value={cat._id}>
                                                 {cat.title}{cat.discount > 0 ? ` (${cat.discount}% off)` : ""}

@@ -465,7 +465,7 @@ const BagListing = () => {
                     {isAdmin && (
                         <>
                             <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/category/add")}>Add Category</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/category/add")}>Add Type</button>
                             <button style={S.logoutBtn} onClick={logout}>Logout</button>
                         </>
                     )}
@@ -619,7 +619,7 @@ const BagListing = () => {
                 </button>
                 <div style={S.tabDivider} />
                 <button onClick={() => setActiveTab("categories")} style={{ ...S.tabBtn, ...(activeTab === "categories" ? S.tabBtnActive : {}) }}>
-                    CATEGORIES{catTotal > 0 && <sup style={S.tabSup}>{catTotal}</sup>}
+                    TYPES{catTotal > 0 && <sup style={S.tabSup}>{catTotal}</sup>}
                 </button>
             </div>
             {/* Underline indicator */}
@@ -666,6 +666,21 @@ const BagListing = () => {
                             </button>
                         );
                     })}
+                    {isAdmin && (
+                        <button
+                            onClick={() => navigate("/admin/type/add")}
+                            style={{
+                                padding: "5px 14px", flexShrink: 0,
+                                border: `1px dashed rgba(201,168,106,0.3)`,
+                                background: "transparent",
+                                color: MUTED,
+                                borderRadius: 100, cursor: "pointer",
+                                fontFamily: SANS, fontSize: 10,
+                                letterSpacing: "0.12em", textTransform: "uppercase",
+                                whiteSpace: "nowrap", transition: "all 0.2s",
+                            }}
+                        >+ Collection</button>
+                    )}
                 </div>
             )}
 
@@ -847,7 +862,7 @@ const BagListing = () => {
                     <div style={S.filterWrap} className="t-filter-wrap">
                         <div style={S.searchRow}>
                             <div style={S.searchInputWrap}>
-                                <input type="text" placeholder="Search collections…"
+                                <input type="text" placeholder="Search types…"
                                     value={catSearch} onChange={handleCatSearchChange} style={S.searchInput} />
                                 {catSearch !== catSearchQuery && <span style={S.searchSpinner} />}
                             </div>
@@ -867,7 +882,7 @@ const BagListing = () => {
                         <div style={S.loadingBox}><div style={S.spinner} /></div>
                     ) : categories.length === 0 ? (
                         <div style={S.emptyBox}>
-                            <p style={S.emptyTitle}>No collections found</p>
+                            <p style={S.emptyTitle}>No types found</p>
                         </div>
                     ) : (
                         <main style={S.catGrid}>

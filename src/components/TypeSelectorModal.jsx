@@ -164,7 +164,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                 transition: "opacity 0.2s, transform 0.2s",
                             }}
                         >
-                            Browse {selected?.title || "Collection"} →
+                            Browse {selected?.title || "Category"} →
                         </button>
                     </div>
                 </div>

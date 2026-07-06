@@ -14,7 +14,7 @@ const TEXT = "#F5F1E8";
 const AddCategory = () => {
     const navigate = useNavigate();
     const { logout } = useAuth();
-    const [form, setForm] = useState({ title: "", discount: "", note: "", typeId: "" });
+    const [form, setForm] = useState({ title: "", discount: "", note: "", typeId: "", productCategory: "" });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [types, setTypes] = useState([]);
@@ -39,7 +39,8 @@ const AddCategory = () => {
     const validate = () => {
         const e = {};
         if (!form.title.trim()) e.title = "Title is required";
-        if (!form.typeId) e.typeId = "Type is required";
+        if (!form.typeId) e.typeId = "Collection is required";
+        if (!form.productCategory) e.productCategory = "Category is required";
         if (form.discount !== "" && (isNaN(form.discount) || form.discount < 0 || form.discount > 100))
             e.discount = "Discount must be between 0 and 100";
         setErrors(e);
@@ -56,6 +57,7 @@ const AddCategory = () => {
                 discount: form.discount === "" ? 0 : Number(form.discount),
                 note: form.note.trim(),
                 typeId: form.typeId || null,
+                productCategory: form.productCategory || null,
             };
             const result = await createCategory(payload);
             if (result.success) navigate("/admin/dashboard");
@@ -71,29 +73,46 @@ const AddCategory = () => {
             <header style={S.header}>
                 <div>
                     <p style={S.eyebrow}>Admin Panel</p>
-                    <h1 style={S.headerTitle}>TRÉSOR BAGS — Add Category</h1>
+                    <h1 style={S.headerTitle}>TRÉSOR BAGS — Add Type</h1>
                 </div>
                 <button style={S.logoutBtn} onClick={logout}>Logout</button>
             </header>
 
             <main style={S.main}>
                 <div style={S.card}>
-                    <h2 style={S.cardTitle}>New Category</h2>
-                    <p style={S.cardSub}>Create a new product category with optional discount and note.</p>
+                    <h2 style={S.cardTitle}>New Type</h2>
+                    <p style={S.cardSub}>Create a new product type with optional discount and note.</p>
 
                     {errors.submit && <div style={S.errorBox}>{errors.submit}</div>}
 
                     <form onSubmit={handleSubmit}>
-                        {/* Type */}
+                        {/* Category */}
                         <div style={S.formGroup}>
-                            <label style={S.label}>Type <span style={S.req}>*</span></label>
+                            <label style={S.label}>Category <span style={S.req}>*</span></label>
+                            <select
+                                className="cf-input"
+                                value={form.productCategory}
+                                onChange={e => { setForm(p => ({ ...p, productCategory: e.target.value })); setErrors(p => { const n={...p}; delete n.productCategory; return n; }); }}
+                                style={{ ...S.input, cursor: "pointer", appearance: "none", WebkitAppearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23E5C48A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36, ...(errors.productCategory ? S.inputErr : {}) }}
+                            >
+                                <option value="">— Select a category —</option>
+                                {["Luggage", "Backpacks", "Bags", "Accessories"].map(c => (
+                                    <option key={c} value={c} style={{ background: "#111", color: "#F5F1E8" }}>{c}</option>
+                                ))}
+                            </select>
+                            {errors.productCategory && <p style={S.fieldError}>{errors.productCategory}</p>}
+                        </div>
+
+                        {/* Collection */}
+                        <div style={S.formGroup}>
+                            <label style={S.label}>Collection <span style={S.req}>*</span></label>
                             <select
                                 className="cf-input"
                                 value={form.typeId}
                                 onChange={e => { setForm(p => ({ ...p, typeId: e.target.value })); setErrors(p => { const n={...p}; delete n.typeId; return n; }); }}
                                 style={{ ...S.input, cursor: "pointer", appearance: "none", WebkitAppearance: "none", backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23E5C48A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 14px center", paddingRight: 36, ...(errors.typeId ? S.inputErr : {}) }}
                             >
-                                <option value="">— Select a type —</option>
+                                <option value="">— Select a collection —</option>
                                 {types.map(t => (
                                     <option key={t._id} value={t._id} style={{ background: "#111", color: "#F5F1E8" }}>{t.title}</option>
                                 ))}
@@ -151,7 +170,7 @@ const AddCategory = () => {
                                 disabled={loading}
                                 style={{ ...S.submitBtn, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
                             >
-                                {loading ? "Saving…" : "Save Category"}
+                                {loading ? "Saving…" : "Save Type"}
                             </button>
                             <button
                                 type="button"

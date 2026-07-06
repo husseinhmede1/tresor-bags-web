@@ -150,6 +150,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         if (!formData.price || formData.price < 0) e.price = "Valid price is required";
         if (!formData.mainImage)          e.mainImage   = "Main image is required";
         if (!formData.color.trim())       e.color       = "Color is required";
+        if (!formData.productCategory)    e.productCategory = "Product category is required";
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -320,13 +321,13 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                 </div>
 
                                 <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Product Category">
+                                    <Field label="Product Category" required error={errors.productCategory}>
                                         <select
                                             className="bf-input"
                                             name="productCategory"
                                             value={formData.productCategory || ""}
                                             onChange={handleChange}
-                                            style={{ ...S.input, cursor: "pointer" }}
+                                            style={{ ...S.input, cursor: "pointer", ...(errors.productCategory ? S.inputErr : {}) }}
                                         >
                                             <option value="">— Select category —</option>
                                             {["Luggage", "Backpacks", "Bags", "Accessories"].map(c => (

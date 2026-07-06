@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllCategories, deleteCategory } from "../services/categoryService";
+import { getAllTypes } from "../services/typeService";
 import HeroParticleReveal from "../components/HeroParticleReveal";
 import TypeSelectorModal from "../components/TypeSelectorModal";
 
@@ -150,12 +151,12 @@ const BagListing = () => {
     const { getQuantity, setQuantity, totalItems } = useCart();
     const navigate = useNavigate();
 
-    /* ── Type selector modal ── */
+    /* ── Category selector modal ── */
     const alreadySeen = sessionStorage.getItem('tresor-modal-seen') === '1';
-    const savedType = (() => { try { const t = sessionStorage.getItem('tresor-selected-type'); return t ? JSON.parse(t) : null; } catch { return null; } })();
-    const [showModal, setShowModal]       = useState(!alreadySeen);
-    const [selectedType, setSelectedType] = useState(savedType);
-    const [pageRevealed, setPageRevealed] = useState(alreadySeen);
+    const savedCategory = sessionStorage.getItem('tresor-selected-category') || null;
+    const [showModal, setShowModal]                       = useState(!alreadySeen);
+    const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(savedCategory);
+    const [pageRevealed, setPageRevealed]                 = useState(alreadySeen);
 
     useEffect(() => {
         if (pageRevealed) {
@@ -171,14 +172,16 @@ const BagListing = () => {
         setTimeout(() => setPageRevealed(true), 650);
     };
 
-    const handleModalStart = (type) => {
-        setSelectedType(type);
-        sessionStorage.setItem('tresor-selected-type', JSON.stringify(type));
+    const handleModalStart = (cat) => {
+        setSelectedPrimaryCategory(cat.title);
+        setSelectedCollection(null);
+        sessionStorage.setItem('tresor-selected-category', cat.title);
         revealPage();
     };
     const handleModalSkip = () => {
-        setSelectedType(null);
-        sessionStorage.removeItem('tresor-selected-type');
+        setSelectedPrimaryCategory(null);
+        setSelectedCollection(null);
+        sessionStorage.removeItem('tresor-selected-category');
         revealPage();
     };
 
@@ -218,6 +221,8 @@ const BagListing = () => {
     const LIMIT = 12;
 
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [selectedCollection, setSelectedCollection] = useState(null);
+    const [collections, setCollections] = useState([]);
 
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
@@ -318,7 +323,8 @@ const BagListing = () => {
                 ...(minWeight && { minWeight }), ...(maxWeight && { maxWeight }),
                 ...(color && { color }), ...(capacity && { capacity }),
                 ...(selectedCategory && { categoryId: selectedCategory._id }),
-                ...(selectedType && { typeId: selectedType._id }),
+                ...(selectedPrimaryCategory && { productCategory: selectedPrimaryCategory }),
+                ...(selectedCollection && { typeId: selectedCollection._id }),
             };
             const result = await getAllBags(params);
             setBags(result.data); setBagTotalPages(result.totalPages); setBagTotal(result.total);
@@ -329,7 +335,7 @@ const BagListing = () => {
     const fetchCategories = async () => {
         setLoadingCats(true);
         try {
-            const result = await getAllCategories({ page: catPage, limit: CAT_LIMIT, search: catSearchQuery, hasDiscount: hasDiscount || undefined, ...(selectedType && { typeId: selectedType._id }) });
+            const result = await getAllCategories({ page: catPage, limit: CAT_LIMIT, search: catSearchQuery, hasDiscount: hasDiscount || undefined, ...(selectedCollection && { typeId: selectedCollection._id }) });
             setCategories(result.data); setCatTotalPages(result.totalPages); setCatTotal(result.total);
         } catch {} finally { setLoadingCats(false); }
     };
@@ -347,10 +353,14 @@ const BagListing = () => {
         catDebounceRef.current = setTimeout(() => setCatSearchQuery(val), 600);
     };
 
-    useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory]);
-    useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedType, activeTab]);
+    useEffect(() => {
+        getAllTypes().then(res => { if (res.success) setCollections(res.data); }).catch(() => {});
+    }, []);
+
+    useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection]);
+    useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection, activeTab]);
     useEffect(() => { setCatPage(1); }, [catSearchQuery, hasDiscount]);
-    useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, selectedType, activeTab]);
+    useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, selectedCollection, activeTab]);
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this bag?")) return;
@@ -410,7 +420,7 @@ const BagListing = () => {
             {/* ── Floating "Choose Type" pill — outside page-content-wrap so position:fixed works ── */}
             <button
                 onClick={() => setShowModal(true)}
-                title="Switch collection type"
+                title="Switch category"
                 style={{
                     position: "fixed",
                     bottom: 24,
@@ -418,7 +428,7 @@ const BagListing = () => {
                     zIndex: 200,
                     display: "flex", alignItems: "center", gap: 8,
                     background: "rgba(8,8,8,0.92)",
-                    border: `1px solid rgba(201,168,106,${selectedType ? "0.45" : "0.2"})`,
+                    border: `1px solid rgba(201,168,106,${selectedPrimaryCategory ? "0.45" : "0.2"})`,
                     borderRadius: 100,
                     padding: "10px 18px 10px 14px",
                     cursor: "pointer",
@@ -426,10 +436,10 @@ const BagListing = () => {
                     fontSize: 10,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
-                    color: selectedType ? GOLD_L : MUTED,
+                    color: selectedPrimaryCategory ? GOLD_L : MUTED,
                     backdropFilter: "blur(16px)",
                     WebkitBackdropFilter: "blur(16px)",
-                    boxShadow: selectedType
+                    boxShadow: selectedPrimaryCategory
                         ? "0 8px 32px rgba(201,168,106,0.18), 0 2px 8px rgba(0,0,0,0.6)"
                         : "0 4px 20px rgba(0,0,0,0.5)",
                     transition: "border-color 0.25s, color 0.25s, box-shadow 0.25s",
@@ -438,14 +448,11 @@ const BagListing = () => {
             >
                 <span style={{
                     width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                    background: selectedType ? GOLD_D : "rgba(107,101,96,0.5)",
-                    boxShadow: selectedType ? `0 0 6px ${GOLD_D}` : "none",
+                    background: selectedPrimaryCategory ? GOLD_D : "rgba(107,101,96,0.5)",
+                    boxShadow: selectedPrimaryCategory ? `0 0 6px ${GOLD_D}` : "none",
                     transition: "background 0.25s",
                 }} />
-                {selectedType?.logo && (
-                    <img src={selectedType.logo} alt="" style={{ width: 16, height: 16, objectFit: "contain", borderRadius: 2, flexShrink: 0 }} />
-                )}
-                {selectedType ? selectedType.title : "All Types"}
+                {selectedPrimaryCategory || "All Categories"}
                 <span style={{ fontSize: 7, opacity: 0.45 }}>▼</span>
             </button>
 
@@ -619,6 +626,48 @@ const BagListing = () => {
             <div style={S.tabUnderlineTrack}>
                 <div style={{ ...S.tabUnderline, left: activeTab === "items" ? "0%" : "50%" }} />
             </div>
+
+            {/* ── Collection chips ── */}
+            {collections.length > 0 && (
+                <div style={{ overflowX: "auto", padding: "14px 24px 0", display: "flex", gap: 8, maxWidth: 1200, margin: "0 auto", scrollbarWidth: "none" }}>
+                    <button
+                        onClick={() => setSelectedCollection(null)}
+                        style={{
+                            padding: "5px 14px", flexShrink: 0,
+                            border: `1px solid ${!selectedCollection ? "rgba(201,168,106,0.5)" : BORDER}`,
+                            background: !selectedCollection ? "rgba(201,168,106,0.08)" : "transparent",
+                            color: !selectedCollection ? GOLD_L : MUTED,
+                            borderRadius: 100, cursor: "pointer",
+                            fontFamily: SANS, fontSize: 10,
+                            letterSpacing: "0.12em", textTransform: "uppercase",
+                            whiteSpace: "nowrap", transition: "all 0.2s",
+                        }}
+                    >All</button>
+                    {collections.map(col => {
+                        const active = selectedCollection?._id === col._id;
+                        return (
+                            <button
+                                key={col._id}
+                                onClick={() => setSelectedCollection(active ? null : col)}
+                                style={{
+                                    padding: "5px 14px", flexShrink: 0,
+                                    border: `1px solid ${active ? "rgba(201,168,106,0.5)" : BORDER}`,
+                                    background: active ? "rgba(201,168,106,0.08)" : "transparent",
+                                    color: active ? GOLD_L : MUTED,
+                                    borderRadius: 100, cursor: "pointer",
+                                    fontFamily: SANS, fontSize: 10,
+                                    letterSpacing: "0.12em", textTransform: "uppercase",
+                                    whiteSpace: "nowrap", transition: "all 0.2s",
+                                    display: "flex", alignItems: "center", gap: 6,
+                                }}
+                            >
+                                {col.logo && <img src={col.logo} alt="" style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 2, flexShrink: 0 }} />}
+                                {col.title}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* ══════ ITEMS TAB ══════ */}
             {activeTab === "items" && (

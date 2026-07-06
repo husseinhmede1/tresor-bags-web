@@ -80,7 +80,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         if (initialData) {
             setFormData({
                 ...initialData,
-                categoryId: initialData.categoryId || "",
+                categoryId: initialData.categoryId?._id || initialData.categoryId || "",
                 productCategory: initialData.productCategory || "",
                 gender: initialData.gender || "",
             });

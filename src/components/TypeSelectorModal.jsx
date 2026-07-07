@@ -11,11 +11,28 @@ const SERIF  = "'Cormorant Garamond', serif";
 const SANS   = "'Inter', sans-serif";
 
 const CATEGORIES = [
-    { title: "Luggage",     sub: "Carry-ons, checked, trolleys" },
-    { title: "Backpacks",   sub: "Travel, laptop, active packs" },
-    { title: "Bags",        sub: "Totes, crossbody, duffels" },
-    { title: "Accessories", sub: "Wallets, tech, packing & more" },
+    { title: "Luggage",     sub: "Carry-ons, checked, trolleys",  icon: "luggage" },
+    { title: "Backpacks",   sub: "Travel, laptop, active packs",  icon: "backpack" },
+    { title: "Bags",        sub: "Totes, crossbody, duffels",     icon: "bag" },
+    { title: "Accessories", sub: "Wallets, tech, packing & more", icon: "accessories" },
 ];
+
+// Elegant gold line-art icon per category (hardcoded, matches the fixed 4).
+const CategoryIcon = ({ name, color }) => {
+    const common = { width: 30, height: 30, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.2, strokeLinecap: "round", strokeLinejoin: "round" };
+    if (name === "luggage") return (
+        <svg {...common}><rect x="4" y="7" width="16" height="13" rx="2" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M9 7v13M15 7v13" /></svg>
+    );
+    if (name === "backpack") return (
+        <svg {...common}><path d="M6 9a6 6 0 0 1 12 0v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9Z" /><path d="M9 9a3 3 0 0 1 6 0" /><rect x="9" y="12" width="6" height="5" rx="1" /></svg>
+    );
+    if (name === "bag") return (
+        <svg {...common}><path d="M5 8h14l-1.1 11.1a1 1 0 0 1-1 .9H7.1a1 1 0 0 1-1-.9L5 8Z" /><path d="M9 8V6.5a3 3 0 0 1 6 0V8" /></svg>
+    );
+    return (
+        <svg {...common}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10.5h18" /><circle cx="16" cy="14.5" r="1.1" /></svg>
+    );
+};
 
 export default function TypeSelectorModal({ onStart, onSkip }) {
     const [selected, setSelected] = useState(null);
@@ -120,6 +137,9 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                         position: "relative",
                                     }}
                                 >
+                                    <span style={{ marginBottom: 4, opacity: isActive ? 1 : 0.85 }}>
+                                        <CategoryIcon name={cat.icon} color={isActive ? GOLD_L : GOLD_D} />
+                                    </span>
                                     <span style={{ fontFamily: SERIF, fontSize: 20, color: isActive ? GOLD_L : TEXT, fontWeight: 400, letterSpacing: "0.04em" }}>
                                         {cat.title}
                                     </span>

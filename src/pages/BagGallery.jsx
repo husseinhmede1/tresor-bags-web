@@ -132,8 +132,8 @@ const BagGallery = () => {
         ["Capacity", bag.capacity           || null],
     ].filter(([, v]) => v);
 
-    const discountedPrice = bag.categoryId?.discount > 0
-        ? (bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)
+    const discountedPrice = bag.typeId?.discount > 0
+        ? (bag.price * (1 - bag.typeId.discount / 100)).toFixed(2)
         : null;
 
     return (
@@ -208,8 +208,8 @@ const BagGallery = () => {
                 <div style={S.detailCol} className="bg-detail-col">
 
                     {/* Collection label */}
-                    {bag.categoryId?.title && (
-                        <p style={S.collectionLabel}>{bag.categoryId.title}</p>
+                    {bag.collectionId?.title && (
+                        <p style={S.collectionLabel}>{bag.collectionId.title}</p>
                     )}
 
                     {/* Title */}
@@ -221,7 +221,7 @@ const BagGallery = () => {
                             <>
                                 <span style={S.priceOld}>${bag.price}</span>
                                 <span style={S.priceFinal}>${discountedPrice}</span>
-                                <span style={S.discountLabel}>−{bag.categoryId.discount}%</span>
+                                <span style={S.discountLabel}>−{bag.typeId.discount}%</span>
                             </>
                         ) : (
                             <span style={S.priceFinal}>${bag.price}</span>

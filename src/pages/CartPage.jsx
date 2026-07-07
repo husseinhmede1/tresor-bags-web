@@ -74,7 +74,7 @@ export default function CartPage() {
             {/* Item list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {cartItems.map(({ bag, quantity }) => {
-                const discount = bag.categoryId?.discount ?? 0;
+                const discount = bag.typeId?.discount ?? 0;
                 const unitDiscounted = bag.price * (1 - discount / 100);
                 const subtotal = unitDiscounted * quantity;
 

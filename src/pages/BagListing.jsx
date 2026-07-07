@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
-import { getAllCategories, deleteCategory } from "../services/categoryService";
-import { getAllTypes } from "../services/typeService";
+import { getAllTypes, deleteType } from "../services/typeService";
+import { getAllCollections } from "../services/collectionService";
 import HeroParticleReveal from "../components/HeroParticleReveal";
 import TypeSelectorModal from "../components/TypeSelectorModal";
 
@@ -322,9 +322,9 @@ const BagListing = () => {
                 ...(minWidth && { minWidth }), ...(maxWidth && { maxWidth }),
                 ...(minWeight && { minWeight }), ...(maxWeight && { maxWeight }),
                 ...(color && { color }), ...(capacity && { capacity }),
-                ...(selectedCategory && { categoryId: selectedCategory._id }),
-                ...(selectedPrimaryCategory && { productCategory: selectedPrimaryCategory }),
-                ...(selectedCollection && { typeId: selectedCollection._id }),
+                ...(selectedCategory && { typeId: selectedCategory._id }),
+                ...(selectedPrimaryCategory && { category: selectedPrimaryCategory }),
+                ...(selectedCollection && { collectionId: selectedCollection._id }),
             };
             const result = await getAllBags(params);
             setBags(result.data); setBagTotalPages(result.totalPages); setBagTotal(result.total);
@@ -335,8 +335,10 @@ const BagListing = () => {
     const fetchCategories = async () => {
         setLoadingCats(true);
         try {
-            const result = await getAllCategories({ page: catPage, limit: CAT_LIMIT, search: catSearchQuery, hasDiscount: hasDiscount || undefined, ...(selectedCollection && { typeId: selectedCollection._id }) });
-            setCategories(result.data); setCatTotalPages(result.totalPages); setCatTotal(result.total);
+            const result = await getAllTypes({ search: catSearchQuery || undefined, ...(selectedPrimaryCategory && { category: selectedPrimaryCategory }) });
+            let data = result.data || [];
+            if (hasDiscount) data = data.filter(t => t.discount > 0);
+            setCategories(data); setCatTotalPages(1); setCatTotal(data.length);
         } catch {} finally { setLoadingCats(false); }
     };
 
@@ -354,13 +356,13 @@ const BagListing = () => {
     };
 
     useEffect(() => {
-        getAllTypes().then(res => { if (res.success) setCollections(res.data); }).catch(() => {});
+        getAllCollections().then(res => { if (res.success) setCollections(res.data); }).catch(() => {});
     }, []);
 
     useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection]);
     useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection, activeTab]);
     useEffect(() => { setCatPage(1); }, [catSearchQuery, hasDiscount]);
-    useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, selectedCollection, activeTab]);
+    useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, selectedPrimaryCategory, activeTab]);
 
     const handleDelete = async (id) => {
         if (!window.confirm("Delete this bag?")) return;
@@ -368,8 +370,8 @@ const BagListing = () => {
     };
     const handleDeleteCategory = async (id, e) => {
         e.stopPropagation();
-        if (!window.confirm("Delete this category?")) return;
-        try { await deleteCategory(id); fetchCategories(); } catch (err) { alert("Failed: " + err.message); }
+        if (!window.confirm("Delete this type?")) return;
+        try { await deleteType(id); fetchCategories(); } catch (err) { alert("Failed: " + err.message); }
     };
     const resetFilters = () => {
         setSearchInput(""); setSearchQuery(""); clearTimeout(debounceRef.current);
@@ -465,7 +467,8 @@ const BagListing = () => {
                     {isAdmin && (
                         <>
                             <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/category/add")}>Add Type</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/type/add")}>Add Type</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/collection/add")}>Add Collection</button>
                             <button style={S.logoutBtn} onClick={logout}>Logout</button>
                         </>
                     )}
@@ -668,7 +671,7 @@ const BagListing = () => {
                     })}
                     {isAdmin && (
                         <button
-                            onClick={() => navigate("/admin/type/add")}
+                            onClick={() => navigate("/admin/collection/add")}
                             style={{
                                 padding: "5px 14px", flexShrink: 0,
                                 border: `1px dashed rgba(201,168,106,0.3)`,
@@ -788,18 +791,18 @@ const BagListing = () => {
                                         </div>
 
                                         <div style={S.cardBody}>
-                                            {bag.categoryId?.title && (
-                                                <p style={S.catBadge}>{bag.categoryId.title}</p>
+                                            {bag.collectionId?.title && (
+                                                <p style={S.catBadge}>{bag.collectionId.title}</p>
                                             )}
                                             <h3 style={S.cardTitle}>{bag.title}</h3>
                                             <p style={S.cardDesc}>{bag.description?.substring(0, 80)}…</p>
 
                                             {/* Price */}
-                                            {bag.categoryId?.discount > 0 ? (
+                                            {bag.typeId?.discount > 0 ? (
                                                 <div style={S.priceWrap}>
                                                     <span style={S.cardPriceOld}>${bag.price}</span>
-                                                    <span style={S.cardPriceNew}>${(bag.price * (1 - bag.categoryId.discount / 100)).toFixed(2)}</span>
-                                                    <span style={S.discountLabel}>−{bag.categoryId.discount}%</span>
+                                                    <span style={S.cardPriceNew}>${(bag.price * (1 - bag.typeId.discount / 100)).toFixed(2)}</span>
+                                                    <span style={S.discountLabel}>−{bag.typeId.discount}%</span>
                                                 </div>
                                             ) : (
                                                 <p style={S.cardPrice}>${bag.price}</p>
@@ -891,7 +894,7 @@ const BagListing = () => {
                                     <div style={S.catCard} className="cat-card" onClick={() => handleCategoryClick(cat)}>
                                         {isAdmin && (
                                             <div style={S.adminActions}>
-                                                <button style={S.editBtn} onClick={e => { e.stopPropagation(); navigate(`/admin/category/edit/${cat._id}`); }}>✏️</button>
+                                                <button style={S.editBtn} onClick={e => { e.stopPropagation(); navigate(`/admin/type/edit/${cat._id}`); }}>✏️</button>
                                                 <button style={S.deleteBtn} onClick={e => handleDeleteCategory(cat._id, e)}>🗑️</button>
                                             </div>
                                         )}

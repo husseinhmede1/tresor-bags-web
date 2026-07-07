@@ -51,13 +51,13 @@ export function CartProvider({ children }) {
   const totalItems = Object.values(items).reduce((sum, { quantity }) => sum + quantity, 0);
 
   const totalPrice = Object.values(items).reduce((sum, { bag, quantity }) => {
-    const discount = bag.categoryId?.discount ?? 0;
+    const discount = bag.typeId?.discount ?? 0;
     const unit = bag.price * (1 - discount / 100);
     return sum + unit * quantity;
   }, 0);
 
   const totalSavings = Object.values(items).reduce((sum, { bag, quantity }) => {
-    const discount = bag.categoryId?.discount ?? 0;
+    const discount = bag.typeId?.discount ?? 0;
     return sum + bag.price * (discount / 100) * quantity;
   }, 0);
 

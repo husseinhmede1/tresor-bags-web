@@ -62,7 +62,7 @@ export default function PaymentPage() {
     lines.push('');
     lines.push('Items:');
     cartItems.forEach(({ bag, quantity }) => {
-      const discount = bag.categoryId?.discount ?? 0;
+      const discount = bag.typeId?.discount ?? 0;
       const unit = bag.price * (1 - discount / 100);
       const subtotal = unit * quantity;
       lines.push(`- ${bag.title} x${quantity} = ${fmt(subtotal)}`);
@@ -87,7 +87,7 @@ export default function PaymentPage() {
     try {
       // Build order payload
       const orderItems = cartItems.map(({ bag, quantity }) => {
-        const discount = bag.categoryId?.discount ?? 0;
+        const discount = bag.typeId?.discount ?? 0;
         const unit = bag.price * (1 - discount / 100);
         return {
           bagId: bag._id,
@@ -180,7 +180,7 @@ export default function PaymentPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {cartItems.map(({ bag, quantity }) => {
-                const discount = bag.categoryId?.discount ?? 0;
+                const discount = bag.typeId?.discount ?? 0;
                 const unit = bag.price * (1 - discount / 100);
                 const subtotal = unit * quantity;
                 return (

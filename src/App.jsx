@@ -15,8 +15,8 @@ import BagGallery from "./pages/BagGallery";
 import Login from "./pages/Login";
 import AddBag from "./pages/AddBag";
 import EditBag from "./pages/EditBag";
-import AddCategory from "./pages/AddCategory";
-import EditCategory from "./pages/EditCategory";
+import AddCollection from "./pages/AddCollection";
+import EditCollection from "./pages/EditCollection";
 import AddType from "./pages/AddType";
 import EditType from "./pages/EditType";
 import CartPage from "./pages/CartPage";
@@ -53,8 +53,8 @@ const App = () => {
             <Route path="/admin/dashboard" element={<ProtectedRoute><BagListing /></ProtectedRoute>} />
             <Route path="/admin/add" element={<ProtectedRoute><AddBag /></ProtectedRoute>} />
             <Route path="/admin/edit/:id" element={<ProtectedRoute><EditBag /></ProtectedRoute>} />
-            <Route path="/admin/category/add" element={<ProtectedRoute><AddCategory /></ProtectedRoute>} />
-            <Route path="/admin/category/edit/:id" element={<ProtectedRoute><EditCategory /></ProtectedRoute>} />
+            <Route path="/admin/collection/add" element={<ProtectedRoute><AddCollection /></ProtectedRoute>} />
+            <Route path="/admin/collection/edit/:id" element={<ProtectedRoute><EditCollection /></ProtectedRoute>} />
             <Route path="/admin/type/add" element={<ProtectedRoute><AddType /></ProtectedRoute>} />
             <Route path="/admin/type/edit/:id" element={<ProtectedRoute><EditType /></ProtectedRoute>} />
             <Route path="/admin/order/:token" element={<ProtectedRoute><AdminOrderPage /></ProtectedRoute>} />

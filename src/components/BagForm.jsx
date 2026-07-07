@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getAllCategories } from "../services/categoryService";
+import { getAllTypes } from "../services/typeService";
+import { getAllCollections } from "../services/collectionService";
 
 /* ── Field must live OUTSIDE BagForm so it isn't recreated on every render ── */
 const Field = ({ label, required, error, children }) => (
@@ -25,9 +26,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         weight: "",
         color: "",
         capacity: "",
-        categoryId: "",
+        typeId: "",
+        collectionId: "",
         stock: "",
-        productCategory: "",
         gender: "",
     });
 
@@ -35,7 +36,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
     const [loading, setLoading]                     = useState(false);
     const [imagePreview, setImagePreview]           = useState("");
     const [sideImagePreviews, setSideImagePreviews] = useState([]);
-    const [categories, setCategories]               = useState([]);
+    const [types, setTypes]                         = useState([]);
+    const [collections, setCollections]             = useState([]);
 
     /* ── Global CSS ── */
     useEffect(() => {
@@ -80,8 +82,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         if (initialData) {
             setFormData({
                 ...initialData,
-                categoryId: initialData.categoryId?._id || initialData.categoryId || "",
-                productCategory: initialData.productCategory || "",
+                typeId: initialData.typeId?._id || initialData.typeId || "",
+                collectionId: initialData.collectionId?._id || initialData.collectionId || "",
                 gender: initialData.gender || "",
             });
             if (initialData.mainImage)  setImagePreview(initialData.mainImage);
@@ -90,9 +92,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
     }, [initialData]);
 
     useEffect(() => {
-        getAllCategories({ limit: 100 }).then(res => {
-            if (res.success) setCategories(res.data);
-        }).catch(() => {});
+        getAllTypes().then(res => { if (res.success) setTypes(res.data); }).catch(() => {});
+        getAllCollections().then(res => { if (res.success) setCollections(res.data); }).catch(() => {});
     }, []);
 
     const handleChange = (e) => {
@@ -150,7 +151,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
         if (!formData.price || formData.price < 0) e.price = "Valid price is required";
         if (!formData.mainImage)          e.mainImage   = "Main image is required";
         if (!formData.color.trim())       e.color       = "Color is required";
-        if (!formData.productCategory)    e.productCategory = "Product category is required";
+        if (!formData.typeId)             e.typeId      = "Type is required";
+        if (!formData.collectionId)       e.collectionId = "Collection is required";
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -321,50 +323,50 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                 </div>
 
                                 <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Product Category" required error={errors.productCategory}>
+                                    <Field label="Type" required error={errors.typeId}>
                                         <select
                                             className="bf-input"
-                                            name="productCategory"
-                                            value={formData.productCategory || ""}
+                                            name="typeId"
+                                            value={formData.typeId || ""}
                                             onChange={handleChange}
-                                            style={{ ...S.input, cursor: "pointer", ...(errors.productCategory ? S.inputErr : {}) }}
+                                            style={{ ...S.input, cursor: "pointer", ...(errors.typeId ? S.inputErr : {}) }}
                                         >
-                                            <option value="">— Select category —</option>
-                                            {["Luggage", "Backpacks", "Bags", "Accessories"].map(c => (
-                                                <option key={c} value={c}>{c}</option>
+                                            <option value="">— Select type —</option>
+                                            {types.map(t => (
+                                                <option key={t._id} value={t._id}>
+                                                    {t.title} · {t.category}{t.discount > 0 ? ` (${t.discount}% off)` : ""}
+                                                </option>
                                             ))}
                                         </select>
                                     </Field>
-                                    <Field label="Gender">
+                                    <Field label="Collection" required error={errors.collectionId}>
                                         <select
                                             className="bf-input"
-                                            name="gender"
-                                            value={formData.gender || ""}
+                                            name="collectionId"
+                                            value={formData.collectionId || ""}
                                             onChange={handleChange}
-                                            style={{ ...S.input, cursor: "pointer" }}
+                                            style={{ ...S.input, cursor: "pointer", ...(errors.collectionId ? S.inputErr : {}) }}
                                         >
-                                            <option value="">— Select gender —</option>
-                                            <option value="Men's">Men's</option>
-                                            <option value="Women's">Women's</option>
-                                            <option value="Unisex">Unisex</option>
+                                            <option value="">— Select collection —</option>
+                                            {collections.map(c => (
+                                                <option key={c._id} value={c._id}>{c.title}</option>
+                                            ))}
                                         </select>
                                     </Field>
                                 </div>
 
-                                <Field label="Type">
+                                <Field label="Gender">
                                     <select
                                         className="bf-input"
-                                        name="categoryId"
-                                        value={formData.categoryId || ""}
+                                        name="gender"
+                                        value={formData.gender || ""}
                                         onChange={handleChange}
                                         style={{ ...S.input, cursor: "pointer" }}
                                     >
-                                        <option value="">— No type —</option>
-                                        {categories.map(cat => (
-                                            <option key={cat._id} value={cat._id}>
-                                                {cat.title}{cat.discount > 0 ? ` (${cat.discount}% off)` : ""}
-                                            </option>
-                                        ))}
+                                        <option value="">— Select gender —</option>
+                                        <option value="Men's">Men's</option>
+                                        <option value="Women's">Women's</option>
+                                        <option value="Unisex">Unisex</option>
                                     </select>
                                 </Field>
                             </div>

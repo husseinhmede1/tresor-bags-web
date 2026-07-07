@@ -792,8 +792,10 @@ const BagListing = () => {
                                         </div>
 
                                         <div style={S.cardBody}>
-                                            {bag.collectionId?.title && (
-                                                <p style={S.catBadge}>{bag.collectionId.title}</p>
+                                            {(bag.typeId || bag.collectionId) && (
+                                                <p style={S.catBadge}>
+                                                    {[bag.typeId?.category, bag.typeId?.title, bag.collectionId?.title].filter(Boolean).join(" · ")}
+                                                </p>
                                             )}
                                             <h3 style={S.cardTitle}>{bag.title}</h3>
                                             <p style={S.cardDesc}>{bag.description?.substring(0, 80)}…</p>

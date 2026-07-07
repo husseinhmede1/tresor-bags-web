@@ -207,9 +207,11 @@ const BagGallery = () => {
                 {/* Right — details */}
                 <div style={S.detailCol} className="bg-detail-col">
 
-                    {/* Collection label */}
-                    {bag.collectionId?.title && (
-                        <p style={S.collectionLabel}>{bag.collectionId.title}</p>
+                    {/* Category · Type · Collection breadcrumb */}
+                    {(bag.typeId || bag.collectionId) && (
+                        <p style={S.collectionLabel}>
+                            {[bag.typeId?.category, bag.typeId?.title, bag.collectionId?.title].filter(Boolean).join(" · ")}
+                        </p>
                     )}
 
                     {/* Title */}

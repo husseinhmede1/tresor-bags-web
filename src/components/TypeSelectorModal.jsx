@@ -19,7 +19,7 @@ const CATEGORIES = [
 
 // Elegant gold line-art icon per category (hardcoded, matches the fixed 4).
 const CategoryIcon = ({ name, color }) => {
-    const common = { width: 30, height: 30, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.2, strokeLinecap: "round", strokeLinejoin: "round" };
+    const common = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.2, strokeLinecap: "round", strokeLinejoin: "round" };
     if (name === "luggage") return (
         <svg {...common}><rect x="4" y="7" width="16" height="13" rx="2" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M9 7v13M15 7v13" /></svg>
     );
@@ -85,7 +85,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
             }}>
 
                 {/* Top — video */}
-                <div style={{ position: "relative", flexShrink: 0, height: "min(46vh, 320px)", background: "#030303", overflow: "hidden" }}>
+                <div style={{ position: "relative", flexShrink: 0, height: "min(30vh, 190px)", background: "#030303", overflow: "hidden" }}>
                     <video
                         src="/tummiVideo.mp4"
                         autoPlay muted loop playsInline
@@ -113,13 +113,13 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                 </div>
 
                 {/* Bottom — category grid */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "18px 24px 0", overflowY: "auto", background: BG, minHeight: 0 }}>
-                    <p style={{ fontFamily: SANS, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, margin: "0 0 14px", flexShrink: 0 }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "14px 20px 0", overflowY: "auto", background: BG, minHeight: 0 }}>
+                    <p style={{ fontFamily: SANS, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, margin: "0 0 10px", flexShrink: 0 }}>
                         {selected ? `Selected: ${selected.title}` : "What are you looking for?"}
                     </p>
 
                     {/* 2×2 grid */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, flex: 1, alignContent: "flex-start" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flex: 1, alignContent: "flex-start" }}>
                         {CATEGORIES.map(cat => {
                             const isActive = selected?.title === cat.title;
                             return (
@@ -128,8 +128,8 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                     className="tsm-cat-box"
                                     onClick={() => setSelected(cat)}
                                     style={{
-                                        display: "flex", flexDirection: "column", gap: 6,
-                                        padding: "20px 18px",
+                                        display: "flex", flexDirection: "column", gap: 3,
+                                        padding: "12px 14px",
                                         border: `1px solid ${isActive ? GOLD_D : BORDER}`,
                                         background: isActive ? "rgba(201,168,106,0.07)" : "rgba(255,255,255,0.02)",
                                         borderRadius: 2, cursor: "pointer",
@@ -137,10 +137,10 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
                                         position: "relative",
                                     }}
                                 >
-                                    <span style={{ marginBottom: 4, opacity: isActive ? 1 : 0.85 }}>
+                                    <span style={{ marginBottom: 2, opacity: isActive ? 1 : 0.85 }}>
                                         <CategoryIcon name={cat.icon} color={isActive ? GOLD_L : GOLD_D} />
                                     </span>
-                                    <span style={{ fontFamily: SERIF, fontSize: 20, color: isActive ? GOLD_L : TEXT, fontWeight: 400, letterSpacing: "0.04em" }}>
+                                    <span style={{ fontFamily: SERIF, fontSize: 18, color: isActive ? GOLD_L : TEXT, fontWeight: 400, letterSpacing: "0.04em" }}>
                                         {cat.title}
                                     </span>
                                     <span style={{ fontFamily: SANS, fontSize: 10, color: MUTED, letterSpacing: "0.06em", lineHeight: 1.5 }}>

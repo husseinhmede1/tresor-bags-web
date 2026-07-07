@@ -286,9 +286,10 @@ const BagListing = () => {
                 .card-reveal-wrapper { transition-delay:0ms !important; }
             }
             @media (max-width:600px) {
-                .t-header      { padding:10px 14px !important; flex-wrap:nowrap !important; overflow:hidden; }
-                .t-header-right { gap:8px !important; flex-wrap:nowrap !important; }
-                .t-header-right button { font-size:9px !important; letter-spacing:0.08em !important; padding:5px 8px !important; white-space:nowrap !important; }
+                .t-header      { padding:10px 14px !important; flex-wrap:nowrap !important; overflow:visible !important; align-items:flex-start !important; }
+                .t-header canvas { max-width:120px !important; height:auto !important; }
+                .t-header-right { gap:6px 10px !important; flex-wrap:wrap !important; justify-content:flex-end !important; }
+                .t-header-right button { font-size:9px !important; letter-spacing:0.06em !important; padding:3px 0 !important; white-space:nowrap !important; }
                 .t-hero-wrap   { min-height:420px !important; }
                 .t-hero-title  { font-size:1.9rem !important; }
                 .t-filter-wrap { margin:8px !important; padding:20px 16px !important; }

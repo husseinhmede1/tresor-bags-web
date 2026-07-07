@@ -1,86 +1,78 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { createType } from "../services/typeService";
+import { createCollection } from "../services/collectionService";
 
 const G = "#E5C48A", BG = "#080808", BORDER = "rgba(201,168,106,0.15)", MUTED = "#6B6560", TEXT = "#F5F1E8";
 const SERIF = "'Cormorant Garamond', serif", SANS = "'Inter', sans-serif";
-const CATEGORIES = ["Backpacks", "Luggage", "Bags", "Accessories"];
 
 const inputStyle = { width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}`, color: TEXT, fontSize: 15, fontFamily: SANS, padding: "11px 14px", outline: "none", letterSpacing: "0.02em" };
 const labelStyle = { fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, display: "block", marginBottom: 10 };
 
-export default function AddType() {
+export default function AddCollection() {
     const navigate = useNavigate();
     const { logout } = useAuth();
-    const [form, setForm] = useState({ title: "", category: "", discount: "", note: "" });
+    const [title, setTitle] = useState("");
+    const [logo, setLogo] = useState("");
+    const [preview, setPreview] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+    const handleLogo = (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => { setLogo(ev.target.result); setPreview(ev.target.result); };
+        reader.readAsDataURL(file);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!form.title.trim()) return setError("Title is required");
-        if (!form.category) return setError("Category is required");
-        if (form.discount !== "" && (isNaN(form.discount) || form.discount < 0 || form.discount > 100))
-            return setError("Discount must be between 0 and 100");
+        if (!title.trim()) return setError("Title is required");
         setLoading(true); setError("");
         try {
-            const res = await createType({
-                title: form.title.trim(),
-                category: form.category,
-                discount: form.discount === "" ? 0 : Number(form.discount),
-                note: form.note.trim(),
-            });
+            const res = await createCollection({ title: title.trim(), logo });
             if (res.success) navigate("/admin/dashboard");
-        } catch (err) { setError(err.message || "Failed to create type"); }
+        } catch (err) { setError(err.message || "Failed to create collection"); }
         finally { setLoading(false); }
     };
 
     return (
         <div style={{ minHeight: "100vh", background: BG, fontFamily: SANS, color: TEXT }}>
             <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 32px", borderBottom: `1px solid ${BORDER}`, background: "rgba(8,8,8,0.96)" }}>
-                <span style={{ fontFamily: SERIF, fontSize: 18, color: G, letterSpacing: "0.1em" }}>Add Type</span>
+                <span style={{ fontFamily: SERIF, fontSize: 18, color: G, letterSpacing: "0.1em" }}>Add Collection</span>
                 <button onClick={logout} style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" }}>Logout</button>
             </header>
             <main style={{ maxWidth: 520, margin: "48px auto", padding: "0 24px 80px" }}>
                 <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, margin: "0 0 28px" }}>
-                    A type sits under a category (e.g. “Carry-On Luggage” under Luggage). Any discount and note apply to every bag of this type.
+                    A collection is a product line (e.g. “Alpha”, “Voyageur”) that can span many types and categories. Logo is optional.
                 </p>
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 28 }}>
                     {error && <p style={{ color: "#C9957A", fontSize: 12, letterSpacing: "0.06em" }}>{error}</p>}
 
                     <div>
-                        <label style={labelStyle}>Category *</label>
-                        <select value={form.category} onChange={e => set("category", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                            <option value="">— Select a category —</option>
-                            {CATEGORIES.map(c => <option key={c} value={c} style={{ background: "#111" }}>{c}</option>)}
-                        </select>
+                        <label style={labelStyle}>Collection Logo · optional</label>
+                        {preview
+                            ? <div style={{ position: "relative", display: "inline-block" }}>
+                                <img src={preview} alt="logo" style={{ width: 120, height: 120, objectFit: "contain", background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}` }} />
+                                <button type="button" onClick={() => { setLogo(""); setPreview(""); }} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.7)", border: "none", color: "#C9957A", cursor: "pointer", fontSize: 11, borderRadius: 2, padding: "2px 6px" }}>✕</button>
+                              </div>
+                            : <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 120, height: 120, border: `1px dashed ${BORDER}`, cursor: "pointer", gap: 8, background: "rgba(255,255,255,0.02)" }}>
+                                <span style={{ fontSize: 28, color: "rgba(201,168,106,0.3)" }}>+</span>
+                                <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED }}>Choose image</span>
+                                <input type="file" accept="image/*" onChange={handleLogo} style={{ display: "none" }} />
+                              </label>
+                        }
                     </div>
 
                     <div>
                         <label style={labelStyle}>Title *</label>
-                        <input type="text" value={form.title} onChange={e => set("title", e.target.value)}
-                            placeholder="e.g. Carry-On Luggage, Briefcases…" style={inputStyle} />
-                    </div>
-
-                    <div>
-                        <label style={labelStyle}>Discount (%) · optional 0–100</label>
-                        <input type="number" min="0" max="100" value={form.discount} onChange={e => set("discount", e.target.value)}
-                            placeholder="e.g. 20" style={inputStyle} />
-                    </div>
-
-                    <div>
-                        <label style={labelStyle}>Note · optional</label>
-                        <textarea value={form.note} onChange={e => set("note", e.target.value)} rows={3}
-                            placeholder='e.g. "With every 2 items of this type you win 1"'
-                            style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }} />
+                        <input type="text" value={title} onChange={e => setTitle(e.target.value)}
+                            placeholder="e.g. Alpha, Voyageur, Harrison…" style={inputStyle} />
                     </div>
 
                     <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
                         <button type="submit" disabled={loading} style={{ background: `linear-gradient(135deg,#C9A86A,${G})`, color: "#070707", border: "none", padding: "12px 28px", fontFamily: SANS, fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-                            {loading ? "Saving…" : "Save Type"}
+                            {loading ? "Saving…" : "Save Collection"}
                         </button>
                         <button type="button" onClick={() => navigate("/admin/dashboard")} style={{ background: "none", border: `1px solid ${BORDER}`, color: MUTED, padding: "12px 20px", fontFamily: SANS, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>Cancel</button>
                     </div>

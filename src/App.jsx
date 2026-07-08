@@ -23,6 +23,8 @@ import CartPage from "./pages/CartPage";
 import DeliveryPage from "./pages/DeliveryPage";
 import PaymentPage from "./pages/PaymentPage";
 import AdminOrderPage from "./pages/AdminOrderPage";
+import AdminOrdersPage from "./pages/AdminOrdersPage";
+import AdminStatsPage from "./pages/AdminStatsPage";
 
 const App = () => {
   /* ── Global mouse tracker for button glow effect ── */
@@ -58,6 +60,8 @@ const App = () => {
             <Route path="/admin/type/add" element={<ProtectedRoute><AddType /></ProtectedRoute>} />
             <Route path="/admin/type/edit/:id" element={<ProtectedRoute><EditType /></ProtectedRoute>} />
             <Route path="/admin/order/:token" element={<ProtectedRoute><AdminOrderPage /></ProtectedRoute>} />
+            <Route path="/admin/orders" element={<ProtectedRoute><AdminOrdersPage /></ProtectedRoute>} />
+            <Route path="/admin/stats" element={<ProtectedRoute><AdminStatsPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

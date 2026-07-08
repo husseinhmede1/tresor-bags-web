@@ -12,6 +12,16 @@ export const createOrder = async (data) => {
     return res.data;
 };
 
+export const getAllOrders = async (params = {}) => {
+    const res = await api.get('/orders', { params });
+    return res.data;
+};
+
+export const getStats = async (period = 'week') => {
+    const res = await api.get('/stats', { params: { period } });
+    return res.data;
+};
+
 export const getOrderByToken = async (token) => {
     const res = await api.get(`/orders/${token}`);
     return res.data.data;

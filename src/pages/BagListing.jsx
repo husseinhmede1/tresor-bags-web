@@ -479,6 +479,8 @@ const BagListing = () => {
                             <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
                             <button style={S.addBtnSecondary} onClick={() => navigate("/admin/type/add")}>Add Type</button>
                             <button style={S.addBtnSecondary} onClick={() => navigate("/admin/collection/add")}>Add Collection</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/orders")}>Orders</button>
+                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/stats")}>Stats</button>
                             <button style={S.logoutBtn} onClick={logout}>Logout</button>
                         </>
                     )}

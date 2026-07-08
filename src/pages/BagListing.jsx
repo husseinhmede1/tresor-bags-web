@@ -901,19 +901,12 @@ const BagListing = () => {
                                                 <button style={S.deleteBtn} onClick={e => handleDeleteCategory(cat._id, e)}>🗑️</button>
                                             </div>
                                         )}
-                                        {/* Editorial discount headline */}
-                                        {cat.discount > 0 && (
-                                            <p style={S.catDiscountHeadline}>
-                                                {cat.discount}
-                                                <span style={S.catDiscountPct}>%</span>
-                                            </p>
-                                        )}
+                                        {cat.category && <p style={S.catCardCat}>{cat.category}</p>}
                                         <h3 style={S.catCardTitle}>{cat.title}</h3>
                                         {cat.discount > 0 && (
-                                            <p style={S.catDiscountSub}>Exclusive discount on this collection</p>
+                                            <span style={S.catDiscountBadge}>{cat.discount}% OFF</span>
                                         )}
-                                        {cat.note && <p style={S.catNote}>{cat.note}</p>}
-                                        <p style={S.catCardHint}>Explore →</p>
+                                        {cat.note && <p style={S.catNoteSm}>{cat.note}</p>}
                                     </div>
                                 </RevealCard>
                             ))}
@@ -1042,14 +1035,12 @@ const S = {
     specVal: { fontSize: 12, color: TEXT, fontFamily: SERIF, fontWeight: 300 },
 
     /* Category grid */
-    catGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: "1px", padding: 0, marginBottom: 0, maxWidth: 1240, marginLeft: "auto", marginRight: "auto", background: BORDER },
-    catCard: { background: CARD, padding: "40px 32px", cursor: "pointer", position: "relative", transition: "transform 0.4s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease", minHeight: 200 },
-    catDiscountHeadline: { fontFamily: SERIF, fontSize: 64, fontWeight: 300, color: "rgba(201,168,106,0.12)", margin: "0 0 4px", lineHeight: 1, letterSpacing: "-0.02em" },
-    catDiscountPct: { fontSize: 32, verticalAlign: "super" },
-    catCardTitle: { fontSize: 22, fontWeight: 400, color: TEXT, margin: "0 0 10px", fontFamily: SERIF, letterSpacing: "0.04em" },
-    catDiscountSub: { fontSize: 10, color: "#C9957A", letterSpacing: "0.14em", textTransform: "uppercase", margin: "0 0 12px", fontFamily: SANS },
-    catNote: { fontSize: 13, color: MUTED, fontStyle: "italic", fontFamily: SERIF, lineHeight: 1.7, margin: "0 0 16px", maxWidth: 320 },
-    catCardHint: { fontSize: 10, color: "rgba(107,101,96,0.5)", margin: "16px 0 0", letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: SANS },
+    catGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 10, padding: "0 12px", marginBottom: 0, maxWidth: 1240, marginLeft: "auto", marginRight: "auto" },
+    catCard: { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 4, padding: "14px 14px 16px", cursor: "pointer", position: "relative", transition: "transform 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.25s, opacity 0.3s ease", minHeight: 92, display: "flex", flexDirection: "column", gap: 6 },
+    catCardCat: { fontSize: 9, color: GOLD_D, letterSpacing: "0.2em", textTransform: "uppercase", margin: 0, fontFamily: SANS },
+    catCardTitle: { fontSize: 16, fontWeight: 400, color: TEXT, margin: 0, fontFamily: SERIF, letterSpacing: "0.03em", lineHeight: 1.25 },
+    catDiscountBadge: { alignSelf: "flex-start", marginTop: "auto", fontSize: 9, color: "#C9957A", border: "1px solid rgba(201,149,122,0.4)", borderRadius: 2, padding: "2px 6px", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: SANS },
+    catNoteSm: { fontSize: 11, color: MUTED, fontStyle: "italic", fontFamily: SERIF, lineHeight: 1.5, margin: 0 },
 };
 
 export default BagListing;

@@ -303,7 +303,12 @@ const BagListing = () => {
     }, []);
 
     const swipeStart = useRef(null);
-    const handleSwipeStart = (e) => { swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+    const handleSwipeStart = (e) => {
+        // Ignore gestures that begin inside a horizontal scroller (e.g. the
+        // collection chips) — scrolling those shouldn't switch tabs.
+        if (e.target.closest && e.target.closest(".no-tab-swipe")) { swipeStart.current = null; return; }
+        swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    };
     const handleSwipeEnd = (e) => {
         if (!swipeStart.current) return;
         const dx = e.changedTouches[0].clientX - swipeStart.current.x;
@@ -637,7 +642,7 @@ const BagListing = () => {
 
             {/* ── Collection chips ── */}
             {collections.length > 0 && (
-                <div style={{ overflowX: "auto", padding: "14px 24px 0", display: "flex", gap: 8, maxWidth: 1200, margin: "0 auto", scrollbarWidth: "none" }}>
+                <div className="no-tab-swipe" style={{ overflowX: "auto", padding: "14px 24px 0", display: "flex", gap: 8, maxWidth: 1200, margin: "0 auto", scrollbarWidth: "none" }}>
                     <button
                         onClick={() => setSelectedCollection(null)}
                         style={{

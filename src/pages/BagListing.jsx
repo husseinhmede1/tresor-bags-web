@@ -239,6 +239,7 @@ const BagListing = () => {
     const [capacity, setCapacity] = useState("");
     const [expandedBag, setExpandedBag] = useState(null);
     const [filterOpen, setFilterOpen] = useState(false);
+    const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
     const [categories, setCategories] = useState([]);
     const [loadingCats, setLoadingCats] = useState(false);
@@ -286,10 +287,9 @@ const BagListing = () => {
                 .card-reveal-wrapper { transition-delay:0ms !important; }
             }
             @media (max-width:600px) {
-                .t-header      { padding:10px 14px !important; flex-wrap:nowrap !important; overflow:visible !important; align-items:flex-start !important; }
-                .t-header canvas { max-width:120px !important; height:auto !important; }
-                .t-header-right { gap:6px 10px !important; flex-wrap:wrap !important; justify-content:flex-end !important; }
-                .t-header-right button { font-size:9px !important; letter-spacing:0.06em !important; padding:3px 0 !important; white-space:nowrap !important; }
+                .t-header      { padding:10px 14px !important; flex-wrap:nowrap !important; overflow:visible !important; }
+                .t-header canvas { max-width:130px !important; height:auto !important; }
+                .t-header-right { gap:10px !important; }
                 .t-hero-wrap   { min-height:420px !important; }
                 .t-hero-title  { font-size:1.9rem !important; }
                 .t-filter-wrap { margin:8px !important; padding:20px 16px !important; }
@@ -301,6 +301,15 @@ const BagListing = () => {
         document.head.appendChild(style);
         return () => document.head.removeChild(style);
     }, []);
+
+    const adminMenuRef = useRef(null);
+    useEffect(() => {
+        if (!adminMenuOpen) return;
+        const onDown = (e) => { if (adminMenuRef.current && !adminMenuRef.current.contains(e.target)) setAdminMenuOpen(false); };
+        document.addEventListener("mousedown", onDown);
+        document.addEventListener("touchstart", onDown);
+        return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("touchstart", onDown); };
+    }, [adminMenuOpen]);
 
     const swipeStart = useRef(null);
     const handleSwipeStart = (e) => {
@@ -475,14 +484,32 @@ const BagListing = () => {
                 <LogoWithZipper src={LOGO_SRC} />
                 <div style={S.headerRight} className="t-header-right">
                     {isAdmin && (
-                        <>
-                            <button style={S.addBtn} onClick={() => navigate("/admin/add")}>Add Bag</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/type/add")}>Add Type</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/collection/add")}>Add Collection</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/orders")}>Orders</button>
-                            <button style={S.addBtnSecondary} onClick={() => navigate("/admin/stats")}>Stats</button>
-                            <button style={S.logoutBtn} onClick={logout}>Logout</button>
-                        </>
+                        <div style={{ position: "relative" }} ref={adminMenuRef}>
+                            <button style={S.menuBtn} onClick={() => setAdminMenuOpen(o => !o)}>
+                                Menu <span style={{ fontSize: 8, opacity: 0.6 }}>{adminMenuOpen ? "▲" : "▼"}</span>
+                            </button>
+                            {adminMenuOpen && (
+                                <div style={S.adminMenu}>
+                                    {[
+                                        { label: "Add Bag", to: "/admin/add" },
+                                        { label: "Add Type", to: "/admin/type/add" },
+                                        { label: "Add Collection", to: "/admin/collection/add" },
+                                        { label: "Orders", to: "/admin/orders" },
+                                        { label: "Stats", to: "/admin/stats" },
+                                    ].map(item => (
+                                        <button key={item.to} style={S.adminMenuItem}
+                                            onClick={() => { setAdminMenuOpen(false); navigate(item.to); }}>
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                    <div style={{ height: 1, background: BORDER, margin: "6px 0" }} />
+                                    <button style={{ ...S.adminMenuItem, color: "#C9807A" }}
+                                        onClick={() => { setAdminMenuOpen(false); logout(); }}>
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     )}
                     <button style={S.cartBtn} onClick={() => navigate("/cart")} title="Shopping Bag">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -935,7 +962,10 @@ const S = {
     page: { minHeight: "100vh", background: BG, color: TEXT, fontFamily: SANS, paddingBottom: 80, overflowX: "hidden", position: "relative", zIndex: 1 },
 
     /* Header */
-    header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "rgba(7,7,7,0.96)", borderBottom: "1px solid rgba(201,168,106,0.08)", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px)", gap: 12, flexWrap: "nowrap", overflow: "hidden" },
+    header: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 28px", background: "rgba(7,7,7,0.96)", borderBottom: "1px solid rgba(201,168,106,0.08)", position: "sticky", top: 0, zIndex: 100, backdropFilter: "blur(20px)", gap: 12, flexWrap: "nowrap", overflow: "visible" },
+    menuBtn: { background: "transparent", color: GOLD_L, border: `1px solid rgba(229,196,138,0.4)`, borderRadius: 100, padding: "7px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 },
+    adminMenu: { position: "absolute", top: "calc(100% + 10px)", right: 0, minWidth: 190, background: "#0e0e0e", border: `1px solid ${BORDER_GOLD}`, borderRadius: 8, padding: 8, display: "flex", flexDirection: "column", gap: 2, boxShadow: "0 20px 50px rgba(0,0,0,0.6)", zIndex: 300 },
+    adminMenuItem: { background: "transparent", border: "none", color: TEXT, textAlign: "left", padding: "10px 14px", borderRadius: 5, cursor: "pointer", fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: SANS, width: "100%" },
     headerRight: { display: "flex", alignItems: "center", gap: 16, flexWrap: "nowrap", justifyContent: "flex-end", flexShrink: 1, minWidth: 0 },
     addBtn: { background: "transparent", color: GOLD_L, border: "none", borderBottom: `1px solid rgba(229,196,138,0.4)`, padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },
     addBtnSecondary: { background: "transparent", color: MUTED, border: "none", borderBottom: "1px solid rgba(167,161,154,0.25)", padding: "4px 0", fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.14em", textTransform: "uppercase", whiteSpace: "nowrap" },

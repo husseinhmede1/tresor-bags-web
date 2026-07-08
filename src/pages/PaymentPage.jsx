@@ -84,6 +84,24 @@ export default function PaymentPage() {
   async function handleConfirm() {
     if (confirming) return;
     setConfirming(true);
+
+    // Open the WhatsApp tab *synchronously* while we're still inside the click
+    // gesture. Opening it after the await below gets blocked as a pop-up on
+    // desktop and stricter mobile browsers (the order saved but WhatsApp never
+    // opened). We redirect this tab once we have the order token.
+    const waWindow = window.open('', '_blank');
+
+    const openWhatsApp = (token) => {
+      const encoded = encodeURIComponent(buildMessage(token));
+      const url = `https://wa.me/96178987288?text=${encoded}`;
+      if (waWindow && !waWindow.closed) {
+        waWindow.location.href = url;
+      } else {
+        // Pop-up was blocked — fall back to navigating the current tab.
+        window.location.href = url;
+      }
+    };
+
     try {
       // Build order payload
       const orderItems = cartItems.map(({ bag, quantity }) => {
@@ -107,9 +125,7 @@ export default function PaymentPage() {
       });
       const confirmToken = result.data?.confirmToken || '';
 
-      const msg = buildMessage(confirmToken);
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
+      openWhatsApp(confirmToken);
 
       clearCart();
       sessionStorage.removeItem('tresor-delivery');
@@ -117,9 +133,7 @@ export default function PaymentPage() {
       setTimeout(() => navigate('/'), 2500);
     } catch {
       // Even if order creation fails, still send WhatsApp without confirm link
-      const msg = buildMessage('');
-      const encoded = encodeURIComponent(msg);
-      window.open(`https://wa.me/96178987288?text=${encoded}`, '_blank');
+      openWhatsApp('');
       clearCart();
       sessionStorage.removeItem('tresor-delivery');
       setSuccess(true);

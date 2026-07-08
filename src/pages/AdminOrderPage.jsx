@@ -90,16 +90,21 @@ export default function AdminOrderPage() {
     if (confirming) return;
     setConfirming(true);
     setStockError(null);
+    // Open the WhatsApp tab synchronously (within the click gesture) so it
+    // isn't blocked as a pop-up after the await below.
+    const phone = customerPhone(order?.delivery);
+    const waWindow = phone ? window.open('', '_blank') : null;
     try {
       const updated = await confirmOrder(token);
       setOrder(updated);
       // WhatsApp to customer
-      const phone = customerPhone(order?.delivery);
       if (phone) {
-        const msg = buildConfirmMessage(order);
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildConfirmMessage(order))}`;
+        if (waWindow && !waWindow.closed) waWindow.location.href = url;
+        else window.location.href = url;
       }
     } catch (err) {
+      if (waWindow && !waWindow.closed) waWindow.close();
       const data = err?.response?.data;
       if (data?.insufficient?.length) {
         setStockError({ insufficient: data.insufficient });
@@ -115,16 +120,21 @@ export default function AdminOrderPage() {
     if (cancelling) return;
     if (!window.confirm('Are you sure you want to cancel this order? This cannot be undone.')) return;
     setCancelling(true);
+    // Open the WhatsApp tab synchronously (within the click gesture) so it
+    // isn't blocked as a pop-up after the await below.
+    const phone = customerPhone(order?.delivery);
+    const waWindow = phone ? window.open('', '_blank') : null;
     try {
       const updated = await cancelOrder(token);
       setOrder(updated);
       // WhatsApp to customer
-      const phone = customerPhone(order?.delivery);
       if (phone) {
-        const msg = buildCancelMessage(order);
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildCancelMessage(order))}`;
+        if (waWindow && !waWindow.closed) waWindow.location.href = url;
+        else window.location.href = url;
       }
     } catch (err) {
+      if (waWindow && !waWindow.closed) waWindow.close();
       const data = err?.response?.data;
       alert(data?.message || 'Failed to cancel order. Please try again.');
     } finally {

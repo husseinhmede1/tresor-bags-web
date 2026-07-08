@@ -302,14 +302,18 @@ const BagListing = () => {
         return () => document.head.removeChild(style);
     }, []);
 
-    const swipeStartX = useRef(null);
-    const handleSwipeStart = (e) => { swipeStartX.current = e.touches[0].clientX; };
+    const swipeStart = useRef(null);
+    const handleSwipeStart = (e) => { swipeStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
     const handleSwipeEnd = (e) => {
-        if (swipeStartX.current === null) return;
-        const diff = swipeStartX.current - e.changedTouches[0].clientX;
-        if (diff > 50) setActiveTab("categories");
-        else if (diff < -50) setActiveTab("items");
-        swipeStartX.current = null;
+        if (!swipeStart.current) return;
+        const dx = e.changedTouches[0].clientX - swipeStart.current.x;
+        const dy = e.changedTouches[0].clientY - swipeStart.current.y;
+        swipeStart.current = null;
+        // Only switch tabs on a clearly horizontal swipe — ignore vertical scrolls
+        // that happen to drift sideways.
+        if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
+        if (dx < 0) setActiveTab("categories");   // swipe left → Types
+        else setActiveTab("items");               // swipe right → Items
     };
 
     const fetchBags = async () => {

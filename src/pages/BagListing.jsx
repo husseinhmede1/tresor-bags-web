@@ -580,7 +580,6 @@ const BagListing = () => {
                         src={heroBagImg}
                         alt="Trésor Bags Collection"
                         style={{
-                            position: "absolute",
                             height: "clamp(260px, 58vh, 440px)",
                             width: "auto",
                             maxWidth: "58%",
@@ -589,18 +588,16 @@ const BagListing = () => {
                             filter: "drop-shadow(0 44px 88px rgba(0,0,0,0.82)) drop-shadow(0 0 56px rgba(201,168,106,0.1))",
                             userSelect: "none",
                             pointerEvents: "none",
-                            left: "50%",
-                            transform: "translateX(-50%)",
                         }}
                     />
                 </div>
             </div>
             <style>{`
                 @keyframes h3dFloat {
-                    0%,100% { transform: translateX(-50%) translateY(0px)  rotate(-0.5deg) scale(1);     }
-                    25%     { transform: translateX(-50%) translateY(-18px) rotate(0.4deg)  scale(1.014); }
-                    50%     { transform: translateX(-50%) translateY(-28px) rotate(1deg)    scale(1.019); }
-                    75%     { transform: translateX(-50%) translateY(-12px) rotate(0.2deg)  scale(1.009); }
+                    0%,100% { transform: translateY(0px)  rotate(-0.5deg) scale(1);     }
+                    25%     { transform: translateY(-18px) rotate(0.4deg)  scale(1.014); }
+                    50%     { transform: translateY(-28px) rotate(1deg)    scale(1.019); }
+                    75%     { transform: translateY(-12px) rotate(0.2deg)  scale(1.009); }
                 }
             `}</style>
 

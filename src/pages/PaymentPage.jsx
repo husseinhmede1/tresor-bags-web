@@ -55,7 +55,9 @@ export default function PaymentPage() {
     lines.push(`Customer: ${delivery.name} ${delivery.surname}`);
     lines.push(`Phone: ${delivery.phonePrefix}${delivery.phoneNumber}`);
     lines.push(`Email: ${delivery.email}`);
-    lines.push(`Address: ${delivery.address}, ${delivery.locality}, ${delivery.district}, ${delivery.region}`);
+    const addr = [delivery.address, delivery.region].filter((s) => s && s.trim()).join(', ');
+    if (addr) lines.push(`Address: ${addr}`);
+    if (delivery.mapLink) lines.push(`Location: ${delivery.mapLink}`);
     if (delivery.moreInfo?.trim()) {
       lines.push(`Notes: ${delivery.moreInfo.trim()}`);
     }

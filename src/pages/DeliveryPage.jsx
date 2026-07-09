@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LEBANON from '../data/lebanon';
+import LocationPicker from '../components/LocationPicker';
 
 const C = {
   BG: '#080808',
@@ -25,8 +26,8 @@ const INITIAL = {
   address: '',
   moreInfo: '',
   region: '',
-  district: '',
-  locality: '',
+  lat: null,
+  lng: null,
   email: '',
   phonePrefix: '+961',
   phoneNumber: '',
@@ -47,16 +48,9 @@ export default function DeliveryPage() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const regions = Object.keys(LEBANON);
-  const districts = form.region ? Object.keys(LEBANON[form.region]) : [];
-  const localities = form.region && form.district ? LEBANON[form.region][form.district] ?? [] : [];
 
   function set(field, value) {
-    setForm(prev => {
-      const next = { ...prev, [field]: value };
-      if (field === 'region') { next.district = ''; next.locality = ''; }
-      if (field === 'district') { next.locality = ''; }
-      return next;
-    });
+    setForm(prev => ({ ...prev, [field]: value }));
   }
 
   function blur(field) {
@@ -67,10 +61,7 @@ export default function DeliveryPage() {
     const e = {};
     if (!form.name.trim()) e.name = 'Name is required';
     if (!form.surname.trim()) e.surname = 'Surname is required';
-    if (!form.address.trim()) e.address = 'Address is required';
-    if (!form.region) e.region = 'Region is required';
-    if (!form.district) e.district = 'District is required';
-    if (!form.locality) e.locality = 'Locality is required';
+    if (form.lat == null || form.lng == null) e.location = 'Please set your delivery location on the map';
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!validateEmail(form.email)) e.email = 'Enter a valid email';
     if (!form.phoneNumber.trim()) e.phoneNumber = 'Phone number is required';
@@ -88,7 +79,8 @@ export default function DeliveryPage() {
   function handleContinue() {
     setSubmitAttempted(true);
     if (hasErrors) return;
-    sessionStorage.setItem('tresor-delivery', JSON.stringify(form));
+    const mapLink = form.lat != null ? `https://www.google.com/maps?q=${form.lat},${form.lng}` : '';
+    sessionStorage.setItem('tresor-delivery', JSON.stringify({ ...form, mapLink }));
     navigate('/checkout/payment');
   }
 
@@ -137,14 +129,21 @@ export default function DeliveryPage() {
             </Field>
           </div>
 
-          {/* Address */}
-          <Field label="Address" error={showErr('address')}>
+          {/* Location on map — the main thing */}
+          <Field label="Delivery Location" error={showErr('location')}>
+            <LocationPicker
+              value={{ lat: form.lat, lng: form.lng }}
+              onChange={({ lat, lng }) => setForm(prev => ({ ...prev, lat, lng }))}
+            />
+          </Field>
+
+          {/* Address details */}
+          <Field label="Address details" hint="Optional">
             <input
               value={form.address}
               onChange={e => set('address', e.target.value)}
-              onBlur={() => blur('address')}
-              placeholder="Street address, building, floor..."
-              style={inputStyle(showErr('address'))}
+              placeholder="Building, floor, apartment, landmark..."
+              style={inputStyle(false)}
             />
           </Field>
 
@@ -159,44 +158,15 @@ export default function DeliveryPage() {
             />
           </Field>
 
-          {/* Region */}
-          <Field label="Region" error={showErr('region')}>
+          {/* Region — optional, coarse area */}
+          <Field label="Region" hint="Optional">
             <select
               value={form.region}
-              onChange={e => { set('region', e.target.value); blur('region'); }}
-              onBlur={() => blur('region')}
-              style={selectStyle(showErr('region'), !form.region)}
+              onChange={e => set('region', e.target.value)}
+              style={selectStyle(false, !form.region)}
             >
               <option value="">Select region...</option>
               {regions.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </Field>
-
-          {/* District */}
-          <Field label="District" error={showErr('district')}>
-            <select
-              value={form.district}
-              onChange={e => { set('district', e.target.value); blur('district'); }}
-              onBlur={() => blur('district')}
-              disabled={!form.region}
-              style={selectStyle(showErr('district'), !form.district)}
-            >
-              <option value="">Select district...</option>
-              {districts.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
-
-          {/* Locality */}
-          <Field label="Locality" error={showErr('locality')}>
-            <select
-              value={form.locality}
-              onChange={e => { set('locality', e.target.value); blur('locality'); }}
-              onBlur={() => blur('locality')}
-              disabled={!form.district}
-              style={selectStyle(showErr('locality'), !form.locality)}
-            >
-              <option value="">Select locality...</option>
-              {localities.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </Field>
 

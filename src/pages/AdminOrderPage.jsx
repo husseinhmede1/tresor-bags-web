@@ -41,7 +41,8 @@ function buildConfirmMessage(order) {
   lines.push(``);
   lines.push(`Total Paid: $${fmt(order.total)}`);
   lines.push(``);
-  lines.push(`Delivering to: ${d.address || ''}, ${d.locality || ''}, ${d.district || ''}, ${d.region || ''}`);
+  const dest = [d.address, d.region].filter((s) => s && s.trim()).join(', ');
+  if (dest) lines.push(`Delivering to: ${dest}`);
   lines.push(``);
   lines.push(`We will contact you soon to arrange delivery. Thank you for shopping with Tresor Bags!`);
   return lines.join('\n');
@@ -370,8 +371,6 @@ export default function AdminOrderPage() {
                   ['Phone',    `${order.delivery?.phonePrefix || ''} ${order.delivery?.phoneNumber || ''}`.trim()],
                   ['Email',    order.delivery?.email],
                   ['Address',  order.delivery?.address],
-                  ['Locality', order.delivery?.locality],
-                  ['District', order.delivery?.district],
                   ['Region',   order.delivery?.region],
                   ['Notes',    order.delivery?.moreInfo],
                 ].filter(([, v]) => v).map(([label, value]) => (
@@ -380,6 +379,12 @@ export default function AdminOrderPage() {
                     <span style={{ textAlign: 'right', flex: 1, color: T.TEXT, fontSize: 14 }}>{value}</span>
                   </div>
                 ))}
+                {order.delivery?.mapLink && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 10, gap: 12 }}>
+                    <span style={{ color: T.MUTED, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, flexShrink: 0, paddingTop: 1 }}>Location</span>
+                    <a href={order.delivery.mapLink} target="_blank" rel="noreferrer" style={{ textAlign: 'right', flex: 1, color: T.GOLD_L || '#E5C48A', fontSize: 14, textDecoration: 'underline' }}>Open in Google Maps ↗</a>
+                  </div>
+                )}
               </div>
 
               {/* Action area — only for pending orders */}

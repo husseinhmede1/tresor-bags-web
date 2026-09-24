@@ -110,7 +110,18 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
     };
 
     /* Merge what the AI read from the chat into the form; blanks never overwrite. */
-    const applyAiResult = (d) => {
+    const applyAiResult = (d, uploaded = []) => {
+        // Photos the AI marked as product shots: main first, the rest go to the gallery.
+        const productNums = (d.images || []).filter(i => i.kind === "product").map(i => i.number);
+        if (productNums.length) {
+            const mainNum = d.mainImage || productNums[0];
+            const main = uploaded[mainNum - 1];
+            const gallery = productNums.filter(n => n !== mainNum).map(n => uploaded[n - 1]).slice(0, 10);
+            setFormData(p => ({ ...p, mainImage: main, sideImages: gallery }));
+            setImagePreview(main);
+            setSideImagePreviews(gallery);
+        }
+
         const has = v => v !== null && v !== undefined && v !== "";
         setFormData(p => ({
             ...p,
@@ -164,6 +175,16 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
     const handleRemoveSideImage = (i) => {
         setSideImagePreviews(p => p.filter((_, j) => j !== i));
         setFormData(p => ({ ...p, sideImages: p.sideImages.filter((_, j) => j !== i) }));
+    };
+
+    // Swap a gallery photo with the current main image.
+    const handleMakeMain = (i) => {
+        const picked = sideImagePreviews[i];
+        const rest = sideImagePreviews.filter((_, j) => j !== i);
+        const gallery = imagePreview ? [imagePreview, ...rest] : rest;
+        setImagePreview(picked);
+        setSideImagePreviews(gallery);
+        setFormData(p => ({ ...p, mainImage: picked, sideImages: gallery }));
     };
 
     const handleRemoveMainImage = () => {
@@ -262,6 +283,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                             <img src={src} alt={`Side ${i}`} style={S.galleryImg} />
                                             <button type="button" style={S.removeThumb}
                                                 onClick={() => handleRemoveSideImage(i)}>✕</button>
+                                            <button type="button" style={S.makeMain}
+                                                onClick={() => handleMakeMain(i)}>★ Main</button>
                                         </div>
                                     ))}
                                     {sideImagePreviews.length < 10 && (
@@ -635,6 +658,18 @@ const S = {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+    },
+    makeMain: {
+        position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
+        padding: "4px 10px",
+        background: "rgba(7,7,7,0.75)",
+        color: GOLD_L,
+        border: `1px solid rgba(229,196,138,0.4)`,
+        borderRadius: 999,
+        cursor: "pointer",
+        fontSize: 10,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
     },
     addThumb: {
         display: "flex",

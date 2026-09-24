@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { parseProductFromChat } from "../services/aiService";
 
-const MAX_SHOTS = 8;
-const MAX_EDGE = 1568; // larger images are downscaled by the API anyway
+const MAX_SHOTS = 20;
+// Product photos picked from here end up on the site, so keep them sharp enough.
+const MAX_EDGE = 1600;
 
-/* Downscale + re-encode so several phone screenshots stay small to upload. */
+/* Downscale + re-encode so a batch of phone images stays small to upload and store. */
 const fileToDataUrl = (file) => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = reject;
@@ -31,17 +32,19 @@ const AiQuickAdd = ({ onResult }) => {
     const [loading, setLoading]   = useState(false);
     const [error, setError]       = useState("");
     const [done, setDone]         = useState(false);
+    const [kinds, setKinds]       = useState({}); // image index -> "screenshot" | "product" | "main" | "other"
 
     const addFiles = async (files) => {
         const imgs = Array.from(files).filter(f => f.type.startsWith("image/"));
         if (!imgs.length) return;
         if (shots.length + imgs.length > MAX_SHOTS) {
-            setError(`Maximum ${MAX_SHOTS} screenshots per bag`);
+            setError(`Maximum ${MAX_SHOTS} images per bag`);
             return;
         }
         setError("");
         const urls = await Promise.all(imgs.map(fileToDataUrl));
         setShots(p => [...p, ...urls]);
+        setKinds({});
     };
 
     // Ctrl/Cmd+V a screenshot straight into the box
@@ -58,7 +61,7 @@ const AiQuickAdd = ({ onResult }) => {
 
     const handleRead = async () => {
         if (!shots.length && !text.trim()) {
-            setError("Add at least one screenshot or paste the supplier's text");
+            setError("Add at least one image or paste the supplier's text");
             return;
         }
         setLoading(true);
@@ -67,7 +70,11 @@ const AiQuickAdd = ({ onResult }) => {
         try {
             const res = await parseProductFromChat({ images: shots, text, language });
             if (res.success) {
-                onResult(res.data);
+                const k = {};
+                (res.data.images || []).forEach(i => { k[i.number - 1] = i.kind; });
+                if (res.data.mainImage) k[res.data.mainImage - 1] = "main";
+                setKinds(k);
+                onResult(res.data, shots);
                 setDone(true);
             } else {
                 setError(res.message || "AI could not read this");
@@ -93,9 +100,9 @@ const AiQuickAdd = ({ onResult }) => {
                 </div>
             </div>
             <p style={S.sub}>
-                Upload the WeChat screenshots for <b>one bag</b> (one or several), or paste the
-                supplier's text. The AI translates and fills the form below — review it, add the
-                product photos and your selling price, then save.
+                Drop everything for <b>one bag</b> here: the WeChat screenshots (one or several) and
+                the bag's photos. The AI reads the details, translates them, and puts the photos in
+                Main Image and Gallery. Review everything, set your selling price, then save.
             </p>
 
             <div style={S.shots}>
@@ -103,14 +110,15 @@ const AiQuickAdd = ({ onResult }) => {
                     <div key={i} style={S.shot}>
                         <img src={src} alt={`Screenshot ${i + 1}`} style={S.shotImg} />
                         <span style={S.shotNum}>{i + 1}</span>
+                        {kinds[i] && <span style={S.kind}>{KIND_LABEL[kinds[i]]}</span>}
                         <button type="button" style={S.remove}
-                            onClick={() => setShots(p => p.filter((_, j) => j !== i))}>✕</button>
+                            onClick={() => { setShots(p => p.filter((_, j) => j !== i)); setKinds({}); }}>✕</button>
                     </div>
                 ))}
                 {shots.length < MAX_SHOTS && (
                     <label style={S.add} className="bf-add">
                         <span style={S.plus}>+</span>
-                        <span style={S.addText}>Screenshot</span>
+                        <span style={S.addText}>Add images</span>
                         <input type="file" accept="image/*" multiple style={{ display: "none" }}
                             onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
                     </label>
@@ -123,7 +131,7 @@ const AiQuickAdd = ({ onResult }) => {
                 style={S.textarea} />
 
             {error && <p style={S.error}>{error}</p>}
-            {done && !error && <p style={S.ok}>Form filled ✓ Check every field before saving.</p>}
+            {done && !error && <p style={S.ok}>Form filled ✓ Check every field and photo before saving.</p>}
 
             <button type="button" onClick={handleRead} disabled={loading}
                 style={{ ...S.btn, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
@@ -133,6 +141,8 @@ const AiQuickAdd = ({ onResult }) => {
         </div>
     );
 };
+
+const KIND_LABEL = { main: "★ Main", product: "Photo", screenshot: "Info", other: "Skipped" };
 
 const GOLD_L = "#E5C48A";
 const MUTED  = "#A7A19A";
@@ -157,6 +167,7 @@ const S = {
     shot: { position: "relative", width: 84, height: 120, borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" },
     shotImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
     shotNum: { position: "absolute", bottom: 6, left: 6, background: "rgba(0,0,0,0.7)", color: GOLD_L, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "2px 7px" },
+    kind: { position: "absolute", top: 6, left: 6, background: GOLD_L, color: "#070707", fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "2px 7px" },
     remove: { position: "absolute", top: 5, right: 5, width: 22, height: 22, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.9)", color: "#B83A3A", fontSize: 11, fontWeight: 700, cursor: "pointer" },
     add: { width: 84, height: 120, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, borderRadius: 12, border: "1.5px dashed rgba(229,196,138,0.35)", background: "rgba(229,196,138,0.06)", cursor: "pointer" },
     plus: { fontSize: 26, color: GOLD_L, lineHeight: 1 },

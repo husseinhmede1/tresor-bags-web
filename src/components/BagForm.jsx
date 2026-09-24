@@ -119,7 +119,6 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
             ...(has(d.color)        && { color: d.color }),
             ...(has(d.capacity)     && { capacity: d.capacity }),
             ...(has(d.weight)       && { weight: d.weight }),
-            ...(has(d.stock)        && { stock: d.stock }),
             ...(has(d.gender)       && { gender: d.gender }),
             ...(has(d.typeId)       && { typeId: d.typeId }),
             ...(has(d.collectionId) && { collectionId: d.collectionId }),

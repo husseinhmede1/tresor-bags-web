@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
+import AiQuickAdd from "./AiQuickAdd";
 
 /* ── Field must live OUTSIDE BagForm so it isn't recreated on every render ── */
 const Field = ({ label, required, error, children }) => (
@@ -38,6 +39,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
     const [sideImagePreviews, setSideImagePreviews] = useState([]);
     const [types, setTypes]                         = useState([]);
     const [collections, setCollections]             = useState([]);
+    const [supplierPrice, setSupplierPrice]         = useState(null);
 
     /* ── Global CSS ── */
     useEffect(() => {
@@ -105,6 +107,32 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
             setFormData(p => ({ ...p, [name]: value }));
         }
         if (errors[name]) setErrors(p => { const n = { ...p }; delete n[name]; return n; });
+    };
+
+    /* Merge what the AI read from the chat into the form; blanks never overwrite. */
+    const applyAiResult = (d) => {
+        const has = v => v !== null && v !== undefined && v !== "";
+        setFormData(p => ({
+            ...p,
+            ...(has(d.title)        && { title: d.title }),
+            ...(has(d.description)  && { description: d.description }),
+            ...(has(d.color)        && { color: d.color }),
+            ...(has(d.capacity)     && { capacity: d.capacity }),
+            ...(has(d.weight)       && { weight: d.weight }),
+            ...(has(d.stock)        && { stock: d.stock }),
+            ...(has(d.gender)       && { gender: d.gender }),
+            ...(has(d.typeId)       && { typeId: d.typeId }),
+            ...(has(d.collectionId) && { collectionId: d.collectionId }),
+            dimensions: {
+                height: has(d.dimensions?.height) ? d.dimensions.height : p.dimensions.height,
+                width:  has(d.dimensions?.width)  ? d.dimensions.width  : p.dimensions.width,
+                depth:  has(d.dimensions?.depth)  ? d.dimensions.depth  : p.dimensions.depth,
+            },
+        }));
+        setSupplierPrice(has(d.supplierPrice)
+            ? { amount: d.supplierPrice, currency: d.supplierCurrency || "", notes: d.notes }
+            : d.notes ? { notes: d.notes } : null);
+        setErrors({});
     };
 
     const handleMainImageChange = (e) => {
@@ -189,6 +217,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                 <form onSubmit={handleSubmit}>
                     {errors.submit && <div style={S.errorBox}>{errors.submit}</div>}
 
+                    {!bagId && !initialData && <AiQuickAdd onResult={applyAiResult} />}
+
                     <div style={S.splitGrid} className="bf-split">
 
                         {/* ── LEFT: images ── */}
@@ -253,15 +283,24 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                             <div style={S.card} className="bf-card">
                                 <h2 style={{ ...S.cardTitle, marginBottom: 24 }}>Bag Details</h2>
 
+                                {supplierPrice && (
+                                    <div style={S.aiHint}>
+                                        {supplierPrice.amount != null && (
+                                            <div>Supplier price: <b>{supplierPrice.amount} {supplierPrice.currency}</b> — set your selling price below.</div>
+                                        )}
+                                        {supplierPrice.notes && <div dir="auto">{supplierPrice.notes}</div>}
+                                    </div>
+                                )}
+
                                 <Field label="Title" required error={errors.title}>
-                                    <input className="bf-input" type="text" name="title"
+                                    <input className="bf-input" type="text" name="title" dir="auto"
                                         value={formData.title} onChange={handleChange}
                                         placeholder="e.g., Classic Leather Tote"
                                         style={{ ...S.input, ...(errors.title ? S.inputErr : {}) }} />
                                 </Field>
 
                                 <Field label="Description" required error={errors.description}>
-                                    <textarea className="bf-input" name="description"
+                                    <textarea className="bf-input" name="description" dir="auto"
                                         value={formData.description} onChange={handleChange}
                                         placeholder="Detailed description of the bag…"
                                         rows={5}
@@ -729,6 +768,16 @@ const S = {
         borderTop: `2px solid ${BG}`,
         borderRadius: "50%",
         animation: "spin 0.7s linear infinite",
+    },
+    aiHint: {
+        padding: "12px 14px",
+        marginBottom: 20,
+        borderRadius: 12,
+        fontSize: 13,
+        lineHeight: 1.7,
+        color: GOLD_L,
+        background: "rgba(223,169,75,0.08)",
+        border: `1px solid rgba(223,169,75,0.22)`,
     },
     errorBox: {
         padding: 16,

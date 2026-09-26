@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check, Plus, Sparkle, Star, X } from "@phosphor-icons/react";
 import { parseProductFromChat } from "../services/aiService";
 
 const MAX_SHOTS = 20;
@@ -87,96 +88,102 @@ const AiQuickAdd = ({ onResult }) => {
     };
 
     return (
-        <div style={S.card} onPaste={handlePaste}>
-            <div style={S.head}>
-                <h2 style={S.title}>✨ AI Quick Add</h2>
-                <div style={S.langWrap}>
+        <section className="sf-panel aq" onPaste={handlePaste} aria-labelledby="aq-h">
+            <style>{AQ_CSS}</style>
+            <div className="aq__head">
+                <h2 id="aq-h" className="sf-h3 aq__title">
+                    <Sparkle size={20} weight="fill" className="sf-gold" /> AI quick add
+                </h2>
+                <div className="sf-seg" role="group" aria-label="Output language">
                     {[["ar", "عربي"], ["en", "English"]].map(([k, l]) => (
                         <button key={k} type="button" onClick={() => setLanguage(k)}
-                            style={{ ...S.langBtn, ...(language === k ? S.langOn : {}) }}>
+                            aria-pressed={language === k}>
                             {l}
                         </button>
                     ))}
                 </div>
             </div>
-            <p style={S.sub}>
+            <p className="sf-muted aq__sub">
                 Drop everything for <b>one bag</b> here: the WeChat screenshots (one or several) and
-                the bag's photos. The AI reads the details, translates them, and puts the photos in
-                Main Image and Gallery. Review everything, set your selling price, then save.
+                the bag's photos. You can also paste a screenshot. The AI reads the details, translates
+                them, and puts the photos in Main image and Gallery. Review everything, set your
+                selling price, then save.
             </p>
 
-            <div style={S.shots}>
+            <div className="aq__shots">
                 {shots.map((src, i) => (
-                    <div key={i} style={S.shot}>
-                        <img src={src} alt={`Screenshot ${i + 1}`} style={S.shotImg} />
-                        <span style={S.shotNum}>{i + 1}</span>
-                        {kinds[i] && <span style={S.kind}>{KIND_LABEL[kinds[i]]}</span>}
-                        <button type="button" style={S.remove}
-                            onClick={() => { setShots(p => p.filter((_, j) => j !== i)); setKinds({}); }}>✕</button>
+                    <div key={i} className="aq__shot">
+                        <img src={src} alt={`Screenshot ${i + 1}`} />
+                        <span className="aq__num sf-num">{i + 1}</span>
+                        {kinds[i] && (
+                            <span className={`aq__kind aq__kind--${kinds[i]}`}>
+                                {kinds[i] === "main" && <Star size={10} weight="fill" />}
+                                {KIND_LABEL[kinds[i]]}
+                            </span>
+                        )}
+                        <button type="button" className="aq__remove" aria-label={`Remove image ${i + 1}`}
+                            onClick={() => { setShots(p => p.filter((_, j) => j !== i)); setKinds({}); }}>
+                            <X size={12} weight="bold" />
+                        </button>
                     </div>
                 ))}
                 {shots.length < MAX_SHOTS && (
-                    <label style={S.add} className="bf-add">
-                        <span style={S.plus}>+</span>
-                        <span style={S.addText}>Add images</span>
-                        <input type="file" accept="image/*" multiple style={{ display: "none" }}
+                    <label className="aq__add">
+                        <Plus size={20} />
+                        <span>Add images</span>
+                        <input type="file" accept="image/*" multiple hidden
                             onChange={e => { addFiles(e.target.files); e.target.value = ""; }} />
                     </label>
                 )}
             </div>
 
-            <textarea className="bf-input" rows={3} value={text}
+            <label className="sf-label" htmlFor="aq-text" style={{ marginBottom: 8 }}>
+                Supplier's message <small>Optional</small>
+            </label>
+            <textarea id="aq-text" className="sf-input" rows={3} value={text} dir="auto"
                 onChange={e => setText(e.target.value)}
-                placeholder="Optional: paste the supplier's message text here…"
-                style={S.textarea} />
+                placeholder="Paste the supplier's message text here…" />
 
-            {error && <p style={S.error}>{error}</p>}
-            {done && !error && <p style={S.ok}>Form filled ✓ Check every field and photo before saving.</p>}
+            {error && <p className="sf-error aq__msg" role="alert">{error}</p>}
+            {done && !error && (
+                <p className="aq__msg aq__ok" role="status">
+                    <Check size={16} weight="bold" /> Form filled. Check every field and photo before saving.
+                </p>
+            )}
 
             <button type="button" onClick={handleRead} disabled={loading}
-                style={{ ...S.btn, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
-                {loading && <span style={S.spinner} />}
-                {loading ? "Reading…" : "Read & fill the form"}
+                className="sf-btn sf-btn--primary sf-btn--block aq__btn">
+                {loading ? <span className="aq__spin" aria-hidden="true" /> : <Sparkle size={16} weight="fill" />}
+                {loading ? "Reading…" : "Read and fill the form"}
             </button>
-        </div>
+        </section>
     );
 };
 
-const KIND_LABEL = { main: "★ Main", product: "Photo", screenshot: "Info", other: "Skipped" };
+const KIND_LABEL = { main: "Main", product: "Photo", screenshot: "Info", other: "Skipped" };
 
-const GOLD_L = "#E5C48A";
-const MUTED  = "#A7A19A";
-const TEXT   = "#F5F1E8";
-
-const S = {
-    card: {
-        padding: "24px",
-        borderRadius: 22,
-        background: "linear-gradient(135deg, rgba(223,169,75,0.10), rgba(255,255,255,0.03))",
-        border: "1px solid rgba(223,169,75,0.3)",
-        boxShadow: "0 24px 60px rgba(0,0,0,0.22)",
-        marginBottom: 28,
-    },
-    head: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 8 },
-    title: { fontSize: 20, fontWeight: 700, color: GOLD_L, margin: 0, fontFamily: "'Cormorant Garamond', serif" },
-    langWrap: { display: "flex", gap: 4, background: "rgba(255,255,255,0.05)", borderRadius: 999, padding: 3 },
-    langBtn: { padding: "6px 14px", border: "none", borderRadius: 999, background: "transparent", color: MUTED, fontSize: 12, fontWeight: 700, cursor: "pointer" },
-    langOn: { background: GOLD_L, color: "#070707" },
-    sub: { fontSize: 13, color: MUTED, lineHeight: 1.7, margin: "0 0 16px" },
-    shots: { display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 },
-    shot: { position: "relative", width: 84, height: 120, borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" },
-    shotImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
-    shotNum: { position: "absolute", bottom: 6, left: 6, background: "rgba(0,0,0,0.7)", color: GOLD_L, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: "2px 7px" },
-    kind: { position: "absolute", top: 6, left: 6, background: GOLD_L, color: "#070707", fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "2px 7px" },
-    remove: { position: "absolute", top: 5, right: 5, width: 22, height: 22, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.9)", color: "#B83A3A", fontSize: 11, fontWeight: 700, cursor: "pointer" },
-    add: { width: 84, height: 120, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, borderRadius: 12, border: "1.5px dashed rgba(229,196,138,0.35)", background: "rgba(229,196,138,0.06)", cursor: "pointer" },
-    plus: { fontSize: 26, color: GOLD_L, lineHeight: 1 },
-    addText: { fontSize: 10, fontWeight: 700, color: GOLD_L },
-    textarea: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: TEXT, fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", marginBottom: 12, boxSizing: "border-box" },
-    error: { color: "#E07A7A", fontSize: 12, fontWeight: 600, margin: "0 0 12px" },
-    ok: { color: GOLD_L, fontSize: 12, fontWeight: 600, margin: "0 0 12px" },
-    btn: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "14px 24px", border: "none", borderRadius: 999, background: "linear-gradient(135deg, #C9A86A, #E5C48A)", color: "#070707", fontSize: 14, fontWeight: 700 },
-    spinner: { display: "inline-block", width: 14, height: 14, border: "2px solid rgba(7,7,7,0.3)", borderTop: "2px solid #070707", borderRadius: "50%", animation: "spin 0.7s linear infinite" },
-};
+const AQ_CSS = `
+    .aq { margin-bottom: 24px; border-color: rgba(217, 178, 111, 0.3); }
+    .aq__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+    .aq__title { display: inline-flex; align-items: center; gap: 8px; }
+    .aq__sub { font-size: 14px; margin-bottom: 18px; max-width: 75ch; }
+    .aq__sub b { color: var(--sf-text); font-weight: 600; }
+    .aq__shots { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+    .aq__shot { position: relative; width: 84px; height: 120px; border-radius: 12px; overflow: hidden; border: 1px solid var(--sf-line); background: var(--sf-surface-2); }
+    .aq__shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .aq__num { position: absolute; bottom: 6px; left: 6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: rgba(17,17,17,.82); color: var(--sf-text); font: 600 11px/20px var(--sf-font); text-align: center; }
+    .aq__kind { position: absolute; top: 6px; left: 6px; height: 20px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; gap: 3px; font: 600 10.5px/1 var(--sf-font); background: rgba(17,17,17,.86); color: var(--sf-text-2); }
+    .aq__kind--main { background: var(--sf-gold); color: var(--sf-on-gold); }
+    .aq__kind--product { color: var(--sf-gold); }
+    .aq__kind--other { color: var(--sf-text-3); }
+    .aq__remove { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: #fff; display: grid; place-items: center; cursor: pointer; }
+    .aq__remove:hover { color: var(--sf-danger); }
+    .aq__add { width: 84px; height: 120px; display: grid; place-content: center; justify-items: center; gap: 6px; border-radius: 12px; border: 1.5px dashed var(--sf-line-2); color: var(--sf-text-2); font-size: 12px; font-weight: 500; text-align: center; cursor: pointer; transition: border-color .2s, color .2s, background-color .2s; }
+    .aq__add:hover { border-color: rgba(217, 178, 111, 0.6); color: var(--sf-gold); background: var(--sf-gold-soft); }
+    .aq__msg { margin-top: 12px; font-size: 14px; }
+    .aq__ok { display: flex; align-items: center; gap: 6px; color: var(--sf-gold); }
+    .aq__btn { margin-top: 16px; }
+    .aq__spin { width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(23, 19, 11, 0.3); border-top-color: var(--sf-on-gold); animation: sfSpin .7s linear infinite; }
+`;
 
 export default AiQuickAdd;

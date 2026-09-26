@@ -1,22 +1,31 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { ImageSquare, Plus, Star, Trash, X } from "@phosphor-icons/react";
+import AdminShell from "./storefront/AdminShell";
 import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import AiQuickAdd from "./AiQuickAdd";
 
-/* ── Field must live OUTSIDE BagForm so it isn't recreated on every render ── */
-const Field = ({ label, required, error, children }) => (
-    <div style={S.formGroup}>
-        <label style={S.label}>{label}{required && " *"}</label>
+/* Field must live OUTSIDE BagForm so it isn't recreated on every render. */
+const Field = ({ id, label, required, hint, error, children }) => (
+    <div className="sf-field">
+        <label className="sf-label" htmlFor={id}>
+            {label}{required && <span className="sf-gold" aria-hidden="true">*</span>}
+            {hint && <small>{hint}</small>}
+        </label>
         {children}
-        {error && <p style={S.fieldError} className="bf-field-error">{error}</p>}
+        {error && <p id={`${id}-error`} className="sf-error bf-field-error">{error}</p>}
     </div>
 );
 
-const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New Bag" }) => {
+/* aria props for an input that may carry an error */
+const errProps = (id, error) => ({
+    "aria-invalid": Boolean(error),
+    "aria-describedby": error ? `${id}-error` : undefined,
+});
+
+const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag" }) => {
     const navigate = useNavigate();
-    const { logout } = useAuth();
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -40,45 +49,6 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
     const [types, setTypes]                         = useState([]);
     const [collections, setCollections]             = useState([]);
     const [supplierPrice, setSupplierPrice]         = useState(null);
-
-    /* ── Global CSS ── */
-    useEffect(() => {
-        const style = document.createElement("style");
-        style.textContent = `
-            *, *::before, *::after { box-sizing: border-box; }
-            @keyframes spin { to { transform: rotate(360deg); } }
-
-            .bf-upload:hover  { border-color: rgba(229,196,138,0.7) !important; background: rgba(229,196,138,0.06) !important; }
-            .bf-add:hover     { border-color: rgba(229,196,138,0.7) !important; background: rgba(229,196,138,0.12) !important; }
-            .bf-input:focus   { border-color: rgba(229,196,138,0.5) !important; background: rgba(229,196,138,0.04) !important; }
-            select.bf-input   { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23E5C48A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px !important; }
-            select.bf-input option { background: #111; color: #F5F1E8; }
-            .bf-submit:hover  { box-shadow: 0 28px 56px rgba(201,168,106,0.36) !important; }
-            .bf-cancel:hover  { background: rgba(255,255,255,0.08) !important; }
-            .bf-logout:hover  { background: rgba(229,196,138,0.1) !important; }
-
-            /* Tablet */
-            @media (max-width: 860px) {
-                .bf-split   { grid-template-columns: 1fr !important; }
-                .bf-header  { padding: 16px 20px !important; }
-                .bf-htitle  { font-size: 20px !important; }
-                .bf-main    { margin: 24px auto !important; padding: 0 16px 48px !important; }
-            }
-            /* Mobile */
-            @media (max-width: 540px) {
-                .bf-header  { padding: 14px 14px !important; gap: 10px !important; flex-wrap: wrap !important; }
-                .bf-htitle  { font-size: 17px !important; letter-spacing: 0.04em !important; }
-                .bf-eyebrow { font-size: 10px !important; }
-                .bf-logout  { padding: 8px 14px !important; font-size: 11px !important; }
-                .bf-card    { padding: 18px 16px !important; border-radius: 18px !important; }
-                .bf-2col    { grid-template-columns: 1fr !important; gap: 0 !important; }
-                .bf-main    { padding: 0 10px 40px !important; margin: 16px auto !important; }
-                .bf-gallery { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-            }
-        `;
-        document.head.appendChild(style);
-        return () => document.head.removeChild(style);
-    }, []);
 
     useEffect(() => {
         if (initialData) {
@@ -225,197 +195,150 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
 
     const handleCancel = () => navigate("/admin/dashboard");
 
+    const typeLabel = (t) => `${t.title} · ${t.category}${t.discount > 0 ? ` (${t.discount}% off)` : ""}`;
+
     return (
-        <div style={S.page}>
+        <AdminShell
+            title={title}
+            subtitle={bagId ? "Changes go live as soon as you save." : "Add the photos and details, then save to publish."}
+            width={1120}
+        >
+            <style>{BF_CSS}</style>
+            <form onSubmit={handleSubmit} className="bf">
+                {!bagId && !initialData && <AiQuickAdd onResult={applyAiResult} />}
 
-            {/* ── Header ── */}
-            <header style={S.header} className="bf-header">
-                <div>
-                    <p style={S.eyebrow} className="bf-eyebrow">Admin Craft</p>
-                    <h1 style={S.headerTitle} className="bf-htitle">
-                        TRÉSOR BAGS — {title}
-                    </h1>
-                </div>
-                <button style={S.logoutBtn} className="bf-logout" onClick={logout}>
-                    Logout
-                </button>
-            </header>
+                <div className="bf-split">
 
-            {/* ── Main ── */}
-            <main style={S.container} className="bf-main">
-                <form onSubmit={handleSubmit}>
-                    {!bagId && !initialData && <AiQuickAdd onResult={applyAiResult} />}
+                    {/* Left: images */}
+                    <div className="bf-col">
 
-                    <div style={S.splitGrid} className="bf-split">
-
-                        {/* ── LEFT: images ── */}
-                        <div style={S.col}>
-
-                            {/* Main Image */}
-                            <div style={S.card} className="bf-card">
-                                <div style={S.cardHeader}>
-                                    <h2 style={S.cardTitle}>Main Image</h2>
-                                    <span style={S.required}>Required</span>
+                        <section className="sf-panel bf-panel" aria-labelledby="bf-main-h">
+                            <div className="bf-panel__head">
+                                <h2 id="bf-main-h" className="sf-h3">Main image</h2>
+                                <span className="sf-faint bf-meta">Required</span>
+                            </div>
+                            {imagePreview ? (
+                                <div className="bf-main">
+                                    <div className="sf-tile bf-main__tile">
+                                        <img src={imagePreview} alt="Main" />
+                                    </div>
+                                    <button type="button" className="sf-btn sf-btn--ghost sf-btn--sm"
+                                        onClick={handleRemoveMainImage}>
+                                        <Trash size={16} /> Remove and reupload
+                                    </button>
                                 </div>
-                                {imagePreview ? (
-                                    <div style={S.previewWrap}>
-                                        <img src={imagePreview} alt="Main" style={S.previewImg} />
-                                        <button type="button" style={S.removeMainBtn}
-                                            onClick={handleRemoveMainImage}>
-                                            Remove &amp; Reupload
+                            ) : (
+                                <label className={`bf-drop${errors.mainImage ? " bf-drop--err" : ""}`}>
+                                    <ImageSquare size={32} weight="light" className="sf-gold" />
+                                    <span className="bf-drop__title">Upload the main image</span>
+                                    <span className="sf-faint bf-drop__hint">Click to browse</span>
+                                    <input type="file" accept="image/*"
+                                        onChange={handleMainImageChange} hidden />
+                                </label>
+                            )}
+                            {errors.mainImage && <p className="sf-error bf-field-error bf-err-gap">{errors.mainImage}</p>}
+                        </section>
+
+                        <section className="sf-panel bf-panel" aria-labelledby="bf-gallery-h">
+                            <div className="bf-panel__head">
+                                <h2 id="bf-gallery-h" className="sf-h3">Gallery</h2>
+                                <span className="sf-faint sf-num bf-meta">{sideImagePreviews.length}/10</span>
+                            </div>
+                            <p className="sf-muted bf-sub">Optional photos for the product slider.</p>
+                            <div className="bf-gallery">
+                                {sideImagePreviews.map((src, i) => (
+                                    <div key={i} className="bf-thumb">
+                                        <div className="sf-tile bf-thumb__tile">
+                                            <img src={src} alt={`Gallery photo ${i + 1}`} />
+                                        </div>
+                                        <button type="button" className="bf-thumb__remove"
+                                            onClick={() => handleRemoveSideImage(i)}
+                                            aria-label={`Remove gallery photo ${i + 1}`}>
+                                            <X size={14} weight="bold" />
+                                        </button>
+                                        <button type="button" className="bf-thumb__main"
+                                            onClick={() => handleMakeMain(i)}
+                                            title="Make this the main image">
+                                            <Star size={12} weight="fill" /> Main
                                         </button>
                                     </div>
-                                ) : (
-                                    <label style={S.uploadArea} className="bf-upload">
-                                        <span style={S.uploadIcon}>📷</span>
-                                        <span style={S.uploadText}>Upload hero image</span>
-                                        <span style={S.uploadHint}>Click to browse</span>
-                                        <input type="file" accept="image/*"
-                                            onChange={handleMainImageChange} style={S.hidden} />
+                                ))}
+                                {sideImagePreviews.length < 10 && (
+                                    <label className="bf-add">
+                                        <Plus size={22} />
+                                        <span>Add</span>
+                                        <input type="file" accept="image/*" multiple
+                                            onChange={handleSideImageAdd} hidden />
                                     </label>
                                 )}
-                                {errors.mainImage && <p style={S.fieldError} className="bf-field-error">{errors.mainImage}</p>}
                             </div>
+                            {errors.sideImages && <p className="sf-error bf-err-gap">{errors.sideImages}</p>}
+                        </section>
+                    </div>
 
-                            {/* Gallery */}
-                            <div style={S.card} className="bf-card">
-                                <div style={S.cardHeader}>
-                                    <h2 style={S.cardTitle}>Gallery Images</h2>
-                                    <span style={S.badge}>{sideImagePreviews.length}/10</span>
-                                </div>
-                                <p style={S.cardSub}>Optional images for the luxury slider.</p>
-                                <div style={S.gallery} className="bf-gallery">
-                                    {sideImagePreviews.map((src, i) => (
-                                        <div key={i} style={S.galleryItem}>
-                                            <img src={src} alt={`Side ${i}`} style={S.galleryImg} />
-                                            <button type="button" style={S.removeThumb}
-                                                onClick={() => handleRemoveSideImage(i)}>✕</button>
-                                            <button type="button" style={S.makeMain}
-                                                onClick={() => handleMakeMain(i)}>★ Main</button>
-                                        </div>
-                                    ))}
-                                    {sideImagePreviews.length < 10 && (
-                                        <label style={S.addThumb} className="bf-add">
-                                            <span style={S.addPlus}>+</span>
-                                            <span style={S.addText}>Add</span>
-                                            <input type="file" accept="image/*" multiple
-                                                onChange={handleSideImageAdd} style={S.hidden} />
-                                        </label>
+                    {/* Right: details */}
+                    <div className="bf-col">
+                        <section className="sf-panel bf-panel" aria-labelledby="bf-details-h">
+                            <h2 id="bf-details-h" className="sf-h3" style={{ marginBottom: 20 }}>Details</h2>
+
+                            {supplierPrice && (
+                                <div className="bf-hint">
+                                    {supplierPrice.amount != null && (
+                                        <div>Supplier price: <b className="sf-num">{supplierPrice.amount} {supplierPrice.currency}</b>. Set your selling price below.</div>
                                     )}
+                                    {supplierPrice.notes && <div dir="auto">{supplierPrice.notes}</div>}
                                 </div>
-                                {errors.sideImages && <p style={S.fieldError}>{errors.sideImages}</p>}
-                            </div>
-                        </div>
+                            )}
 
-                        {/* ── RIGHT: details ── */}
-                        <div style={S.col}>
-                            <div style={S.card} className="bf-card">
-                                <h2 style={{ ...S.cardTitle, marginBottom: 24 }}>Bag Details</h2>
-
-                                {supplierPrice && (
-                                    <div style={S.aiHint}>
-                                        {supplierPrice.amount != null && (
-                                            <div>Supplier price: <b>{supplierPrice.amount} {supplierPrice.currency}</b> — set your selling price below.</div>
-                                        )}
-                                        {supplierPrice.notes && <div dir="auto">{supplierPrice.notes}</div>}
-                                    </div>
-                                )}
-
-                                <Field label="Title" required error={errors.title}>
-                                    <input className="bf-input" type="text" name="title" dir="auto"
+                            <div className="bf-fields">
+                                <Field id="bf-title" label="Title" required error={errors.title}>
+                                    <input id="bf-title" className="sf-input" type="text" name="title" dir="auto"
                                         value={formData.title} onChange={handleChange}
-                                        placeholder="e.g., Classic Leather Tote"
-                                        style={{ ...S.input, ...(errors.title ? S.inputErr : {}) }} />
+                                        placeholder="e.g. Classic leather tote"
+                                        {...errProps("bf-title", errors.title)} />
                                 </Field>
 
-                                <Field label="Description" required error={errors.description}>
-                                    <textarea className="bf-input" name="description" dir="auto"
+                                <Field id="bf-description" label="Description" required error={errors.description}>
+                                    <textarea id="bf-description" className="sf-input" name="description" dir="auto"
                                         value={formData.description} onChange={handleChange}
-                                        placeholder="Detailed description of the bag…"
+                                        placeholder="Materials, size, what fits inside…"
                                         rows={5}
-                                        style={{ ...S.input, ...S.textarea, ...(errors.description ? S.inputErr : {}) }} />
+                                        {...errProps("bf-description", errors.description)} />
                                 </Field>
 
-                                <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Price ($)" required error={errors.price}>
-                                        <input className="bf-input" type="number" name="price"
+                                <div className="bf-2col">
+                                    <Field id="bf-price" label="Price" hint="USD" required error={errors.price}>
+                                        <input id="bf-price" className="sf-input sf-num" type="number" name="price"
                                             value={formData.price} onChange={handleChange}
-                                            placeholder="0.00" min="0" step="0.01"
-                                            style={{ ...S.input, ...(errors.price ? S.inputErr : {}) }} />
+                                            placeholder="0.00" min="0" step="0.01" inputMode="decimal"
+                                            {...errProps("bf-price", errors.price)} />
                                     </Field>
-                                    <Field label="Color" required error={errors.color}>
-                                        <input className="bf-input" type="text" name="color"
+                                    <Field id="bf-color" label="Color" required error={errors.color}>
+                                        <input id="bf-color" className="sf-input" type="text" name="color"
                                             value={formData.color} onChange={handleChange}
-                                            placeholder="e.g., Black"
-                                            style={{ ...S.input, ...(errors.color ? S.inputErr : {}) }} />
+                                            placeholder="e.g. Black"
+                                            {...errProps("bf-color", errors.color)} />
                                     </Field>
                                 </div>
 
-                                <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Capacity">
-                                        <input className="bf-input" type="text" name="capacity"
-                                            value={formData.capacity} onChange={handleChange}
-                                            placeholder="e.g., 20L" style={S.input} />
-                                    </Field>
-                                    <Field label="Weight (kg)">
-                                        <input className="bf-input" type="number" name="weight"
-                                            value={formData.weight} onChange={handleChange}
-                                            placeholder="0.00" min="0" step="0.01" style={S.input} />
-                                    </Field>
-                                </div>
-
-                                <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Height (cm)">
-                                        <input className="bf-input" type="number" name="dimensions.height"
-                                            value={formData.dimensions.height} onChange={handleChange}
-                                            placeholder="0" min="0" style={S.input} />
-                                    </Field>
-                                    <Field label="Width (cm)">
-                                        <input className="bf-input" type="number" name="dimensions.width"
-                                            value={formData.dimensions.width} onChange={handleChange}
-                                            placeholder="0" min="0" style={S.input} />
-                                    </Field>
-                                </div>
-
-                                <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Depth (cm)">
-                                        <input className="bf-input" type="number" name="dimensions.depth"
-                                            value={formData.dimensions.depth} onChange={handleChange}
-                                            placeholder="0" min="0" style={S.input} />
-                                    </Field>
-                                    <Field label="Stock (units)">
-                                        <input className="bf-input" type="number" name="stock"
-                                            value={formData.stock} onChange={handleChange}
-                                            placeholder="0" min="0" style={S.input} />
-                                    </Field>
-                                </div>
-
-                                <div style={S.twoCol} className="bf-2col">
-                                    <Field label="Type" required error={errors.typeId}>
-                                        <select
-                                            className="bf-input"
-                                            name="typeId"
-                                            value={formData.typeId || ""}
-                                            onChange={handleChange}
-                                            style={{ ...S.input, cursor: "pointer", ...(errors.typeId ? S.inputErr : {}) }}
-                                        >
-                                            <option value="">— Select type —</option>
+                                <div className="bf-2col">
+                                    <Field id="bf-type" label="Type" required error={errors.typeId}>
+                                        <select id="bf-type" className="sf-input" name="typeId"
+                                            value={formData.typeId || ""} onChange={handleChange}
+                                            style={{ color: formData.typeId ? undefined : "var(--sf-text-3)" }}
+                                            {...errProps("bf-type", errors.typeId)}>
+                                            <option value="">Select type</option>
                                             {types.map(t => (
-                                                <option key={t._id} value={t._id}>
-                                                    {t.title} · {t.category}{t.discount > 0 ? ` (${t.discount}% off)` : ""}
-                                                </option>
+                                                <option key={t._id} value={t._id}>{typeLabel(t)}</option>
                                             ))}
                                         </select>
                                     </Field>
-                                    <Field label="Collection" required error={errors.collectionId}>
-                                        <select
-                                            className="bf-input"
-                                            name="collectionId"
-                                            value={formData.collectionId || ""}
-                                            onChange={handleChange}
-                                            style={{ ...S.input, cursor: "pointer", ...(errors.collectionId ? S.inputErr : {}) }}
-                                        >
-                                            <option value="">— Select collection —</option>
+                                    <Field id="bf-collection" label="Collection" required error={errors.collectionId}>
+                                        <select id="bf-collection" className="sf-input" name="collectionId"
+                                            value={formData.collectionId || ""} onChange={handleChange}
+                                            style={{ color: formData.collectionId ? undefined : "var(--sf-text-3)" }}
+                                            {...errProps("bf-collection", errors.collectionId)}>
+                                            <option value="">Select collection</option>
                                             {collections.map(c => (
                                                 <option key={c._id} value={c._id}>{c.title}</option>
                                             ))}
@@ -423,418 +346,136 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                     </Field>
                                 </div>
 
-                                <Field label="Gender">
-                                    <select
-                                        className="bf-input"
-                                        name="gender"
-                                        value={formData.gender || ""}
-                                        onChange={handleChange}
-                                        style={{ ...S.input, cursor: "pointer" }}
-                                    >
-                                        <option value="">— Select gender —</option>
-                                        <option value="Men's">Men's</option>
-                                        <option value="Women's">Women's</option>
-                                        <option value="Unisex">Unisex</option>
-                                    </select>
-                                </Field>
-                            </div>
-
-                            {/* Publish panel */}
-                            <div style={S.publishCard} className="bf-card">
-                                <div style={S.publishTop}>
-                                    <span style={S.publishDot} />
-                                    <h3 style={S.publishTitle}>Ready to publish</h3>
-                                </div>
-                                <p style={S.publishText}>
-                                    Save once the hero image and all specs are complete.
-                                </p>
-                                {errors.submit && <div style={{ ...S.errorBox, marginBottom: 14 }}>{errors.submit}</div>}
-                                {missing > 0 && !errors.submit && (
-                                    <div style={{ ...S.errorBox, marginBottom: 14 }}>
-                                        Please fill the {missing === 1 ? "field" : `${missing} fields`} marked in red before saving.
-                                    </div>
-                                )}
-                                <div style={S.btnGroup}>
-                                    <button type="submit" className="bf-submit"
-                                        disabled={loading}
-                                        style={{
-                                            ...S.submitBtn,
-                                            opacity: loading ? 0.7 : 1,
-                                            cursor: loading ? "not-allowed" : "pointer",
-                                        }}>
-                                        {loading && <span style={S.spinnerInline} />}
-                                        {loading ? "Saving…" : "Save Bag"}
-                                    </button>
-                                    <button type="button" className="bf-cancel"
-                                        onClick={handleCancel} style={S.cancelBtn}>
-                                        Cancel
-                                    </button>
+                                <div className="bf-2col">
+                                    <Field id="bf-gender" label="Gender" hint="Optional">
+                                        <select id="bf-gender" className="sf-input" name="gender"
+                                            value={formData.gender || ""} onChange={handleChange}
+                                            style={{ color: formData.gender ? undefined : "var(--sf-text-3)" }}>
+                                            <option value="">Select gender</option>
+                                            <option value="Men's">Men's</option>
+                                            <option value="Women's">Women's</option>
+                                            <option value="Unisex">Unisex</option>
+                                        </select>
+                                    </Field>
+                                    <Field id="bf-stock" label="Stock" hint="Units">
+                                        <input id="bf-stock" className="sf-input sf-num" type="number" name="stock"
+                                            value={formData.stock} onChange={handleChange}
+                                            placeholder="0" min="0" inputMode="numeric" />
+                                    </Field>
                                 </div>
                             </div>
-                        </div>
 
+                            <h3 className="bf-subhead">Size and weight <span className="sf-faint">Optional</span></h3>
+                            <div className="bf-fields">
+                                <div className="bf-3col">
+                                    <Field id="bf-height" label="Height" hint="cm">
+                                        <input id="bf-height" className="sf-input sf-num" type="number" name="dimensions.height"
+                                            value={formData.dimensions.height} onChange={handleChange}
+                                            placeholder="0" min="0" inputMode="decimal" />
+                                    </Field>
+                                    <Field id="bf-width" label="Width" hint="cm">
+                                        <input id="bf-width" className="sf-input sf-num" type="number" name="dimensions.width"
+                                            value={formData.dimensions.width} onChange={handleChange}
+                                            placeholder="0" min="0" inputMode="decimal" />
+                                    </Field>
+                                    <Field id="bf-depth" label="Depth" hint="cm">
+                                        <input id="bf-depth" className="sf-input sf-num" type="number" name="dimensions.depth"
+                                            value={formData.dimensions.depth} onChange={handleChange}
+                                            placeholder="0" min="0" inputMode="decimal" />
+                                    </Field>
+                                </div>
+                                <div className="bf-2col">
+                                    <Field id="bf-weight" label="Weight" hint="kg">
+                                        <input id="bf-weight" className="sf-input sf-num" type="number" name="weight"
+                                            value={formData.weight} onChange={handleChange}
+                                            placeholder="0.00" min="0" step="0.01" inputMode="decimal" />
+                                    </Field>
+                                    <Field id="bf-capacity" label="Capacity">
+                                        <input id="bf-capacity" className="sf-input" type="text" name="capacity"
+                                            value={formData.capacity} onChange={handleChange}
+                                            placeholder="e.g. 20L" />
+                                    </Field>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Publish */}
+                        <section className="sf-panel bf-panel bf-publish" aria-labelledby="bf-publish-h">
+                            <h2 id="bf-publish-h" className="sf-h3">Ready to publish</h2>
+                            <p className="sf-muted bf-sub">Save once the main image and the details are complete.</p>
+                            {errors.submit && <div className="bf-alert" role="alert">{errors.submit}</div>}
+                            {missing > 0 && !errors.submit && (
+                                <div className="bf-alert" role="alert">
+                                    Please fill the {missing === 1 ? "field" : `${missing} fields`} marked in red before saving.
+                                </div>
+                            )}
+                            <div className="bf-actions">
+                                <button type="button" className="sf-btn sf-btn--ghost" onClick={handleCancel}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="sf-btn sf-btn--primary bf-save" disabled={loading}>
+                                    {loading && <span className="bf-spinner" aria-hidden="true" />}
+                                    {loading ? "Saving…" : "Save bag"}
+                                </button>
+                            </div>
+                        </section>
                     </div>
-                </form>
-            </main>
-        </div>
+
+                </div>
+            </form>
+        </AdminShell>
     );
 };
 
-/* ── Tokens ── */
-const GOLD   = "#dfa94b";
-const GOLD_L = "#E5C48A";
-const BG     = "#070707";
-const BORDER = "rgba(255,255,255,0.08)";
-const MUTED  = "#A7A19A";
-const TEXT   = "#F5F1E8";
+const BF_CSS = `
+    .bf-split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+    .bf-col { display: grid; gap: 24px; min-width: 0; }
+    .bf-panel__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .bf-meta { font-size: 13px; }
+    .bf-sub { font-size: 14px; margin: -8px 0 16px; }
+    .bf-publish .bf-sub { margin: 6px 0 18px; }
+    .bf-err-gap { margin-top: 10px !important; }
+    .bf-fields { display: grid; gap: 18px; }
+    .bf-2col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .bf-3col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .bf-subhead { margin: 28px 0 16px !important; padding-top: 22px; border-top: 1px solid var(--sf-line); font-size: 15px; font-weight: 550; display: flex; gap: 8px; align-items: baseline; }
+    .bf-subhead span { font-size: 13px; font-weight: 400; }
+    .bf .sf-label span.sf-gold { margin-left: -4px; }
 
-const S = {
-    page: {
-        minHeight: "100vh",
-        background: `radial-gradient(ellipse at top left, rgba(201,168,106,0.13), transparent 36%), ${BG}`,
-        fontFamily: "'Inter', sans-serif",
-        color: TEXT,
-        overflowX: "hidden",
-    },
-    header: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "20px 36px",
-        background: "rgba(7,7,7,0.94)",
-        borderBottom: `1px solid ${BORDER}`,
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        backdropFilter: "blur(18px)",
-        gap: 12,
-    },
-    eyebrow: {
-        fontSize: 11,
-        color: MUTED,
-        letterSpacing: "0.3em",
-        textTransform: "uppercase",
-        margin: "0 0 6px",
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 700,
-        margin: 0,
-        color: GOLD_L,
-        fontFamily: "'Cormorant Garamond', serif",
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        whiteSpace: "nowrap",
-    },
-    logoutBtn: {
-        padding: "10px 22px",
-        background: "transparent",
-        color: GOLD_L,
-        border: `1px solid rgba(229,196,138,0.4)`,
-        borderRadius: 999,
-        cursor: "pointer",
-        fontSize: 12,
-        fontWeight: 700,
-        whiteSpace: "nowrap",
-        flexShrink: 0,
-        transition: "background 0.2s",
-    },
-    container: {
-        maxWidth: 1200,
-        margin: "32px auto",
-        padding: "0 20px 60px",
-    },
-    splitGrid: {
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 28,
-        alignItems: "start",
-    },
-    col: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-    },
-    card: {
-        padding: "26px 24px",
-        background: "rgba(255,255,255,0.035)",
-        borderRadius: 22,
-        border: `1px solid ${BORDER}`,
-        boxShadow: "0 24px 60px rgba(0,0,0,0.22)",
-    },
-    cardHeader: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 16,
-    },
-    cardTitle: {
-        fontSize: 18,
-        fontWeight: 700,
-        color: TEXT,
-        margin: 0,
-        fontFamily: "'Cormorant Garamond', serif",
-    },
-    cardSub: {
-        fontSize: 13,
-        color: MUTED,
-        margin: "0 0 18px",
-        lineHeight: 1.7,
-    },
-    required: {
-        fontSize: 11,
-        color: GOLD,
-        background: "rgba(223,169,75,0.1)",
-        border: `1px solid rgba(223,169,75,0.22)`,
-        borderRadius: 999,
-        padding: "4px 10px",
-        fontWeight: 700,
-    },
-    badge: {
-        fontSize: 12,
-        color: GOLD_L,
-        background: "rgba(229,196,138,0.1)",
-        border: `1px solid rgba(229,196,138,0.22)`,
-        borderRadius: 999,
-        padding: "4px 12px",
-        fontWeight: 700,
-    },
-    uploadArea: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        padding: "44px 20px",
-        border: "1.5px dashed rgba(229,196,138,0.32)",
-        borderRadius: 18,
-        cursor: "pointer",
-        background: "rgba(255,255,255,0.02)",
-        transition: "all 0.25s",
-    },
-    uploadIcon: { fontSize: 38, lineHeight: 1 },
-    uploadText: { fontSize: 14, fontWeight: 700, color: TEXT },
-    uploadHint: { fontSize: 12, color: MUTED },
-    hidden: { display: "none" },
-    previewWrap: {
-        position: "relative",
-        borderRadius: 18,
-        overflow: "hidden",
-        border: `1px solid ${BORDER}`,
-    },
-    previewImg: {
-        width: "100%",
-        display: "block",
-        objectFit: "cover",
-        maxHeight: 340,
-    },
-    removeMainBtn: {
-        position: "absolute",
-        bottom: 16,
-        left: "50%",
-        transform: "translateX(-50%)",
-        padding: "10px 20px",
-        background: "rgba(201,168,106,0.95)",
-        color: BG,
-        border: "none",
-        borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 700,
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.28)",
-    },
-    gallery: {
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: 12,
-    },
-    galleryItem: {
-        position: "relative",
-        borderRadius: 14,
-        overflow: "hidden",
-        aspectRatio: "1/1",
-        background: "rgba(255,255,255,0.04)",
-        border: `1px solid ${BORDER}`,
-    },
-    galleryImg: { width: "100%", height: "100%", objectFit: "cover", display: "block" },
-    removeThumb: {
-        position: "absolute", top: 8, right: 8,
-        width: 26, height: 26,
-        background: "rgba(255,255,255,0.9)",
-        color: "#B83A3A",
-        border: "none",
-        borderRadius: "50%",
-        cursor: "pointer",
-        fontSize: 12,
-        fontWeight: 700,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    makeMain: {
-        position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
-        padding: "4px 10px",
-        background: "rgba(7,7,7,0.75)",
-        color: GOLD_L,
-        border: `1px solid rgba(229,196,138,0.4)`,
-        borderRadius: 999,
-        cursor: "pointer",
-        fontSize: 10,
-        fontWeight: 700,
-        whiteSpace: "nowrap",
-    },
-    addThumb: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 6,
-        aspectRatio: "1/1",
-        borderRadius: 14,
-        background: "rgba(229,196,138,0.06)",
-        border: "1.5px dashed rgba(229,196,138,0.35)",
-        cursor: "pointer",
-        transition: "all 0.2s",
-    },
-    addPlus: { fontSize: 28, color: GOLD_L, lineHeight: 1 },
-    addText: { fontSize: 11, fontWeight: 700, color: GOLD_L, letterSpacing: "0.06em" },
-    formGroup: {
-        display: "flex",
-        flexDirection: "column",
-        marginBottom: 18,
-    },
-    label: {
-        fontSize: 11,
-        fontWeight: 700,
-        color: MUTED,
-        marginBottom: 8,
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-    },
-    input: {
-        padding: "13px 16px",
-        border: `1px solid rgba(255,255,255,0.1)`,
-        borderRadius: 12,
-        fontSize: 14,
-        fontFamily: "inherit",
-        outline: "none",
-        background: "rgba(255,255,255,0.04)",
-        color: TEXT,
-        width: "100%",
-        boxSizing: "border-box",
-        transition: "border-color 0.2s, background 0.2s",
-    },
-    textarea: {
-        resize: "vertical",
-        minHeight: 120,
-        lineHeight: 1.7,
-    },
-    inputErr: {
-        borderColor: "#B83A3A",
-        background: "rgba(184,58,58,0.07)",
-    },
-    fieldError: {
-        color: GOLD,
-        fontSize: 11,
-        margin: "6px 0 0",
-        fontWeight: 600,
-    },
-    twoCol: {
-        display: "grid",
-        gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-        gap: 16,
-    },
-    publishCard: {
-        padding: "24px",
-        borderRadius: 22,
-        background: "rgba(223,169,75,0.05)",
-        border: `1px solid rgba(223,169,75,0.16)`,
-        boxShadow: "0 20px 50px rgba(0,0,0,0.18)",
-    },
-    publishTop: {
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        marginBottom: 10,
-    },
-    publishDot: {
-        width: 8, height: 8,
-        borderRadius: "50%",
-        background: GOLD,
-        boxShadow: `0 0 8px ${GOLD}`,
-        flexShrink: 0,
-    },
-    publishTitle: {
-        fontSize: 16,
-        fontWeight: 700,
-        color: TEXT,
-        margin: 0,
-    },
-    publishText: {
-        color: MUTED,
-        fontSize: 13,
-        lineHeight: 1.75,
-        margin: "0 0 20px",
-    },
-    btnGroup: {
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-    },
-    submitBtn: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        padding: "15px 28px",
-        background: `linear-gradient(135deg, #C9A86A, ${GOLD_L})`,
-        color: BG,
-        border: "none",
-        borderRadius: 999,
-        fontSize: 14,
-        fontWeight: 700,
-        boxShadow: "0 18px 40px rgba(201,168,106,0.22)",
-        transition: "box-shadow 0.25s",
-    },
-    cancelBtn: {
-        padding: "14px 28px",
-        background: "rgba(255,255,255,0.04)",
-        color: TEXT,
-        border: `1px solid ${BORDER}`,
-        borderRadius: 999,
-        fontSize: 14,
-        fontWeight: 700,
-        cursor: "pointer",
-        transition: "background 0.2s",
-    },
-    spinnerInline: {
-        display: "inline-block",
-        width: 14, height: 14,
-        border: `2px solid rgba(7,7,7,0.3)`,
-        borderTop: `2px solid ${BG}`,
-        borderRadius: "50%",
-        animation: "spin 0.7s linear infinite",
-    },
-    aiHint: {
-        padding: "12px 14px",
-        marginBottom: 20,
-        borderRadius: 12,
-        fontSize: 13,
-        lineHeight: 1.7,
-        color: GOLD_L,
-        background: "rgba(223,169,75,0.08)",
-        border: `1px solid rgba(223,169,75,0.22)`,
-    },
-    errorBox: {
-        padding: 16,
-        background: "rgba(184,58,58,0.12)",
-        color: TEXT,
-        borderRadius: 14,
-        fontSize: 13,
-        marginBottom: 24,
-        border: "1px solid rgba(184,58,58,0.28)",
-    },
-};
+    .bf-main { display: grid; gap: 12px; justify-items: start; }
+    .bf-main__tile { aspect-ratio: 1 / 1; cursor: default; }
+    .bf-drop { display: grid; justify-items: center; gap: 6px; padding: 48px 20px; border-radius: var(--sf-r-card); border: 1.5px dashed var(--sf-line-2); background: var(--sf-surface-2); cursor: pointer; text-align: center; transition: border-color .2s, background-color .2s; }
+    .bf-drop:hover { border-color: rgba(217, 178, 111, 0.6); background: var(--sf-gold-soft); }
+    .bf-drop--err { border-color: var(--sf-danger); }
+    .bf-drop__title { font-weight: 550; margin-top: 6px; }
+    .bf-drop__hint { font-size: 13px; }
+
+    .bf-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+    .bf-thumb { position: relative; }
+    .bf-thumb__tile { aspect-ratio: 1 / 1; cursor: default; }
+    .bf-thumb__tile img { padding: 6%; }
+    .bf-thumb__remove { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: #fff; display: grid; place-items: center; cursor: pointer; }
+    .bf-thumb__remove:hover { color: var(--sf-danger); }
+    .bf-thumb__main { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); height: 26px; padding: 0 10px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: var(--sf-gold); display: inline-flex; align-items: center; gap: 4px; font: 600 12px/1 var(--sf-font); cursor: pointer; white-space: nowrap; }
+    .bf-thumb__main:hover { background: #111; color: var(--sf-gold-2); }
+    .bf-add { aspect-ratio: 1 / 1; display: grid; place-content: center; justify-items: center; gap: 4px; border-radius: var(--sf-r-card); border: 1.5px dashed var(--sf-line-2); color: var(--sf-text-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: border-color .2s, color .2s, background-color .2s; }
+    .bf-add:hover { border-color: rgba(217, 178, 111, 0.6); color: var(--sf-gold); background: var(--sf-gold-soft); }
+
+    .bf-hint { display: grid; gap: 4px; padding: 12px 14px; margin-bottom: 20px; border-radius: var(--sf-r-input); font-size: 14px; color: var(--sf-text); background: var(--sf-gold-soft); border: 1px solid rgba(217, 178, 111, 0.3); }
+    .bf-hint b { color: var(--sf-gold); font-weight: 600; }
+
+    .bf-alert { padding: 12px 14px; margin-bottom: 16px; border-radius: var(--sf-r-input); font-size: 14px; color: var(--sf-text); background: rgba(240, 144, 127, 0.1); border: 1px solid rgba(240, 144, 127, 0.35); }
+    .bf-actions { display: flex; gap: 12px; }
+    .bf-save { flex: 1; }
+    .bf-spinner { width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(23, 19, 11, 0.3); border-top-color: var(--sf-on-gold); animation: sfSpin .7s linear infinite; }
+
+    @media (max-width: 860px) {
+        .bf-split { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+        .bf-2col { grid-template-columns: 1fr; }
+        .bf-3col { gap: 8px; }
+    }
+`;
 
 export default BagForm;

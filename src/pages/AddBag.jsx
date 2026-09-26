@@ -14,7 +14,7 @@ const AddBag = () => {
     return (
         <BagForm
             onSubmit={handleSubmit}
-            title="Add New Bag"
+            title="Add bag"
         />
     );
 };

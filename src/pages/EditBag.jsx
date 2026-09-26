@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, WarningCircle } from "@phosphor-icons/react";
 import BagForm from "../components/BagForm";
+import AdminShell from "../components/storefront/AdminShell";
 import { getBagById, updateBag } from "../services/bagService";
 
 const EditBag = () => {
@@ -38,22 +40,40 @@ const EditBag = () => {
 
     if (loading) {
         return (
-            <div style={styles.loadingPage}>
-                <div style={styles.spinner}></div>
-                <p>Loading bag details...</p>
-            </div>
+            <AdminShell title="Edit bag" subtitle="Loading bag details…" width={1120}>
+                <div className="eb-skel" aria-busy="true" aria-label="Loading bag details">
+                    <div className="sf-panel eb-skel__col">
+                        <div className="sf-skel" style={{ height: 22, width: "40%" }} />
+                        <div className="sf-skel" style={{ aspectRatio: "1 / 1", borderRadius: 16 }} />
+                    </div>
+                    <div className="sf-panel eb-skel__col">
+                        <div className="sf-skel" style={{ height: 22, width: "30%" }} />
+                        {[0, 1, 2, 3, 4].map(i => (
+                            <div key={i} style={{ display: "grid", gap: 8 }}>
+                                <div className="sf-skel" style={{ height: 14, width: "22%" }} />
+                                <div className="sf-skel" style={{ height: 48, borderRadius: 12 }} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <style>{EB_CSS}</style>
+            </AdminShell>
         );
     }
 
     if (error) {
         return (
-            <div style={styles.errorPage}>
-                <h2>Error</h2>
-                <p>{error}</p>
-                <button onClick={() => navigate("/admin/dashboard")}>
-                    Go Back
-                </button>
-            </div>
+            <AdminShell title="Edit bag" width={1120}>
+                <div className="sf-panel" role="alert" style={{ maxWidth: 520, display: "grid", gap: 10, justifyItems: "start" }}>
+                    <WarningCircle size={28} style={{ color: "var(--sf-danger)" }} />
+                    <h2 className="sf-h3">Could not load this bag</h2>
+                    <p className="sf-muted">{error}</p>
+                    <button className="sf-btn sf-btn--ghost sf-btn--sm" style={{ marginTop: 8 }}
+                        onClick={() => navigate("/admin/dashboard")}>
+                        <ArrowLeft size={16} /> Back to bags
+                    </button>
+                </div>
+            </AdminShell>
         );
     }
 
@@ -62,41 +82,15 @@ const EditBag = () => {
             bagId={id}
             initialData={bagData}
             onSubmit={handleSubmit}
-            title="Edit Bag"
+            title="Edit bag"
         />
     ) : null;
 };
 
-const styles = {
-    loadingPage: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "radial-gradient(circle at top, rgba(201,168,106,0.12), transparent 18%), #070707",
-        color: "#F5F1E8",
-        fontFamily: "'Inter', sans-serif",
-    },
-    spinner: {
-        width: "40px",
-        height: "40px",
-        border: "4px solid rgba(255,255,255,0.12)",
-        borderTop: "4px solid #E5C48A",
-        borderRadius: "50%",
-        animation: "spin 1s linear infinite",
-        marginBottom: "16px",
-    },
-    errorPage: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "100vh",
-        background: "radial-gradient(circle at top, rgba(201,168,106,0.12), transparent 18%), #070707",
-        color: "#F5F1E8",
-        fontFamily: "'Inter', sans-serif",
-    },
-};
+const EB_CSS = `
+    .eb-skel { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+    .eb-skel__col { display: grid; gap: 18px; }
+    @media (max-width: 860px) { .eb-skel { grid-template-columns: 1fr; } }
+`;
 
 export default EditBag;

@@ -1,4 +1,6 @@
 import { useEffect } from "react";
+import "@fontsource-variable/geist";
+import "./styles/storefront.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 /* Scrolls to top on every route change */
@@ -28,19 +30,6 @@ import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminStatsPage from "./pages/AdminStatsPage";
 
 const App = () => {
-  /* ── Global mouse tracker for button glow effect ── */
-  useEffect(() => {
-    const onMove = (e) => {
-      const btn = e.target.closest("button");
-      if (!btn) return;
-      const r = btn.getBoundingClientRect();
-      btn.style.setProperty("--mx", `${e.clientX - r.left}px`);
-      btn.style.setProperty("--my", `${e.clientY - r.top}px`);
-    };
-    document.addEventListener("mousemove", onMove);
-    return () => document.removeEventListener("mousemove", onMove);
-  }, []);
-
   return (
     <CartProvider>
       <AuthProvider>

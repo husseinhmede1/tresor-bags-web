@@ -6,13 +6,12 @@ import { sized } from "../utils/image";
 // Ask-the-shop box: a question and/or a photo in, a short answer plus matching bags out.
 // Answers come only from the catalog (enforced on the server).
 
-const GOLD_L = "#E5C48A";
-const GOLD_D = "#C9A86A";
-const TEXT   = "#F5F1E8";
-const SOFT   = "#A39A90";   // secondary text, AA on the near-black background
-const BORDER = "rgba(201,168,106,0.18)";
-const SERIF  = "'Cormorant Garamond', serif";
-const SANS   = "'Inter', system-ui, sans-serif";
+const GOLD_L = "#D9B26F";
+const GOLD_D = "#D9B26F";
+const TEXT   = "#F2F0EB";
+const SOFT   = "#B3ADA5";   // secondary text, AA on the near-black background
+const BORDER = "rgba(255,255,255,0.10)";
+const SANS   = "'Geist Variable', system-ui, sans-serif";
 
 const SUGGESTIONS = ["A laptop backpack", "What's on sale?", "شنطة سفر كبيرة"];
 const MAX_EDGE = 1024;
@@ -165,82 +164,82 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
 }
 
 const CSS = `
-.sa { display: flex; flex-direction: column; gap: 10px; }
+.sa { display: flex; flex-direction: column; gap: 12px; }
 .sa-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .sa-field {
     display: flex; align-items: center; gap: 10px;
-    padding: 6px 6px 6px 14px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid ${BORDER}; border-radius: 2px;
-    transition: border-color .25s, background .25s;
+    padding: 5px 5px 5px 18px;
+    background: #131315;
+    border: 1px solid ${BORDER}; border-radius: 999px;
+    transition: border-color .2s, background-color .2s;
 }
-.sa-field:focus-within { border-color: rgba(229,196,138,0.55); background: rgba(201,168,106,0.05); }
+.sa-field:focus-within { border-color: rgba(217,178,111,0.6); background: #1B1B1E; }
 .sa-field input {
     flex: 1; min-width: 0; background: none; border: none; outline: none;
-    color: ${TEXT}; font: 400 14px/1.4 ${SANS}; padding: 8px 0;
+    color: ${TEXT}; font: 400 15px/1.4 ${SANS}; padding: 9px 0;
 }
-.sa-field input::placeholder { color: ${SOFT}; }
+.sa-field input::placeholder { color: #8C867E; }
 .sa-icon, .sa-send {
-    flex-shrink: 0; width: 36px; height: 36px; display: grid; place-items: center;
-    border-radius: 2px; cursor: pointer; transition: background .2s, color .2s, transform .15s, opacity .2s;
+    flex-shrink: 0; width: 40px; height: 40px; display: grid; place-items: center;
+    border-radius: 999px; cursor: pointer; transition: background-color .2s, color .2s, transform .15s, opacity .2s;
 }
-.sa-icon { background: none; border: 1px solid transparent; color: ${SOFT}; }
-.sa-icon:hover { color: ${GOLD_L}; background: rgba(201,168,106,0.08); }
-.sa-send { border: none; color: #0A0908; background: linear-gradient(135deg, ${GOLD_D}, ${GOLD_L}); }
+.sa-icon { background: none; border: 0; color: ${SOFT}; }
+.sa-icon:hover { color: ${TEXT}; background: rgba(255,255,255,0.06); }
+.sa-send { border: none; color: #17130B; background: ${GOLD_L}; }
+.sa-send:hover:not(:disabled) { background: #E6C68D; }
 .sa-send:disabled { opacity: .3; cursor: default; }
 .sa-send:not(:disabled):active, .sa-icon:active { transform: scale(0.96); }
 .sa-icon:focus-visible, .sa-send:focus-visible, .sa-suggest button:focus-visible, .sa-card:focus-visible {
-    outline: 1px solid ${GOLD_L}; outline-offset: 2px;
+    outline: 2px solid ${GOLD_L}; outline-offset: 2px;
 }
-.sa-chip { position: relative; flex-shrink: 0; width: 30px; height: 30px; }
-.sa-chip img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; border: 1px solid ${BORDER}; }
+.sa-chip { position: relative; flex-shrink: 0; width: 32px; height: 32px; }
+.sa-chip img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 1px solid ${BORDER}; }
 .sa-chip button {
     position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%;
     display: grid; place-items: center; padding: 0; cursor: pointer;
-    background: ${TEXT}; color: #0A0908; border: none;
+    background: ${TEXT}; color: #0B0B0C; border: none;
 }
-.sa-suggest { display: flex; gap: 6px; flex-wrap: wrap; }
+.sa-suggest { display: flex; gap: 8px; flex-wrap: wrap; }
 .sa-suggest button {
-    padding: 6px 12px; border-radius: 2px; cursor: pointer;
+    height: 34px; padding: 0 14px; border-radius: 999px; cursor: pointer;
     background: none; border: 1px solid ${BORDER}; color: ${SOFT};
-    font: 400 12px/1.3 ${SANS}; transition: color .2s, border-color .2s;
+    font: 500 13px/1 ${SANS}; transition: color .2s, border-color .2s;
 }
-.sa-suggest button:hover { color: ${GOLD_L}; border-color: rgba(201,168,106,0.4); }
-.sa-result { animation: saIn .35s cubic-bezier(0.22,1,0.36,1); }
-.sa-answer { margin: 0; color: ${TEXT}; font: 400 14px/1.65 ${SANS}; max-width: 62ch; }
+.sa-suggest button:hover { color: ${TEXT}; border-color: rgba(255,255,255,0.22); }
+.sa-result { animation: saIn .35s cubic-bezier(0.16,1,0.3,1); }
+.sa-answer { margin: 0; color: ${TEXT}; font: 400 15px/1.65 ${SANS}; max-width: 62ch; }
 .sa-cards {
-    display: grid; grid-auto-flow: column; grid-auto-columns: 128px; gap: 10px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 140px; gap: 12px;
     overflow-x: auto; scroll-snap-type: x mandatory; padding: 12px 0 4px; scrollbar-width: none;
 }
 .sa-cards::-webkit-scrollbar { display: none; }
 .sa-card {
-    scroll-snap-align: start; display: flex; flex-direction: column; gap: 6px; text-align: left;
+    scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; text-align: left;
     padding: 0; background: none; border: none; cursor: pointer; color: inherit;
 }
 .sa-card-img {
-    position: relative; display: block; aspect-ratio: 1; border-radius: 2px; overflow: hidden;
-    background: #121110; border: 1px solid ${BORDER}; transition: border-color .25s;
+    position: relative; display: block; aspect-ratio: 1; border-radius: 16px; overflow: hidden; isolation: isolate;
+    background: #EDEDEE;
 }
-.sa-card-img img { width: 100%; height: 100%; object-fit: contain; transition: transform .4s cubic-bezier(0.22,1,0.36,1); }
-.sa-card:hover .sa-card-img { border-color: rgba(201,168,106,0.45); }
+.sa-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 10%; mix-blend-mode: multiply; transition: transform .5s cubic-bezier(0.16,1,0.3,1); }
 .sa-card:hover .sa-card-img img { transform: scale(1.04); }
 .sa-soldout {
-    position: absolute; left: 0; right: 0; bottom: 0; padding: 4px 0; text-align: center;
-    background: rgba(8,8,8,0.8); color: ${SOFT}; font: 500 10px/1 ${SANS}; letter-spacing: .08em;
+    position: absolute; left: 8px; top: 8px; height: 22px; padding: 0 8px; border-radius: 999px; display: inline-flex; align-items: center;
+    background: #111; color: #D8D4CD; font: 600 11px/1 ${SANS};
 }
 .sa-card-title {
-    font: 400 15px/1.2 ${SERIF}; color: ${TEXT};
+    font: 550 14px/1.3 ${SANS}; color: ${TEXT};
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.sa-card-price { display: flex; gap: 6px; align-items: baseline; font: 600 12px/1 ${SANS}; color: ${GOLD_L}; }
-.sa-card-price s { font-weight: 400; color: ${SOFT}; }
-.sa-error { margin: 0; color: #E08A8A; font: 400 13px/1.5 ${SANS}; }
-.sa-note { margin: 0; color: #857D75; font: 400 10.5px/1.4 ${SANS}; }
+.sa-card-price { display: flex; gap: 6px; align-items: baseline; font: 600 13px/1 ${SANS}; color: ${TEXT}; font-variant-numeric: tabular-nums; }
+.sa-card-price s { font-weight: 400; color: #8C867E; }
+.sa-error { margin: 0; color: #F0907F; font: 400 14px/1.5 ${SANS}; }
+.sa-note { margin: 0; color: #8C867E; font: 400 12.5px/1.4 ${SANS}; }
 .sa-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.sa-note a:hover { color: ${GOLD_L}; }
-.sa-skel { height: 12px; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(229,196,138,0.10) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: saShimmer 1.3s linear infinite; }
-.sa-skel-card { height: auto; aspect-ratio: 1; }
-.sa-spin { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(10,9,8,0.25); border-top-color: #0A0908; animation: saSpin .7s linear infinite; }
+.sa-note a:hover { color: ${TEXT}; }
+.sa-skel { height: 12px; border-radius: 8px; background: linear-gradient(90deg, #17171a 25%, #212125 50%, #17171a 75%); background-size: 200% 100%; animation: saShimmer 1.4s linear infinite; }
+.sa-skel-card { height: auto; aspect-ratio: 1; border-radius: 16px; }
+.sa-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(23,19,11,0.25); border-top-color: #17130B; animation: saSpin .7s linear infinite; }
 @keyframes saIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes saShimmer { to { background-position: -200% 0; } }
 @keyframes saSpin { to { transform: rotate(360deg); } }

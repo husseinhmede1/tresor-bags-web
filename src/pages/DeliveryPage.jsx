@@ -1,19 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LEBANON from '../data/lebanon';
 import LocationPicker from '../components/LocationPicker';
+import SiteHeader from '../components/storefront/SiteHeader';
+import CheckoutSteps from '../components/storefront/CheckoutSteps';
 
-const C = {
-  BG: '#080808',
-  GOLD: '#dfa94b',
-  GOLD_L: '#E5C48A',
-  GOLD_D: '#C9A86A',
-  MUTED: '#6B6560',
-  TEXT: '#F5F1E8',
-  BORDER: 'rgba(201,168,106,0.15)',
-  SERIF: "'Cormorant Garamond', serif",
-  SANS: "'Inter', sans-serif",
-};
 
 const PHONE_PREFIXES = [
   '+961', '+1', '+44', '+33', '+49', '+39', '+34',
@@ -65,7 +56,7 @@ export default function DeliveryPage() {
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!validateEmail(form.email)) e.email = 'Enter a valid email';
     if (!form.phoneNumber.trim()) e.phoneNumber = 'Phone number is required';
-    else if (!validatePhone(form.phoneNumber)) e.phoneNumber = 'Enter 7–10 digits';
+    else if (!validatePhone(form.phoneNumber)) e.phoneNumber = 'Enter 7 to 10 digits';
     return e;
   }
 
@@ -84,220 +75,97 @@ export default function DeliveryPage() {
     navigate('/checkout/payment');
   }
 
+  const errId = (f) => (showErr(f) ? `${f}-error` : undefined);
+
   return (
-    <div style={{ minHeight: '100vh', background: C.BG, color: C.TEXT, fontFamily: C.SANS }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px',
-        borderBottom: `1px solid ${C.BORDER}`, position: 'sticky', top: 0,
-        background: C.BG, zIndex: 10,
-      }}>
-        <button onClick={() => navigate('/cart')} style={backBtn} aria-label="Back">←</button>
-        <span style={{ fontFamily: C.SERIF, fontSize: 22, letterSpacing: '0.15em', color: C.GOLD, fontWeight: 600 }}>
-          TRÉSOR BAGS
-        </span>
-      </div>
+    <div className="sf">
+      <SiteHeader back="/cart" />
+      <main className="sf-container" style={{ maxWidth: 640, paddingBlock: '32px 96px' }}>
+        <CheckoutSteps step={2} />
+        <h1 className="sf-h2" style={{ marginTop: 20 }}>Delivery details</h1>
+        <p className="sf-muted" style={{ marginTop: 8 }}>Where should we deliver your order?</p>
 
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '32px 16px 100px' }}>
-        <h1 style={{ fontFamily: C.SERIF, fontSize: 32, fontWeight: 400, color: C.GOLD_L, marginBottom: 4 }}>
-          Delivery Details
-        </h1>
-        <p style={{ color: C.MUTED, fontSize: 14, marginBottom: 36 }}>
-          Step 1 of 2 — Where should we deliver your order?
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {/* Name + Surname */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Field label="Name" error={showErr('name')}>
-              <input
-                value={form.name}
-                onChange={e => set('name', e.target.value)}
-                onBlur={() => blur('name')}
-                placeholder="First name"
-                style={inputStyle(showErr('name'))}
-              />
+        <div style={{ display: 'grid', gap: 22, marginTop: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+            <Field id="name" label="First name" error={showErr('name')}>
+              <input id="name" className="sf-input" autoComplete="given-name" value={form.name}
+                onChange={e => set('name', e.target.value)} onBlur={() => blur('name')}
+                aria-invalid={Boolean(showErr('name'))} aria-describedby={errId('name')} />
             </Field>
-            <Field label="Surname" error={showErr('surname')}>
-              <input
-                value={form.surname}
-                onChange={e => set('surname', e.target.value)}
-                onBlur={() => blur('surname')}
-                placeholder="Last name"
-                style={inputStyle(showErr('surname'))}
-              />
+            <Field id="surname" label="Last name" error={showErr('surname')}>
+              <input id="surname" className="sf-input" autoComplete="family-name" value={form.surname}
+                onChange={e => set('surname', e.target.value)} onBlur={() => blur('surname')}
+                aria-invalid={Boolean(showErr('surname'))} aria-describedby={errId('surname')} />
             </Field>
           </div>
 
-          {/* Location on map — the main thing */}
-          <Field label="Delivery Location" error={showErr('location')}>
-            <LocationPicker
-              value={{ lat: form.lat, lng: form.lng }}
-              onChange={({ lat, lng }) => setForm(prev => ({ ...prev, lat, lng }))}
-            />
+          <Field id="location" label="Delivery location" hint="Pin it on the map" error={showErr('location')}>
+            <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--sf-line)' }}>
+              <LocationPicker
+                value={{ lat: form.lat, lng: form.lng }}
+                onChange={({ lat, lng }) => setForm(prev => ({ ...prev, lat, lng }))}
+              />
+            </div>
           </Field>
 
-          {/* Address details */}
-          <Field label="Address details" hint="Optional">
-            <input
-              value={form.address}
-              onChange={e => set('address', e.target.value)}
-              placeholder="Building, floor, apartment, landmark..."
-              style={inputStyle(false)}
-            />
+          <Field id="address" label="Address details" hint="Optional">
+            <input id="address" className="sf-input" autoComplete="street-address" value={form.address}
+              onChange={e => set('address', e.target.value)} placeholder="Building, floor, apartment" />
           </Field>
 
-          {/* More info */}
-          <Field label="More Information" hint="Optional">
-            <textarea
-              value={form.moreInfo}
-              onChange={e => set('moreInfo', e.target.value)}
-              placeholder="Delivery notes, landmarks, etc."
-              rows={3}
-              style={{ ...inputStyle(false), resize: 'vertical', lineHeight: 1.5 }}
-            />
+          <Field id="moreInfo" label="Notes for the driver" hint="Optional">
+            <textarea id="moreInfo" className="sf-input" rows={3} value={form.moreInfo}
+              onChange={e => set('moreInfo', e.target.value)} placeholder="Landmarks, best time to call" />
           </Field>
 
-          {/* Region — optional, coarse area */}
-          <Field label="Region" hint="Optional">
-            <select
-              value={form.region}
-              onChange={e => set('region', e.target.value)}
-              style={selectStyle(false, !form.region)}
-            >
-              <option value="">Select region...</option>
+          <Field id="region" label="Region" hint="Optional">
+            <select id="region" className="sf-input" value={form.region} onChange={e => set('region', e.target.value)}
+              style={{ color: form.region ? undefined : 'var(--sf-text-3)' }}>
+              <option value="">Select a region</option>
               {regions.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </Field>
 
-          {/* Email */}
-          <Field label="E-mail" error={showErr('email')}>
-            <input
-              type="email"
-              value={form.email}
-              onChange={e => set('email', e.target.value)}
-              onBlur={() => blur('email')}
-              placeholder="your@email.com"
-              style={inputStyle(showErr('email'))}
-            />
+          <Field id="email" label="Email" error={showErr('email')}>
+            <input id="email" className="sf-input" type="email" autoComplete="email" value={form.email}
+              onChange={e => set('email', e.target.value)} onBlur={() => blur('email')} placeholder="you@example.com"
+              aria-invalid={Boolean(showErr('email'))} aria-describedby={errId('email')} />
           </Field>
 
-          {/* Phone */}
-          <Field label="Telephone" error={showErr('phoneNumber')}>
+          <Field id="phoneNumber" label="Phone" error={showErr('phoneNumber')}>
             <div style={{ display: 'flex', gap: 8 }}>
-              <select
-                value={form.phonePrefix}
-                onChange={e => set('phonePrefix', e.target.value)}
-                style={{ ...selectStyle(false, false), width: 90, flexShrink: 0 }}
-              >
+              <select className="sf-input" aria-label="Country code" value={form.phonePrefix}
+                onChange={e => set('phonePrefix', e.target.value)} style={{ width: 104, flexShrink: 0 }}>
                 {PHONE_PREFIXES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
-              <input
-                value={form.phoneNumber}
-                onChange={e => set('phoneNumber', e.target.value.replace(/\D/g, ''))}
-                onBlur={() => blur('phoneNumber')}
-                placeholder="79999999"
-                maxLength={10}
-                inputMode="tel"
-                style={{ ...inputStyle(showErr('phoneNumber')), flex: 1 }}
-              />
+              <input id="phoneNumber" className="sf-input" value={form.phoneNumber} inputMode="tel" autoComplete="tel-national" maxLength={10}
+                onChange={e => set('phoneNumber', e.target.value.replace(/\D/g, ''))} onBlur={() => blur('phoneNumber')}
+                placeholder="71 234 567" aria-invalid={Boolean(showErr('phoneNumber'))} aria-describedby={errId('phoneNumber')} />
             </div>
           </Field>
         </div>
 
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: 12, marginTop: 36, flexWrap: 'wrap' }}>
-          <button onClick={() => navigate('/cart')} style={btnSecondary}>Back</button>
-          <button onClick={handleContinue} style={{ ...btnPrimary, flex: 1 }}>Continue</button>
+        {submitAttempted && hasErrors && (
+          <p className="sf-error" role="alert" style={{ marginTop: 24 }}>Please fix the fields marked above.</p>
+        )}
+        <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
+          <button className="sf-btn sf-btn--ghost" onClick={() => navigate('/cart')}>Back</button>
+          <button className="sf-btn sf-btn--primary" style={{ flex: 1 }} onClick={handleContinue}>Continue to payment</button>
         </div>
-        <p style={{ fontFamily: C.SANS, fontSize: 11, color: '#857D75', margin: '14px 0 0' }}>
-          Your details are used only for this order. <a href="/privacy" style={{ color: 'inherit', textUnderlineOffset: 2 }}>Privacy Policy</a>
+        <p className="sf-faint" style={{ fontSize: 13, marginTop: 16 }}>
+          Your details are used only for this order. <a href="/privacy" style={{ textUnderlineOffset: 3 }}>Privacy Policy</a>
         </p>
-      </div>
+      </main>
     </div>
   );
 }
 
-function Field({ label, hint, error, children }) {
+function Field({ id, label, hint, error, children }) {
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-        <label style={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#C9A86A' }}>
-          {label}
-        </label>
-        {hint && <span style={{ fontSize: 11, color: '#6B6560' }}>{hint}</span>}
-      </div>
+    <div className="sf-field">
+      <label className="sf-label" htmlFor={id}>{label}{hint && <small>{hint}</small>}</label>
       {children}
-      {error && <p style={{ fontSize: 12, color: '#e05', marginTop: 4 }}>{error}</p>}
+      {error && <p id={`${id}-error`} className="sf-error">{error}</p>}
     </div>
   );
 }
-
-function inputStyle(hasError) {
-  return {
-    width: '100%',
-    background: 'rgba(255,255,255,0.03)',
-    border: `1px solid ${hasError ? '#e05' : 'rgba(201,168,106,0.2)'}`,
-    borderRadius: 4,
-    color: '#F5F1E8',
-    fontSize: 15,
-    padding: '12px 14px',
-    fontFamily: "'Inter', sans-serif",
-    outline: 'none',
-    boxSizing: 'border-box',
-    transition: 'border-color 0.2s',
-  };
-}
-
-function selectStyle(hasError, isPlaceholder) {
-  return {
-    width: '100%',
-    background: '#0e0e0e',
-    border: `1px solid ${hasError ? '#e05' : 'rgba(201,168,106,0.2)'}`,
-    borderRadius: 4,
-    color: isPlaceholder ? '#6B6560' : '#F5F1E8',
-    fontSize: 15,
-    padding: '12px 14px',
-    fontFamily: "'Inter', sans-serif",
-    outline: 'none',
-    boxSizing: 'border-box',
-    cursor: 'pointer',
-    appearance: 'auto',
-  };
-}
-
-const btnPrimary = {
-  background: 'linear-gradient(135deg, #dfa94b, #C9A86A)',
-  color: '#080808',
-  border: 'none',
-  borderRadius: 4,
-  padding: '14px 32px',
-  fontSize: 14,
-  fontFamily: "'Inter', sans-serif",
-  fontWeight: 600,
-  letterSpacing: '0.08em',
-  cursor: 'pointer',
-  textTransform: 'uppercase',
-};
-
-const btnSecondary = {
-  background: 'none',
-  color: '#6B6560',
-  border: '1px solid rgba(201,168,106,0.25)',
-  borderRadius: 4,
-  padding: '14px 32px',
-  fontSize: 14,
-  fontFamily: "'Inter', sans-serif",
-  fontWeight: 500,
-  cursor: 'pointer',
-};
-
-const backBtn = {
-  background: 'none',
-  border: 'none',
-  color: '#dfa94b',
-  cursor: 'pointer',
-  fontSize: 22,
-  lineHeight: 1,
-  padding: 4,
-};

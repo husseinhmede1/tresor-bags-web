@@ -151,81 +151,13 @@ html, body, #root {
   }
 }
 
-/* ── Rotating gold glow button effect ── */
-@property --tresor-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes tresor-spin {
-  to { --tresor-angle: 360deg; }
-}
-
+/* Buttons: a quiet press feedback everywhere (the old spinning gold border is gone). */
 button {
-  position: relative;
-  z-index: 0;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-}
-
-/* Thin rotating border */
-button::before {
-  content: "";
-  position: absolute;
-  inset: -1.5px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--tresor-angle) at 50% 50%,
-    transparent 0deg,
-    rgba(201, 168, 106, 0.9) 40deg,
-    rgba(229, 196, 138, 1)   70deg,
-    rgba(245, 223, 160, 1)   90deg,
-    transparent              130deg
-  );
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 1.5px;
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  animation: tresor-spin 3s linear infinite;
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* Inner mouse-follow radial glow */
-button::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    80px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(201, 168, 106, 0.22),
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: 1;
-}
-
-button:hover:not(:disabled)::before {
-  opacity: 1;
-}
-
-button:hover:not(:disabled)::after {
-  opacity: 1;
-}
-
-button:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 input, textarea, select {
@@ -243,16 +175,16 @@ input:focus, textarea:focus, select:focus {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f5f0eb;
+  background: #0B0B0C;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #2A2926;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #3A3833;
 }
 
 /* ── Global Animations ── */

@@ -1,20 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Check, CheckCircle, Copy } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../services/orderService';
 import { sized } from '../utils/image';
+import SiteHeader from '../components/storefront/SiteHeader';
+import CheckoutSteps from '../components/storefront/CheckoutSteps';
 
-const C = {
-  BG: '#080808',
-  GOLD: '#dfa94b',
-  GOLD_L: '#E5C48A',
-  GOLD_D: '#C9A86A',
-  MUTED: '#6B6560',
-  TEXT: '#F5F1E8',
-  BORDER: 'rgba(201,168,106,0.15)',
-  SERIF: "'Cormorant Garamond', serif",
-  SANS: "'Inter', sans-serif",
-};
 
 function fmt(n) {
   return '$' + Number(n).toFixed(2);
@@ -26,6 +18,10 @@ export default function PaymentPage() {
   const [delivery, setDelivery] = useState(null);
   const [success, setSuccess] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const copyNumber = () => {
+    navigator.clipboard?.writeText('+96178987288').then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  };
 
   useEffect(() => {
     const raw = sessionStorage.getItem('tresor-delivery');
@@ -144,212 +140,97 @@ export default function PaymentPage() {
     }
   }
 
+  const addressLine = [delivery.address, delivery.region].filter((x) => x && x.trim()).join(', ');
+
   if (success) {
     return (
-      <div style={{
-        minHeight: '100vh', background: C.BG, color: C.TEXT, fontFamily: C.SANS,
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 16, padding: 32,
-      }}>
-        <div style={{ fontSize: 56 }}>✅</div>
-        <h2 style={{ fontFamily: C.SERIF, fontSize: 28, color: C.GOLD_L, fontWeight: 400, margin: 0 }}>
-          Order Confirmed!
-        </h2>
-        <p style={{ color: C.MUTED, textAlign: 'center', maxWidth: 360 }}>
-          Your order has been sent via WhatsApp. We'll be in touch shortly to confirm delivery.
-        </p>
-        <p style={{ color: C.MUTED, fontSize: 13 }}>Redirecting to home...</p>
+      <div className="sf" style={{ display: 'grid', placeItems: 'center', padding: 24 }}>
+        <div style={{ display: 'grid', justifyItems: 'center', gap: 14, textAlign: 'center', maxWidth: 420 }}>
+          <CheckCircle size={56} weight="fill" color="#D9B26F" />
+          <h1 className="sf-h2">Order sent</h1>
+          <p className="sf-muted">Your order went to us on WhatsApp. We’ll confirm your payment and arrange delivery shortly.</p>
+          <p className="sf-faint" style={{ fontSize: 13 }}>Taking you back to the shop…</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: C.BG, color: C.TEXT, fontFamily: C.SANS }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px',
-        borderBottom: `1px solid ${C.BORDER}`, position: 'sticky', top: 0,
-        background: C.BG, zIndex: 10,
-      }}>
-        <button onClick={() => navigate('/checkout/delivery')} style={backBtn} aria-label="Back">←</button>
-        <span style={{ fontFamily: C.SERIF, fontSize: 22, letterSpacing: '0.15em', color: C.GOLD, fontWeight: 600 }}>
-          TRÉSOR BAGS
-        </span>
-      </div>
+    <div className="sf">
+      <style>{PAY_CSS}</style>
+      <SiteHeader back="/checkout/delivery" />
+      <main className="sf-container" style={{ maxWidth: 1080, paddingBlock: '32px 96px' }}>
+        <CheckoutSteps step={3} />
+        <h1 className="sf-h2" style={{ marginTop: 20 }}>Review and pay</h1>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px 100px' }}>
-        <h1 style={{ fontFamily: C.SERIF, fontSize: 32, fontWeight: 400, color: C.GOLD_L, marginBottom: 4 }}>
-          Complete Your Order
-        </h1>
-        <p style={{ color: C.MUTED, fontSize: 14, marginBottom: 36 }}>
-          Step 2 of 2 — Review and pay
-        </p>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-          {/* Order Summary */}
-          <div style={{
-            background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.BORDER}`,
-            borderRadius: 8, padding: 24,
-          }}>
-            <h2 style={{ fontFamily: C.SERIF, fontSize: 20, color: C.GOLD, fontWeight: 500, margin: '0 0 20px' }}>
-              Order Summary
-            </h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="pay">
+          {/* Order summary */}
+          <section className="sf-panel" aria-labelledby="summary-h">
+            <h2 id="summary-h" className="sf-h3">Your order</h2>
+            <ul className="pay__items">
               {cartItems.map(({ bag, quantity }) => {
                 const discount = bag.typeId?.discount ?? 0;
                 const unit = bag.price * (1 - discount / 100);
-                const subtotal = unit * quantity;
                 return (
-                  <div key={bag.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <img
-                      src={sized(bag.mainImage || bag.imageUrl || '', 160)}
-                      alt={bag.title || bag.name}
-                      style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 3, flexShrink: 0, background: '#111' }}
-                    />
+                  <li key={bag._id || bag.id}>
+                    <span className="sf-tile" style={{ width: 56, aspectRatio: '1', borderRadius: 10, flexShrink: 0 }}>
+                      <img src={sized(bag.mainImage || '', 160)} alt="" style={{ padding: '10%' }} />
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontFamily: C.SERIF, fontSize: 15, color: C.GOLD_L, margin: '0 0 2px', fontWeight: 500 }}>
-                        {bag.title || bag.name}
-                      </p>
-                      <p style={{ fontSize: 12, color: C.MUTED, margin: 0 }}>
-                        {fmt(unit)} × {quantity}
-                      </p>
+                      <p style={{ fontWeight: 550 }}>{bag.title}</p>
+                      <p className="sf-faint sf-num" style={{ fontSize: 13 }}>{fmt(unit)} × {quantity}</p>
                     </div>
-                    <span style={{ fontSize: 15, color: C.TEXT, flexShrink: 0 }}>{fmt(subtotal)}</span>
-                  </div>
+                    <span className="sf-num">{fmt(unit * quantity)}</span>
+                  </li>
                 );
               })}
-            </div>
-
-            <div style={{ height: 1, background: C.BORDER, margin: '20px 0' }} />
-
+            </ul>
             {totalSavings > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                <span style={{ color: '#5dba6e', fontSize: 14 }}>Total Savings</span>
-                <span style={{ color: '#5dba6e', fontSize: 14, fontWeight: 600 }}>{fmt(totalSavings)}</span>
-              </div>
+              <p className="pay__row"><span className="sf-muted">You save</span><span className="sf-gold sf-num">{fmt(totalSavings)}</span></p>
             )}
+            <p className="pay__total"><span>Total</span><span className="sf-num">{fmt(totalPrice)}</span></p>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: C.SERIF, fontSize: 18, color: C.TEXT }}>Grand Total</span>
-              <span style={{ fontFamily: C.SERIF, fontSize: 24, color: C.GOLD, fontWeight: 600 }}>
-                {fmt(totalPrice)}
-              </span>
+            <div className="pay__deliver">
+              <p className="sf-faint" style={{ fontSize: 13 }}>Delivering to</p>
+              <p style={{ fontWeight: 550 }}>{delivery.name} {delivery.surname}</p>
+              {addressLine && <p className="sf-muted" style={{ fontSize: 14 }}>{addressLine}</p>}
+              <p className="sf-muted" style={{ fontSize: 14 }}>{delivery.phonePrefix} {delivery.phoneNumber}</p>
             </div>
+          </section>
 
-            {/* Delivery summary */}
-            <div style={{ marginTop: 20, padding: '16px', background: 'rgba(0,0,0,0.3)', borderRadius: 6 }}>
-              <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.MUTED, marginBottom: 8 }}>
-                Delivering to
-              </p>
-              <p style={{ fontSize: 13, color: C.TEXT, margin: '0 0 2px' }}>
-                {delivery.name} {delivery.surname}
-              </p>
-              <p style={{ fontSize: 13, color: C.MUTED, margin: '0 0 2px' }}>
-                {delivery.address}
-              </p>
-              <p style={{ fontSize: 13, color: C.MUTED, margin: 0 }}>
-                {delivery.locality}, {delivery.district}, {delivery.region}
-              </p>
+          {/* Payment */}
+          <section style={{ display: 'grid', gap: 16, alignContent: 'start' }} aria-labelledby="pay-h">
+            <div className="sf-panel" style={{ display: 'grid', gap: 14 }}>
+              <h2 id="pay-h" className="sf-h3">Pay with Whish</h2>
+              <p className="sf-muted">Send <b className="sf-num" style={{ color: 'var(--sf-text)' }}>{fmt(totalPrice)}</b> to this Whish number:</p>
+              <button className="pay__number" onClick={copyNumber} aria-label="Copy the Whish number">
+                <span className="sf-num">+961 78 987 288</span>
+                <span className="sf-faint" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                  {copied ? <><Check size={16} /> Copied</> : <><Copy size={16} /> Copy</>}
+                </span>
+              </button>
+              <p className="sf-muted" style={{ fontSize: 14 }}>Then tap Confirm order. Your order details go to us on WhatsApp and we arrange delivery. Keep your transfer receipt.</p>
             </div>
-          </div>
-
-          {/* Payment Instructions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{
-              background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.BORDER}`,
-              borderRadius: 8, padding: 24,
-            }}>
-              <h2 style={{ fontFamily: C.SERIF, fontSize: 20, color: C.GOLD, fontWeight: 500, margin: '0 0 20px' }}>
-                Payment Instructions
-              </h2>
-
-              {/* Whish block */}
-              <div style={{
-                background: 'rgba(230,0,60,0.08)', border: '1px solid rgba(230,0,60,0.2)',
-                borderRadius: 8, padding: '20px', marginBottom: 20,
-              }}>
-                <div style={{
-                  display: 'inline-block',
-                  background: 'linear-gradient(135deg, #e6003c, #ff4d7a)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: 18,
-                  letterSpacing: '0.12em',
-                  padding: '6px 18px',
-                  borderRadius: 6,
-                  marginBottom: 16,
-                }}>
-                  WHISH
-                </div>
-
-                <p style={{ fontSize: 14, color: C.MUTED, margin: '0 0 12px' }}>
-                  Send {fmt(totalPrice)} to Whish number:
-                </p>
-
-                <p style={{
-                  fontFamily: C.SERIF, fontSize: 28, color: C.GOLD, fontWeight: 600,
-                  margin: '0 0 12px', letterSpacing: '0.05em',
-                }}>
-                  +961 78 987 288
-                </p>
-
-                <p style={{ fontSize: 13, color: C.TEXT, margin: '0 0 8px' }}>
-                  Once transferred, click <strong>'Confirm Order'</strong> below
-                </p>
-
-                <p style={{ fontSize: 12, color: C.MUTED, margin: 0, fontStyle: 'italic' }}>
-                  Keep your transfer receipt for reference
-                </p>
-              </div>
-
-              <div style={{
-                background: 'rgba(223,169,75,0.06)', border: `1px solid ${C.BORDER}`,
-                borderRadius: 6, padding: 14, marginBottom: 4,
-              }}>
-                <p style={{ fontSize: 13, color: C.MUTED, margin: 0 }}>
-                  After confirming, your order details will be sent automatically to our team via WhatsApp and we'll contact you to arrange delivery.
-                </p>
-              </div>
-            </div>
-
-            {/* Confirm button */}
-            <button
-              onClick={handleConfirm}
-              disabled={confirming}
-              style={{
-                background: confirming
-                  ? 'rgba(223,169,75,0.4)'
-                  : 'linear-gradient(135deg, #dfa94b, #C9A86A)',
-                color: '#080808',
-                border: 'none',
-                borderRadius: 4,
-                padding: '16px 32px',
-                fontSize: 15,
-                fontFamily: C.SANS,
-                fontWeight: 700,
-                letterSpacing: '0.1em',
-                cursor: confirming ? 'not-allowed' : 'pointer',
-                textTransform: 'uppercase',
-                width: '100%',
-                transition: 'background 0.3s',
-              }}
-            >
-              {confirming ? 'Processing...' : 'Confirm Order'}
+            <button className="sf-btn sf-btn--primary sf-btn--block" onClick={handleConfirm} disabled={confirming}>
+              {confirming ? 'Sending…' : 'Confirm order'}
             </button>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-const backBtn = {
-  background: 'none',
-  border: 'none',
-  color: '#dfa94b',
-  cursor: 'pointer',
-  fontSize: 22,
-  lineHeight: 1,
-  padding: 4,
-};
+const PAY_CSS = `
+  .pay { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; margin-top: 28px; align-items: start; }
+  .pay__items { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 14px; }
+  .pay__items li { display: flex; align-items: center; gap: 12px; }
+  .pay__row, .pay__total { display: flex; justify-content: space-between; gap: 12px; }
+  .pay__row { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--sf-line); }
+  .pay__row + .pay__total { margin-top: 10px; padding-top: 0; border-top: 0; }
+  .pay__total { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--sf-line); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .pay__deliver { margin-top: 20px; padding: 14px 16px; border-radius: 12px; background: var(--sf-surface-2); display: grid; gap: 2px; }
+  .pay__number { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; height: 60px; padding: 0 18px; border-radius: 12px; background: var(--sf-surface-2); border: 1px solid var(--sf-line); color: var(--sf-text); font: 600 22px/1 var(--sf-font); letter-spacing: -0.01em; cursor: pointer; }
+  .pay__number:hover { border-color: rgba(217, 178, 111, 0.5); }
+  @media (max-width: 860px) { .pay { grid-template-columns: 1fr; } }
+`;

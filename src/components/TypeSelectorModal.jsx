@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import ShopAssistant from "./ShopAssistant";
+import { Suitcase, Backpack, Handbag, Wallet, X, Check } from "@phosphor-icons/react";
 
-const GOLD   = "#dfa94b";
-const GOLD_L = "#E5C48A";
-const GOLD_D = "#C9A86A";
-const BG     = "#080808";
-const BORDER = "rgba(201,168,106,0.15)";
-const MUTED  = "#6B6560";
-const TEXT   = "#F5F1E8";
-const SERIF  = "'Cormorant Garamond', serif";
-const SANS   = "'Inter', sans-serif";
+const GOLD_L = "#D9B26F";
+const GOLD_D = "#D9B26F";
+const BG     = "#111113";
+const BORDER = "rgba(255,255,255,0.09)";
+const MUTED  = "#8C867E";
+const TEXT   = "#F2F0EB";
+const FONT   = "'Geist Variable', system-ui, sans-serif";
 
 const CATEGORIES = [
     { title: "Luggage",     sub: "Carry-ons, checked, trolleys",  icon: "luggage" },
@@ -18,21 +17,10 @@ const CATEGORIES = [
     { title: "Accessories", sub: "Wallets, tech, packing & more", icon: "accessories" },
 ];
 
-// Elegant gold line-art icon per category (hardcoded, matches the fixed 4).
+const ICONS = { luggage: Suitcase, backpack: Backpack, bag: Handbag, accessories: Wallet };
 const CategoryIcon = ({ name, color }) => {
-    const common = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.2, strokeLinecap: "round", strokeLinejoin: "round" };
-    if (name === "luggage") return (
-        <svg {...common}><rect x="4" y="7" width="16" height="13" rx="2" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M9 7v13M15 7v13" /></svg>
-    );
-    if (name === "backpack") return (
-        <svg {...common}><path d="M6 9a6 6 0 0 1 12 0v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9Z" /><path d="M9 9a3 3 0 0 1 6 0" /><rect x="9" y="12" width="6" height="5" rx="1" /></svg>
-    );
-    if (name === "bag") return (
-        <svg {...common}><path d="M5 8h14l-1.1 11.1a1 1 0 0 1-1 .9H7.1a1 1 0 0 1-1-.9L5 8Z" /><path d="M9 8V6.5a3 3 0 0 1 6 0V8" /></svg>
-    );
-    return (
-        <svg {...common}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M3 10.5h18" /><circle cx="16" cy="14.5" r="1.1" /></svg>
-    );
+    const Icon = ICONS[name] || Handbag;
+    return <Icon size={26} color={color} />;
 };
 
 export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
@@ -50,9 +38,9 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
             @keyframes tsmFadeIn    { from { opacity:0; transform:scale(0.97) translateY(12px); } to { opacity:1; transform:scale(1) translateY(0); } }
             @keyframes tsmFadeOut   { from { opacity:1; transform:scale(1) translateY(0); } to { opacity:0; transform:scale(1.04) translateY(-10px); } }
             @keyframes tsmOverlayOut { from { opacity:1; backdrop-filter:blur(14px); } to { opacity:0; backdrop-filter:blur(0px); } }
-            .tsm-cat-box:hover  { border-color: rgba(201,168,106,0.4) !important; background: rgba(201,168,106,0.05) !important; }
-            .tsm-start-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,168,106,0.35) !important; }
-            .tsm-close-btn:hover { background: rgba(201,168,106,0.12) !important; color: #E5C48A !important; }
+            .tsm-cat-box:hover  { border-color: rgba(217,178,111,0.45) !important; background: rgba(217,178,111,0.06) !important; }
+            .tsm-start-btn:hover:not(:disabled) { background: #E6C68D !important; }
+            .tsm-close-btn:hover { background: rgba(255,255,255,0.14) !important; }
         `;
         if (!document.getElementById("tsm-keyframes")) document.head.appendChild(s);
         return () => { const el = document.getElementById("tsm-keyframes"); if (el) el.remove(); };
@@ -75,7 +63,7 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                 height: "min(92vh, 760px)",
                 background: BG,
                 border: `1px solid ${BORDER}`,
-                borderRadius: 3,
+                borderRadius: 20,
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
@@ -94,23 +82,17 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                     />
                     <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "55%", background: "linear-gradient(to top, rgba(8,8,8,0.96), transparent)", pointerEvents: "none" }} />
                     <div style={{ position: "absolute", bottom: 18, left: 24, display: "flex", flexDirection: "column", gap: 5 }}>
-                        <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 700, color: GOLD_L, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                            TRÉSOR BAGS
-                        </span>
-                        {selected && (
-                            <span style={{ fontFamily: SANS, fontSize: 10, color: MUTED, letterSpacing: "0.22em", textTransform: "uppercase" }}>
-                                {selected.title}
-                            </span>
-                        )}
+                        <img src="/tresor_logo.webp" alt="Trésor Bags" style={{ height: 40, width: 110, objectFit: "contain", objectPosition: "left center" }} />
+
                     </div>
                     <button onClick={handleSkip} className="tsm-close-btn" title="Browse all" style={{
                         position: "absolute", top: 12, right: 12,
                         background: "rgba(0,0,0,0.5)", border: `1px solid ${BORDER}`,
-                        color: MUTED, borderRadius: "50%", width: 30, height: 30,
+                        color: TEXT, borderRadius: "50%", width: 36, height: 36,
                         cursor: "pointer", fontSize: 13,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         backdropFilter: "blur(6px)",
-                    }}>✕</button>
+                    }}><X size={16} /></button>
                 </div>
 
                 {/* Bottom — category grid */}
@@ -120,9 +102,9 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                         <ShopAssistant storageKey="modal" onOpenBag={onOpenBag} />
                     </div>
 
-                    <p style={{ fontFamily: SANS, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, margin: "0 0 10px", flexShrink: 0 }}>
-                        {selected ? `Selected: ${selected.title}` : "What are you looking for?"}
-                    </p>
+                    <h2 style={{ fontFamily: FONT, fontSize: 17, fontWeight: 600, letterSpacing: "-0.015em", color: TEXT, margin: "0 0 12px", flexShrink: 0 }}>
+                        What are you looking for?
+                    </h2>
 
                     {/* 2×2 grid */}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flex: 1, alignContent: "flex-start" }}>
@@ -138,7 +120,7 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                                         padding: "12px 14px",
                                         border: `1px solid ${isActive ? GOLD_D : BORDER}`,
                                         background: isActive ? "rgba(201,168,106,0.07)" : "rgba(255,255,255,0.02)",
-                                        borderRadius: 2, cursor: "pointer",
+                                        borderRadius: 16, cursor: "pointer",
                                         transition: "border-color 0.25s, background 0.25s",
                                         position: "relative",
                                     }}
@@ -146,14 +128,14 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                                     <span style={{ marginBottom: 2, opacity: isActive ? 1 : 0.85 }}>
                                         <CategoryIcon name={cat.icon} color={isActive ? GOLD_L : GOLD_D} />
                                     </span>
-                                    <span style={{ fontFamily: SERIF, fontSize: 18, color: isActive ? GOLD_L : TEXT, fontWeight: 400, letterSpacing: "0.04em" }}>
+                                    <span style={{ fontFamily: FONT, fontSize: 16, color: isActive ? GOLD_L : TEXT, fontWeight: 600, letterSpacing: "-0.01em" }}>
                                         {cat.title}
                                     </span>
-                                    <span style={{ fontFamily: SANS, fontSize: 10, color: MUTED, letterSpacing: "0.06em", lineHeight: 1.5 }}>
+                                    <span style={{ fontFamily: FONT, fontSize: 13, color: MUTED, lineHeight: 1.45 }}>
                                         {cat.sub}
                                     </span>
                                     {isActive && (
-                                        <span style={{ position: "absolute", top: 8, right: 10, fontSize: 9, color: GOLD_L, fontWeight: 700 }}>✓</span>
+                                        <Check size={16} weight="bold" color={GOLD_L} style={{ position: "absolute", top: 12, right: 12 }} />
                                     )}
                                 </div>
                             );
@@ -163,34 +145,31 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                     {/* Footer */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: `1px solid ${BORDER}`, padding: "14px 0", marginTop: 14, flexShrink: 0 }}>
                         <div>
-                            {selected && (
-                                <span style={{ fontFamily: SANS, fontSize: 10, letterSpacing: "0.1em", color: GOLD_D, textTransform: "uppercase" }}>
-                                    ✓ {selected.title}
-                                </span>
-                            )}
+                            <button onClick={handleSkip} style={{ background: "none", border: 0, color: MUTED, fontFamily: FONT, fontSize: 14, cursor: "pointer", padding: "8px 0" }}>
+                                Browse everything
+                            </button>
                         </div>
                         <button
                             className="tsm-start-btn"
                             onClick={handleStart}
                             disabled={!selected}
                             style={{
-                                background: `linear-gradient(135deg, ${GOLD_D}, ${GOLD_L})`,
-                                color: "#070707",
+                                background: GOLD_L,
+                                color: "#17130B",
                                 border: "none",
-                                padding: "11px 24px",
-                                borderRadius: 1,
-                                fontFamily: SANS,
-                                fontSize: 11,
-                                fontWeight: 700,
-                                letterSpacing: "0.16em",
-                                textTransform: "uppercase",
+                                height: 44,
+                                padding: "0 22px",
+                                borderRadius: 999,
+                                fontFamily: FONT,
+                                fontSize: 15,
+                                fontWeight: 600,
                                 cursor: selected ? "pointer" : "not-allowed",
                                 opacity: selected ? 1 : 0.28,
                                 pointerEvents: selected ? "auto" : "none",
                                 transition: "opacity 0.2s, transform 0.2s",
                             }}
                         >
-                            Browse {selected?.title || "Category"} →
+                            {selected ? `Show ${selected.title}` : "Pick a category"}
                         </button>
                     </div>
                 </div>

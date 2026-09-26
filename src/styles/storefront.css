@@ -1,0 +1,237 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Trésor storefront design system (customer pages only; the admin keeps its own).
+   Identity kept: near-black + one gold accent. Modernised: Geist sans, light product
+   tiles, pill actions, calm motion.
+
+   Theme: dark only on purpose. Black and gold IS the brand, so there is no light mode.
+
+   Shape rule (used everywhere):
+     product tiles and cards  16px   (--sf-r-card)
+     panels and dialogs       20px   (--sf-r-panel)
+     inputs                   12px   (--sf-r-input)
+     buttons and chips        pill   (999px)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.sf {
+    --sf-bg: #0B0B0C;
+    --sf-surface: #131315;
+    --sf-surface-2: #1B1B1E;
+    --sf-line: rgba(255, 255, 255, 0.08);
+    --sf-line-2: rgba(255, 255, 255, 0.16);
+    --sf-text: #F2F0EB;
+    --sf-text-2: #B3ADA5;   /* ~9:1 on bg */
+    --sf-text-3: #8C867E;   /* ~5.4:1 on bg, still AA for small text */
+    --sf-gold: #D9B26F;     /* the one accent */
+    --sf-gold-2: #E6C68D;
+    --sf-gold-soft: rgba(217, 178, 111, 0.12);
+    --sf-on-gold: #17130B;
+    --sf-tile: #EDEDEE;     /* neutral grey tile so supplier photos on white blend in */
+    --sf-danger: #F0907F;
+    --sf-r-card: 16px;
+    --sf-r-panel: 20px;
+    --sf-r-input: 12px;
+    --sf-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --sf-font: "Geist Variable", "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    background: var(--sf-bg);
+    color: var(--sf-text);
+    font-family: var(--sf-font);
+    font-size: 16px;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+    flex-shrink: 0;
+    /* clip, not hidden: hidden would turn the page into its own scroll box */
+    overflow-x: clip;
+}
+
+/* index.css styles bare h1/h2 for the admin; the storefront sets its own. */
+/* :where() keeps this reset at zero specificity so the .sf-* type classes win. */
+.sf :where(h1, h2, h3, p) { margin: 0; font-family: inherit; color: inherit; letter-spacing: inherit; font-weight: inherit; }
+.sf a { color: inherit; }
+.sf ::selection { background: var(--sf-gold); color: var(--sf-on-gold); }
+
+.sf-container { width: 100%; max-width: 1280px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 40px); }
+
+/* ── Type ─────────────────────────────────────────────────────────────── */
+.sf-display { font-size: clamp(2.4rem, 4.6vw, 4rem); line-height: 1.02; font-weight: 600; letter-spacing: -0.04em; }
+.sf-h2 { font-size: clamp(1.6rem, 2.6vw, 2.25rem); line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; }
+.sf-h3 { font-size: 1.125rem; line-height: 1.3; font-weight: 550; letter-spacing: -0.015em; }
+.sf-lead { font-size: clamp(1rem, 1.3vw, 1.125rem); color: var(--sf-text-2); line-height: 1.6; max-width: 46ch; }
+.sf-muted { color: var(--sf-text-2); }
+.sf-faint { color: var(--sf-text-3); }
+.sf-gold { color: var(--sf-gold); }
+.sf-num { font-variant-numeric: tabular-nums; }
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+.sf-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(11, 11, 12, 0.78);
+    backdrop-filter: saturate(160%) blur(18px);
+    -webkit-backdrop-filter: saturate(160%) blur(18px);
+    border-bottom: 1px solid var(--sf-line);
+}
+.sf-header__inner { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.sf-header__logo { display: block; height: 44px; width: 112px; object-fit: contain; object-position: left center; }
+.sf-header__right { display: flex; align-items: center; gap: 8px; }
+.sf-header__back { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.sf-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 48px; padding: 0 22px; border-radius: 999px;
+    font: 550 15px/1 var(--sf-font); letter-spacing: -0.01em; white-space: nowrap;
+    border: 1px solid transparent; cursor: pointer; text-decoration: none;
+    transition: background-color .2s, border-color .2s, color .2s, transform .2s var(--sf-ease);
+}
+.sf-btn--primary { background: var(--sf-gold); color: var(--sf-on-gold); }
+.sf-btn--primary:hover:not(:disabled) { background: var(--sf-gold-2); }
+.sf-btn--ghost { background: transparent; color: var(--sf-text); border-color: var(--sf-line-2); }
+.sf-btn--ghost:hover:not(:disabled) { border-color: rgba(255, 255, 255, 0.32); background: rgba(255, 255, 255, 0.04); }
+.sf-btn--sm { height: 38px; padding: 0 16px; font-size: 14px; }
+.sf-btn--block { width: 100%; }
+.sf-btn:disabled { opacity: .45; cursor: not-allowed; }
+.sf-btn:active:not(:disabled) { transform: scale(0.98); }
+
+.sf-icon-btn {
+    position: relative; width: 40px; height: 40px; border-radius: 999px;
+    display: inline-grid; place-items: center; flex-shrink: 0;
+    background: transparent; border: 1px solid transparent; color: var(--sf-text); cursor: pointer;
+}
+.sf-icon-btn:hover { background: rgba(255, 255, 255, 0.06); }
+.sf-badge {
+    position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; padding: 0 5px;
+    border-radius: 999px; background: var(--sf-gold); color: var(--sf-on-gold);
+    font: 600 10.5px/18px var(--sf-font); text-align: center; pointer-events: none;
+}
+
+.sf :focus-visible { outline: 2px solid var(--sf-gold); outline-offset: 3px; }
+
+/* ── Chips (filters) ──────────────────────────────────────────────────── */
+.sf-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.sf-chips::-webkit-scrollbar { display: none; }
+.sf-chip {
+    flex-shrink: 0; height: 38px; padding: 0 16px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid var(--sf-line); color: var(--sf-text-2);
+    font: 500 14px/1 var(--sf-font); cursor: pointer; white-space: nowrap;
+}
+.sf-chip:hover { color: var(--sf-text); border-color: var(--sf-line-2); }
+.sf-chip[aria-pressed="true"] { background: var(--sf-gold-soft); border-color: rgba(217, 178, 111, 0.55); color: var(--sf-gold); }
+.sf-chip img { width: 16px; height: 16px; object-fit: contain; border-radius: 4px; }
+.sf-chip--dashed { border-style: dashed; }
+
+/* Segmented switch (Bags / Types) */
+.sf-seg { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--sf-surface); border: 1px solid var(--sf-line); }
+.sf-seg button {
+    height: 34px; padding: 0 16px; border-radius: 999px; border: 0; cursor: pointer;
+    background: transparent; color: var(--sf-text-2); font: 500 14px/1 var(--sf-font);
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.sf-seg button[aria-pressed="true"] { background: var(--sf-surface-2); color: var(--sf-text); box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+.sf-seg small { color: var(--sf-text-3); font-size: 12px; }
+
+/* ── Inputs ───────────────────────────────────────────────────────────── */
+.sf-field { display: grid; gap: 8px; }
+.sf-label { font: 500 13.5px/1.3 var(--sf-font); color: var(--sf-text-2); display: flex; gap: 8px; align-items: baseline; }
+.sf-label small { color: var(--sf-text-3); font-weight: 400; }
+.sf-input {
+    width: 100%; height: 48px; padding: 0 14px; border-radius: var(--sf-r-input);
+    background: var(--sf-surface); border: 1px solid var(--sf-line); color: var(--sf-text);
+    font: 400 15px/1.2 var(--sf-font); outline: none; transition: border-color .2s, background-color .2s;
+}
+textarea.sf-input { height: auto; padding: 12px 14px; line-height: 1.5; resize: vertical; }
+select.sf-input { appearance: none; cursor: pointer; background-image: linear-gradient(45deg, transparent 50%, var(--sf-text-3) 50%), linear-gradient(135deg, var(--sf-text-3) 50%, transparent 50%); background-position: calc(100% - 20px) 21px, calc(100% - 15px) 21px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 36px; }
+.sf-input::placeholder { color: var(--sf-text-3); }
+.sf-input:hover { border-color: var(--sf-line-2); }
+.sf-input:focus { border-color: rgba(217, 178, 111, 0.7); background: var(--sf-surface-2); }
+.sf-input[aria-invalid="true"] { border-color: var(--sf-danger); }
+.sf-error { color: var(--sf-danger); font-size: 13px; }
+
+.sf-search { position: relative; flex: 1; min-width: 0; }
+.sf-search .sf-input { padding-left: 42px; border-radius: 999px; }
+.sf-search svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--sf-text-3); pointer-events: none; }
+
+/* ── Product tile + card ──────────────────────────────────────────────── */
+.sf-tile {
+    position: relative; display: block; overflow: hidden; border-radius: var(--sf-r-card);
+    background: var(--sf-tile); aspect-ratio: 4 / 5; cursor: pointer; border: 0; padding: 0; width: 100%;
+    isolation: isolate;
+}
+/* multiply turns the photos' white backgrounds (and their white halos) into the tile grey */
+.sf-tile img {
+    width: 100%; height: 100%; object-fit: contain; padding: 9%;
+    mix-blend-mode: multiply; transition: transform .7s var(--sf-ease);
+}
+.sf-card:hover .sf-tile img { transform: scale(1.045); }
+.sf-tile__flag {
+    position: absolute; top: 12px; left: 12px; z-index: 1;
+    height: 26px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center;
+    background: #111; color: var(--sf-gold); font: 600 12px/1 var(--sf-font);
+}
+.sf-tile__flag--muted { color: #D8D4CD; }
+
+.sf-card { display: flex; flex-direction: column; gap: 12px; position: relative; }
+.sf-card__body { display: grid; gap: 4px; padding: 0 2px; }
+.sf-card__meta { font-size: 13px; color: var(--sf-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sf-card__title { font-size: 15.5px; font-weight: 550; letter-spacing: -0.015em; line-height: 1.3; color: var(--sf-text); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
+.sf-card__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; min-height: 38px; }
+.sf-price { display: inline-flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+.sf-price b { font-weight: 600; font-size: 16px; }
+.sf-price s { color: var(--sf-text-3); font-size: 13.5px; }
+
+.sf-stepper { display: inline-flex; align-items: center; height: 38px; border-radius: 999px; border: 1px solid var(--sf-line-2); }
+.sf-stepper button { width: 36px; height: 36px; border-radius: 999px; border: 0; background: transparent; color: var(--sf-text); display: grid; place-items: center; cursor: pointer; }
+.sf-stepper button:hover:not(:disabled) { background: rgba(255,255,255,.06); }
+.sf-stepper button:disabled { color: var(--sf-text-3); opacity: .5; cursor: not-allowed; }
+.sf-stepper span { min-width: 22px; text-align: center; font: 550 14px/1 var(--sf-font); font-variant-numeric: tabular-nums; }
+
+.sf-admin-tools { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; gap: 6px; }
+.sf-admin-tools button { width: 34px; height: 34px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.sf-admin-tools button:last-child { color: var(--sf-danger); }
+
+.sf-grid { display: grid; gap: clamp(20px, 2.4vw, 32px) clamp(12px, 1.8vw, 24px); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .sf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+    .sf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* Narrow cards: "Add" becomes a round + and the stepper tightens, so the price keeps its line. */
+    .sf-card__add { width: 38px; padding: 0; }
+    .sf-card__add-label { display: none; }
+    .sf-card__row { flex-wrap: wrap; row-gap: 8px; }
+    .sf-stepper button { width: 30px; }
+    .sf-price b { font-size: 15px; }
+}
+
+/* ── Panels ───────────────────────────────────────────────────────────── */
+.sf-panel { background: var(--sf-surface); border: 1px solid var(--sf-line); border-radius: var(--sf-r-panel); padding: clamp(18px, 2.4vw, 28px); }
+
+/* ── Skeleton ─────────────────────────────────────────────────────────── */
+.sf-skel { border-radius: 8px; background: linear-gradient(90deg, #17171a 25%, #212125 50%, #17171a 75%); background-size: 200% 100%; animation: sfShimmer 1.4s linear infinite; }
+
+/* ── Motion ───────────────────────────────────────────────────────────── */
+/* Hero entrance: the headline, text and buttons arrive in reading order. */
+.sf-rise { animation: sfRise .8s var(--sf-ease) both; animation-delay: var(--d, 0ms); }
+/* Grid items fade up once as they scroll into view (hierarchy, not decoration). */
+.sf-reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--sf-ease), transform .7s var(--sf-ease); }
+.sf-reveal.is-in { opacity: 1; transform: none; }
+/* The hero bag drifts slowly, the page's one ambient motion. */
+.sf-float { animation: sfFloat 7s ease-in-out infinite; }
+
+@keyframes sfRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes sfFloat { 0%, 100% { transform: translateY(0) rotate(-0.6deg); } 50% { transform: translateY(-14px) rotate(0.6deg); } }
+@keyframes sfShimmer { to { background-position: -200% 0; } }
+@keyframes sfSpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .sf-rise, .sf-float, .sf-skel { animation: none !important; }
+    .sf-reveal { opacity: 1; transform: none; transition: none; }
+    .sf-tile img, .sf-btn { transition: none; }
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.sf-footer { border-top: 1px solid var(--sf-line); margin-top: clamp(64px, 8vw, 112px); }
+.sf-footer__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding-block: 32px 40px; }
+.sf-footer__links { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; }
+.sf-footer__links a { color: var(--sf-text-2); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.sf-footer__links a:hover { color: var(--sf-text); }

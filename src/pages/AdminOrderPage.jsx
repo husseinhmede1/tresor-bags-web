@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getOrderByToken, confirmOrder, cancelOrder } from '../services/orderService';
 import { useAuth } from '../context/AuthContext';
+import { sized } from '../utils/image';
 
 const T = {
   BG: '#080808',
@@ -324,7 +325,7 @@ export default function AdminOrderPage() {
                 {(order.items || []).map((item, i) => (
                   <div key={item._id || i} style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
                     {item.mainImage ? (
-                      <img src={item.mainImage} alt={item.title} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: `1px solid ${T.BORDER}`, flexShrink: 0, background: 'rgba(255,255,255,0.04)' }} />
+                      <img src={sized(item.mainImage, 160)} alt={item.title} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: `1px solid ${T.BORDER}`, flexShrink: 0, background: 'rgba(255,255,255,0.04)' }} />
                     ) : (
                       <div style={{ width: 60, height: 60, borderRadius: 6, border: `1px solid ${T.BORDER}`, flexShrink: 0, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: T.MUTED }}>🛍</div>
                     )}

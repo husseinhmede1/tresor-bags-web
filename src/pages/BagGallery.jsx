@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
+import { sized } from "../utils/image";
 
 /* ── Tokens (mirrors BagListing) ── */
 const GOLD_L  = "#E5C48A";
@@ -157,7 +158,7 @@ const BagGallery = () => {
                     {/* Main image */}
                     <div style={S.mainImgWrap} className="bg-main-img-wrap">
                         <img
-                            src={selectedImage}
+                            src={sized(selectedImage, 1400)}
                             alt={bag.title}
                             style={S.mainImg}
                         />
@@ -182,7 +183,7 @@ const BagGallery = () => {
                                         outline: isActive ? `1px solid ${GOLD_L}` : "1px solid transparent",
                                     }} className="bg-thumb-wrap thumb-wrap">
                                         <img
-                                            src={img}
+                                            src={sized(img, 240)}
                                             alt={`View ${i + 1}`}
                                             style={{
                                                 ...S.thumb,

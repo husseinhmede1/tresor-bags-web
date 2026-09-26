@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../services/orderService';
+import { sized } from '../utils/image';
 
 const C = {
   BG: '#080808',
@@ -202,7 +203,7 @@ export default function PaymentPage() {
                 return (
                   <div key={bag.id} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <img
-                      src={bag.mainImage || bag.imageUrl || ''}
+                      src={sized(bag.mainImage || bag.imageUrl || '', 160)}
                       alt={bag.title || bag.name}
                       style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 3, flexShrink: 0, background: '#111' }}
                     />

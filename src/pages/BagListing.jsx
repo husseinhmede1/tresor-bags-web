@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllTypes, deleteType } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
+import { sized } from "../utils/image";
 import HeroParticleReveal from "../components/HeroParticleReveal";
 import TypeSelectorModal from "../components/TypeSelectorModal";
 
@@ -650,7 +651,7 @@ const BagListing = () => {
                                     display: "flex", alignItems: "center", gap: 6,
                                 }}
                             >
-                                {col.logo && <img src={col.logo} alt="" style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 2, flexShrink: 0 }} />}
+                                {col.logo && <img src={sized(col.logo, 64)} alt="" style={{ width: 14, height: 14, objectFit: "contain", borderRadius: 2, flexShrink: 0 }} />}
                                 {col.title}
                             </button>
                         );
@@ -770,7 +771,7 @@ const BagListing = () => {
                                         )}
                                         {/* Image — no bounding box, bleeds into card */}
                                         <div style={S.imgWrap} onClick={() => navigate(`/gallery/${bag._id}`)}>
-                                            <img src={bag.mainImage} alt={bag.title} style={S.img} className="tresor-img" />
+                                            <img src={sized(bag.mainImage, 700)} alt={bag.title} loading="lazy" style={S.img} className="tresor-img" />
                                             <div style={S.imgOverlay}>
                                                 <span style={S.viewLabel}>Discover</span>
                                             </div>

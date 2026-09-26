@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { sized } from '../utils/image';
 
 const C = {
   BG: '#080808',
@@ -88,7 +89,7 @@ export default function CartPage() {
                   >
                     {/* Image */}
                     <img
-                      src={bag.mainImage || bag.imageUrl || bag.image || ''}
+                      src={sized(bag.mainImage || bag.imageUrl || bag.image || '', 200)}
                       alt={bag.title || bag.name}
                       style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4, flexShrink: 0, background: '#111' }}
                     />

@@ -100,12 +100,10 @@ export default function DeliveryPage() {
           </div>
 
           <Field id="location" label="Delivery location" hint="Pin it on the map" error={showErr('location')}>
-            <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--sf-line)' }}>
-              <LocationPicker
-                value={{ lat: form.lat, lng: form.lng }}
-                onChange={({ lat, lng }) => setForm(prev => ({ ...prev, lat, lng }))}
-              />
-            </div>
+            <LocationPicker
+              value={{ lat: form.lat, lng: form.lng }}
+              onChange={({ lat, lng }) => setForm(prev => ({ ...prev, lat, lng }))}
+            />
           </Field>
 
           <Field id="address" label="Address details" hint="Optional">

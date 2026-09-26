@@ -1,10 +1,11 @@
+import { Crosshair, Check } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const GOLD = "#dfa94b", GOLD_L = "#E5C48A", MUTED = "#6B6560", BORDER = "rgba(201,168,106,0.2)";
 
 // Gold SVG pin so we don't depend on Leaflet's (bundler-broken) default marker images.
+const GOLD = "#D9B26F"; // map pin colour (Leaflet marker HTML, so not a React icon)
 const pinIcon = L.divIcon({
     className: "",
     html: `<svg width="34" height="34" viewBox="0 0 24 24" fill="${GOLD}" stroke="#080808" stroke-width="1"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.6" fill="#080808"/></svg>`,
@@ -75,21 +76,16 @@ export default function LocationPicker({ value, onChange }) {
 
     return (
         <div>
-            <button type="button" onClick={useMyLocation} disabled={locating} style={{
-                display: "flex", alignItems: "center", gap: 8, width: "100%", justifyContent: "center",
-                background: "rgba(201,168,106,0.08)", border: `1px solid ${BORDER}`, borderRadius: 4,
-                color: GOLD_L, padding: "12px 14px", fontSize: 14, cursor: locating ? "default" : "pointer",
-                fontFamily: "'Inter', sans-serif", marginBottom: 10, letterSpacing: "0.03em",
-            }}>
-                📍 {locating ? "Locating…" : "Use my current location"}
+            <button type="button" className="sf-btn sf-btn--ghost sf-btn--block" onClick={useMyLocation} disabled={locating} style={{ marginBottom: 10 }}>
+                <Crosshair size={18} color="#D9B26F" /> {locating ? "Finding you…" : "Use my current location"}
             </button>
-            <div ref={containerRef} style={{ height: 260, width: "100%", borderRadius: 6, overflow: "hidden", border: `1px solid ${BORDER}` }} />
-            <p style={{ fontSize: 12, color: hasPoint ? GOLD_L : MUTED, margin: "8px 0 0", letterSpacing: "0.02em" }}>
+            <div ref={containerRef} style={{ height: 260, width: "100%", borderRadius: 16, overflow: "hidden", border: "1px solid var(--sf-line, rgba(255,255,255,0.08))" }} />
+            <p className={hasPoint ? "sf-gold" : "sf-faint"} style={{ fontSize: 13, margin: "8px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
                 {hasPoint
-                    ? `✓ Location set (${value.lat.toFixed(5)}, ${value.lng.toFixed(5)}) — drag the pin to fine-tune`
+                    ? <><Check size={14} weight="bold" /> Location set. Drag the pin to fine-tune it.</>
                     : "Tap “Use my current location”, or tap the map to drop a pin."}
             </p>
-            {error && <p style={{ fontSize: 12, color: "#e05", margin: "6px 0 0" }}>{error}</p>}
+            {error && <p className="sf-error" role="alert" style={{ marginTop: 6 }}>{error}</p>}
         </div>
     );
 }

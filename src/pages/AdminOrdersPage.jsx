@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { CaretLeft, CaretRight, Receipt } from "@phosphor-icons/react";
 import { getAllOrders } from "../services/orderService";
-
-const G = "#E5C48A", GD = "#C9A86A", BG = "#080808", CARD = "#0e0e0e", BORDER = "rgba(201,168,106,0.15)", MUTED = "#8A847C", TEXT = "#F5F1E8";
-const SERIF = "'Cormorant Garamond', serif", SANS = "'Inter', sans-serif";
+import AdminShell from "../components/storefront/AdminShell";
 
 const STATUSES = [
     { k: "", label: "All" },
@@ -18,14 +16,13 @@ const PERIODS = [
     { k: "week", label: "Week" },
     { k: "month", label: "Month" },
 ];
-const STATUS_COLOR = { pending: "#D8B24A", confirmed: "#7BB07B", cancelled: "#C9807A" };
+const STATUS_LABEL = { pending: "Pending", confirmed: "Confirmed", cancelled: "Cancelled" };
 
 const money = (n) => "$" + (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtDate = (d) => { try { return new Date(d).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
 
 export default function AdminOrdersPage() {
     const navigate = useNavigate();
-    const { logout } = useAuth();
     const [sp] = useSearchParams();
     const [status, setStatus] = useState(sp.get("status") || "");
     const [period, setPeriod] = useState("all");
@@ -44,91 +41,111 @@ export default function AdminOrdersPage() {
             .finally(() => setLoading(false));
     }, [status, period, page]);
 
+    const subtitle = loading ? "Loading orders" : `${data.total} order${data.total === 1 ? "" : "s"}`;
+
     return (
-        <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: SANS }}>
-            <header style={S.header}>
-                <div>
-                    <p style={S.eyebrow}>Admin</p>
-                    <h1 style={S.title}>Orders</h1>
-                </div>
-                <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-                    <button style={S.linkBtn} onClick={() => navigate("/admin/stats")}>Statistics</button>
-                    <button style={S.linkBtn} onClick={() => navigate("/admin/dashboard")}>Dashboard</button>
-                    <button style={S.linkBtn} onClick={logout}>Logout</button>
-                </div>
-            </header>
+        <AdminShell title="Orders" subtitle={subtitle} width={1000}>
+            <style>{ORDERS_CSS}</style>
 
-            <main style={{ maxWidth: 1000, margin: "24px auto", padding: "0 16px 80px" }}>
-                {/* Status tabs */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            <div className="aos-filters">
+                <div className="sf-seg aos-seg" role="group" aria-label="Filter by status">
                     {STATUSES.map((s) => (
-                        <button key={s.k} onClick={() => setStatus(s.k)} style={{ ...S.chip, ...(status === s.k ? S.chipActive : {}) }}>{s.label}</button>
+                        <button key={s.k} type="button" aria-pressed={status === s.k} onClick={() => setStatus(s.k)}>{s.label}</button>
                     ))}
                 </div>
-                {/* Period filter */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 22 }}>
+                <div className="sf-chips" role="group" aria-label="Filter by period">
                     {PERIODS.map((p) => (
-                        <button key={p.k} onClick={() => setPeriod(p.k)} style={{ ...S.chipSm, ...(period === p.k ? S.chipSmActive : {}) }}>{p.label}</button>
+                        <button key={p.k} type="button" className="sf-chip" aria-pressed={period === p.k} onClick={() => setPeriod(p.k)}>{p.label}</button>
                     ))}
                 </div>
+            </div>
 
-                {error && <p style={{ color: "#C9957A", fontSize: 13 }}>{error}</p>}
-                {loading ? (
-                    <p style={{ color: MUTED, fontSize: 13, letterSpacing: "0.1em" }}>Loading…</p>
-                ) : data.data.length === 0 ? (
-                    <p style={{ color: MUTED, fontSize: 14, marginTop: 30 }}>No orders found.</p>
-                ) : (
-                    <>
-                        <p style={{ color: MUTED, fontSize: 11, letterSpacing: "0.1em", marginBottom: 12 }}>{data.total} order{data.total === 1 ? "" : "s"}</p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {data.data.map((o) => {
-                                const d = o.delivery || {};
-                                const name = [d.name, d.surname].filter(Boolean).join(" ") || "—";
-                                const phone = [d.phonePrefix, d.phoneNumber].filter(Boolean).join(" ");
-                                const items = (o.items || []).reduce((n, it) => n + (it.quantity || 0), 0);
-                                return (
-                                    <div key={o._id} style={S.row} onClick={() => navigate(`/admin/order/${o.confirmToken}`)}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={S.rowName}>{name}</p>
-                                            <p style={S.rowSub}>{phone || "no phone"} · {items} item{items === 1 ? "" : "s"} · {fmtDate(o.createdAt)}</p>
-                                        </div>
-                                        <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                            <p style={S.rowTotal}>{money(o.total)}</p>
-                                            <span style={{ ...S.badge, color: STATUS_COLOR[o.status] || MUTED, borderColor: (STATUS_COLOR[o.status] || MUTED) + "55" }}>{o.status}</span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+            {error && <p className="sf-error" role="alert" style={{ marginBottom: 16 }}>{error}</p>}
 
-                        {/* Pagination */}
-                        {data.totalPages > 1 && (
-                            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 24 }}>
-                                <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} style={{ ...S.pageBtn, opacity: page <= 1 ? 0.3 : 1 }}>← Prev</button>
-                                <span style={{ fontSize: 12, color: MUTED }}>{page} / {data.totalPages}</span>
-                                <button disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)} style={{ ...S.pageBtn, opacity: page >= data.totalPages ? 0.3 : 1 }}>Next →</button>
+            {loading ? (
+                <div className="aos-list" aria-busy="true" aria-label="Loading orders">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <div key={i} className="aos-skelrow">
+                            <div style={{ display: "grid", gap: 8, flex: 1 }}>
+                                <div className="sf-skel" style={{ height: 16, width: "40%" }} />
+                                <div className="sf-skel" style={{ height: 12, width: "60%" }} />
                             </div>
-                        )}
-                    </>
-                )}
-            </main>
-        </div>
+                            <div className="sf-skel" style={{ height: 26, width: 84, borderRadius: 999 }} />
+                        </div>
+                    ))}
+                </div>
+            ) : data.data.length === 0 ? (
+                <div className="sf-panel aos-empty">
+                    <Receipt size={40} color="#8C867E" />
+                    <h2 className="sf-h3">No orders found</h2>
+                    <p className="sf-muted" style={{ maxWidth: "36ch" }}>Try another status or a longer period.</p>
+                </div>
+            ) : (
+                <>
+                    <ul className="aos-list">
+                        {data.data.map((o) => {
+                            const d = o.delivery || {};
+                            const name = [d.name, d.surname].filter(Boolean).join(" ") || "Name not given";
+                            const phone = d.phoneNumber ? [d.phonePrefix, d.phoneNumber].filter(Boolean).join(" ") : "";
+                            const items = (o.items || []).reduce((n, it) => n + (it.quantity || 0), 0);
+                            return (
+                                <li key={o._id}>
+                                    <button type="button" className="sf-row aos-row" onClick={() => navigate(`/admin/order/${o.confirmToken}`)}>
+                                        <div style={{ minWidth: 0 }}>
+                                            <p className="aos-name">{name}</p>
+                                            <p className="aos-sub sf-num">
+                                                <span>{fmtDate(o.createdAt)}</span>
+                                                <span>{items} item{items === 1 ? "" : "s"}</span>
+                                                {phone && <span className="aos-phone">{phone}</span>}
+                                            </p>
+                                        </div>
+                                        <div className="aos-end">
+                                            <span className="sf-num aos-total">{money(o.total)}</span>
+                                            <span className={`sf-status sf-status--${o.status}`}>{STATUS_LABEL[o.status] || o.status}</span>
+                                        </div>
+                                        <CaretRight size={16} className="aos-chev" aria-hidden="true" />
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+
+                    {data.totalPages > 1 && (
+                        <nav className="aos-pager" aria-label="Pagination">
+                            <button className="sf-btn sf-btn--ghost sf-btn--sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+                                <CaretLeft size={14} /> Previous
+                            </button>
+                            <span className="sf-faint sf-num" style={{ fontSize: 14 }}>Page {page} of {data.totalPages}</span>
+                            <button className="sf-btn sf-btn--ghost sf-btn--sm" disabled={page >= data.totalPages} onClick={() => setPage((p) => p + 1)}>
+                                Next <CaretRight size={14} />
+                            </button>
+                        </nav>
+                    )}
+                </>
+            )}
+        </AdminShell>
     );
 }
 
-const S = {
-    header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "18px 24px", borderBottom: `1px solid ${BORDER}`, background: "rgba(8,8,8,0.96)", position: "sticky", top: 0, zIndex: 10, flexWrap: "wrap" },
-    eyebrow: { fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: MUTED, margin: "0 0 4px" },
-    title: { fontFamily: SERIF, fontSize: 24, color: G, letterSpacing: "0.08em", margin: 0 },
-    linkBtn: { background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" },
-    chip: { padding: "8px 18px", background: "transparent", border: `1px solid ${BORDER}`, color: MUTED, borderRadius: 100, cursor: "pointer", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: SANS },
-    chipActive: { background: "rgba(201,168,106,0.1)", borderColor: GD, color: G },
-    chipSm: { padding: "5px 14px", background: "transparent", border: `1px solid ${BORDER}`, color: MUTED, borderRadius: 100, cursor: "pointer", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: SANS },
-    chipSmActive: { background: "rgba(201,168,106,0.08)", borderColor: GD, color: G },
-    row: { display: "flex", alignItems: "center", gap: 14, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "14px 16px", cursor: "pointer" },
-    rowName: { fontSize: 15, color: TEXT, margin: 0, fontFamily: SERIF, letterSpacing: "0.02em" },
-    rowSub: { fontSize: 11, color: MUTED, margin: "4px 0 0", letterSpacing: "0.03em" },
-    rowTotal: { fontSize: 15, color: G, margin: "0 0 6px", fontFamily: SERIF },
-    badge: { fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", border: "1px solid", borderRadius: 2, padding: "2px 7px" },
-    pageBtn: { background: "transparent", border: `1px solid ${BORDER}`, color: TEXT, padding: "7px 16px", borderRadius: 100, cursor: "pointer", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" },
-};
+const ORDERS_CSS = `
+    .aos-filters { display: grid; gap: 12px; margin-bottom: 24px; }
+    .aos-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; width: fit-content; }
+    .aos-seg::-webkit-scrollbar { display: none; }
+    .aos-seg button { flex-shrink: 0; }
+    .aos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .aos-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .aos-name { font-size: 16px; font-weight: 550; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .aos-sub { margin-top: 4px; font-size: 13.5px; color: var(--sf-text-3); display: flex; flex-wrap: wrap; column-gap: 14px; row-gap: 2px; }
+    .aos-end { display: grid; justify-items: end; gap: 6px; }
+    .aos-total { font-weight: 600; font-size: 16px; }
+    .aos-chev { color: var(--sf-text-3); }
+    .aos-skelrow { display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 16px; background: var(--sf-surface); border: 1px solid var(--sf-line); }
+    .aos-empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 56px 24px; }
+    .aos-pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 28px; flex-wrap: wrap; }
+    @media (max-width: 560px) {
+        .aos-row { grid-template-columns: minmax(0, 1fr) auto; padding: 14px 16px; }
+        .aos-chev { display: none; }
+        .aos-phone { display: none; }
+        .aos-pager { gap: 10px; }
+    }
+`;

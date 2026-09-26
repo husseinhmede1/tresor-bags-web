@@ -1,20 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getOrderByToken, confirmOrder, cancelOrder } from '../services/orderService';
-import { useAuth } from '../context/AuthContext';
+import {
+  ArrowLeft, ArrowSquareOut, CheckCircle, EnvelopeSimple, Handbag, MagnifyingGlass,
+  MapPin, Note, Phone, User, WarningCircle, WhatsappLogo, XCircle,
+} from '@phosphor-icons/react';
 import { sized } from '../utils/image';
-
-const T = {
-  BG: '#080808',
-  GOLD: '#dfa94b',
-  GOLD_L: '#E5C48A',
-  GOLD_D: '#C9A86A',
-  MUTED: '#6B6560',
-  TEXT: '#F5F1E8',
-  BORDER: 'rgba(201,168,106,0.15)',
-  SERIF: "'Cormorant Garamond', serif",
-  SANS: "'Inter', sans-serif",
-};
+import AdminShell from '../components/storefront/AdminShell';
 
 const fmt = (n) =>
   Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -67,7 +59,6 @@ function buildCancelMessage(order) {
 export default function AdminOrderPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -148,319 +139,267 @@ export default function AdminOrderPage() {
   const isCancelled = order?.status === 'cancelled';
   const savings = order?.savings || 0;
 
-  return (
-    <>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .admin-confirm-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
-        .admin-cancel-btn:hover:not(:disabled) { opacity: 0.82; transform: translateY(-1px); }
-        .admin-back-btn:hover { border-color: ${T.GOLD_D} !important; }
-        .stock-popup-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-          display: flex; align-items: center; justify-content: center;
-          z-index: 1000; padding: 24px;
-        }
-        .stock-popup {
-          background: #0e0e0e; border: 1px solid rgba(239,68,68,0.35);
-          border-radius: 12px; padding: 32px; max-width: 480px; width: 100%;
-          box-shadow: 0 24px 60px rgba(0,0,0,0.8);
-        }
-      `}</style>
+  const d = order?.delivery || {};
+  const customerName = `${d.name || ''} ${d.surname || ''}`.trim();
+  const phoneDisplay = d.phoneNumber ? `${d.phonePrefix || ''} ${d.phoneNumber}`.trim() : '';
+  const phoneDigits = customerPhone(d);
+  const addressLine = [d.address, d.district, d.locality, d.region].filter((s) => s && String(s).trim()).join(', ');
+  const mapHref = d.mapLink || (d.lat != null && d.lng != null ? `https://www.google.com/maps?q=${d.lat},${d.lng}` : null);
+  const itemCount = (order?.items || []).reduce((n, it) => n + (it.quantity || 1), 0);
+  const fmtWhen = (v) => new Date(v).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
-      {/* Stock error popup */}
+  return (
+    <AdminShell width={1120}>
+      <style>{ORDER_CSS}</style>
+
+      {/* Stock error dialog */}
       {stockError && (
-        <div className="stock-popup-overlay" onClick={() => setStockError(null)}>
-          <div className="stock-popup" onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>⚠️</div>
-            <h2 style={{ fontFamily: T.SERIF, fontSize: 22, color: '#f87171', fontWeight: 400, margin: '0 0 8px' }}>
-              Insufficient Stock
-            </h2>
-            <p style={{ color: T.MUTED, fontSize: 13, marginBottom: 20 }}>
+        <div className="aod-overlay" onClick={() => setStockError(null)}>
+          <div className="sf-panel aod-dialog" role="alertdialog" aria-modal="true" aria-labelledby="aod-stock-title" onClick={e => e.stopPropagation()}>
+            <WarningCircle size={32} color="var(--sf-danger)" />
+            <h2 id="aod-stock-title" className="sf-h3" style={{ marginTop: 12 }}>Not enough stock</h2>
+            <p className="sf-muted" style={{ fontSize: 14, marginTop: 6 }}>
               The following items don't have enough stock to fulfil this order. No changes were made.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+            <ul className="aod-stock">
               {stockError.insufficient.map((item, i) => (
-                <div key={i} style={{
-                  background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)',
-                  borderRadius: 8, padding: '12px 16px',
-                }}>
-                  <div style={{ fontFamily: T.SERIF, fontSize: 16, color: T.GOLD_L, marginBottom: 4 }}>
-                    {item.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: T.MUTED }}>
-                    Required: <span style={{ color: '#f87171', fontWeight: 600 }}>{item.required}</span>
-                    &nbsp;·&nbsp;
-                    Available: <span style={{ color: '#4ade80', fontWeight: 600 }}>{item.available}</span>
-                  </div>
-                </div>
+                <li key={i}>
+                  <p style={{ fontWeight: 550 }}>{item.title}</p>
+                  <p className="sf-faint sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
+                    Required <span className="aod-danger">{item.required}</span>
+                    <span style={{ marginInline: 8 }}>·</span>
+                    Available <span style={{ color: 'var(--sf-text)' }}>{item.available}</span>
+                  </p>
+                </li>
               ))}
-            </div>
-            <button
-              onClick={() => setStockError(null)}
-              style={{
-                width: '100%', padding: '12px 0', background: 'rgba(239,68,68,0.15)',
-                border: '1px solid rgba(239,68,68,0.35)', borderRadius: 6,
-                color: '#f87171', fontFamily: T.SANS, fontSize: 14,
-                fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em',
-              }}
-            >
-              Dismiss
-            </button>
+            </ul>
+            <button className="sf-btn sf-btn--ghost sf-btn--block" onClick={() => setStockError(null)}>Dismiss</button>
           </div>
         </div>
       )}
 
-      <div style={{ minHeight: '100vh', background: T.BG, color: T.TEXT, fontFamily: T.SANS }}>
-        {/* Header */}
-        <header style={{
-          borderBottom: `1px solid ${T.BORDER}`, padding: '18px 32px',
-          display: 'flex', alignItems: 'center', gap: 24,
-          background: 'rgba(8,8,8,0.95)', position: 'sticky', top: 0, zIndex: 10,
-        }}>
-          <button
-            className="admin-back-btn"
-            style={{
-              background: 'none', border: `1px solid ${T.BORDER}`, color: T.GOLD_L,
-              fontFamily: T.SANS, fontSize: 13, padding: '7px 16px', borderRadius: 6,
-              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-              letterSpacing: '0.04em', transition: 'border-color 0.2s',
-            }}
-            onClick={() => navigate('/admin/dashboard')}
-          >
-            ← Back
-          </button>
-          <span style={{
-            fontFamily: T.SERIF, fontSize: 20, color: T.GOLD, letterSpacing: '0.12em',
-            fontWeight: 400, flex: 1, textAlign: 'center',
-          }}>
-            TRÉSOR BAGS — Order Confirmation
-          </span>
-          {user && (
-            <span style={{ fontSize: 12, color: T.MUTED, letterSpacing: '0.06em', minWidth: 120, textAlign: 'right' }}>
-              {user.name || user.email || 'Admin'}
-            </span>
-          )}
-        </header>
+      <button className="sf-btn sf-btn--ghost sf-btn--sm" onClick={() => navigate('/admin/orders')}>
+        <ArrowLeft size={16} /> Orders
+      </button>
 
-        <div style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px 80px' }}>
-          {/* Loading */}
-          {loading && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
-              <div style={{ width: 36, height: 36, border: `3px solid ${T.BORDER}`, borderTop: `3px solid ${T.GOLD}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              <span style={{ color: T.MUTED, fontSize: 14, letterSpacing: '0.06em' }}>Loading order…</span>
+      {/* Loading */}
+      {loading && (
+        <div aria-busy="true" aria-label="Loading order" style={{ marginTop: 28 }}>
+          <div className="sf-skel" style={{ height: 34, width: 260, maxWidth: '70%' }} />
+          <div className="sf-skel" style={{ height: 20, width: 200, marginTop: 12 }} />
+          <div className="aod-grid">
+            <div className="sf-skel" style={{ height: 320, borderRadius: 20 }} />
+            <div className="sf-skel" style={{ height: 320, borderRadius: 20 }} />
+          </div>
+        </div>
+      )}
+
+      {/* Not found */}
+      {!loading && notFound && (
+        <div className="sf-panel aod-empty">
+          <MagnifyingGlass size={40} color="#8C867E" />
+          <h1 className="sf-h3">Order not found</h1>
+          <p className="sf-muted">No order exists for this token.</p>
+        </div>
+      )}
+
+      {/* Order loaded */}
+      {!loading && !notFound && order && (
+        <>
+          <div className="aod-head">
+            <h1 className="sf-h2">{customerName || 'Order'}</h1>
+            <div className="aod-meta">
+              {isConfirmed && <span className="sf-status sf-status--confirmed">Confirmed</span>}
+              {isCancelled && <span className="sf-status sf-status--cancelled">Cancelled</span>}
+              {!isConfirmed && !isCancelled && <span className="sf-status sf-status--pending">Awaiting confirmation</span>}
+              {order.createdAt && <span className="sf-faint sf-num">Placed {fmtWhen(order.createdAt)}</span>}
             </div>
-          )}
+          </div>
 
-          {/* Not found */}
-          {!loading && notFound && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
-              <div style={{ fontFamily: T.SERIF, fontSize: 28, color: T.GOLD }}>Order Not Found</div>
-              <div style={{ color: T.MUTED, fontSize: 14 }}>No order exists for this token.</div>
-            </div>
-          )}
+          <div className="aod-grid">
+            {/* Items and totals */}
+            <section className="sf-panel">
+              <div className="aod-panel-head">
+                <h2 className="sf-h3">Items</h2>
+                <span className="sf-faint sf-num" style={{ fontSize: 14 }}>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
+              </div>
 
-          {/* Order loaded */}
-          {!loading && !notFound && order && (
-            <>
-              {/* Status badge */}
-              {isConfirmed && (
-                <>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.30)',
-                    color: '#4ade80', fontSize: 11, fontFamily: T.SANS, letterSpacing: '0.14em',
-                    fontWeight: 600, padding: '6px 16px', borderRadius: 4,
-                    textTransform: 'uppercase', marginBottom: 28,
-                  }}>
-                    <span>✓</span> Payment Confirmed
-                  </div>
-                  {order.confirmedAt && (
-                    <div style={{ fontSize: 12, color: T.MUTED, marginTop: -20, marginBottom: 28, letterSpacing: '0.04em' }}>
-                      Confirmed on {new Date(order.confirmedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {isCancelled && (
-                <>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.30)',
-                    color: '#f87171', fontSize: 11, fontFamily: T.SANS, letterSpacing: '0.14em',
-                    fontWeight: 600, padding: '6px 16px', borderRadius: 4,
-                    textTransform: 'uppercase', marginBottom: 28,
-                  }}>
-                    <span>✕</span> Order Cancelled
-                  </div>
-                  {order.cancelledAt && (
-                    <div style={{ fontSize: 12, color: T.MUTED, marginTop: -20, marginBottom: 28, letterSpacing: '0.04em' }}>
-                      Cancelled on {new Date(order.cancelledAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {!isConfirmed && !isCancelled && (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: 'rgba(218,165,32,0.12)', border: '1px solid rgba(218,165,32,0.35)',
-                  color: '#f0c844', fontSize: 11, fontFamily: T.SANS, letterSpacing: '0.14em',
-                  fontWeight: 600, padding: '6px 16px', borderRadius: 4,
-                  textTransform: 'uppercase', marginBottom: 28,
-                }}>
-                  <span>⏳</span> Awaiting Confirmation
-                </div>
-              )}
-
-              {/* Order Summary */}
-              <div style={{
-                background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.BORDER}`,
-                borderRadius: 10, padding: '24px 28px', marginBottom: 20,
-              }}>
-                <div style={{ fontSize: 10, letterSpacing: '0.18em', color: T.MUTED, textTransform: 'uppercase', fontWeight: 600, marginBottom: 18 }}>
-                  Order Summary
-                </div>
-
+              <ul className="aod-items">
                 {(order.items || []).map((item, i) => (
-                  <div key={item._id || i} style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-                    {item.mainImage ? (
-                      <img src={sized(item.mainImage, 160)} alt={item.title} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: `1px solid ${T.BORDER}`, flexShrink: 0, background: 'rgba(255,255,255,0.04)' }} />
-                    ) : (
-                      <div style={{ width: 60, height: 60, borderRadius: 6, border: `1px solid ${T.BORDER}`, flexShrink: 0, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: T.MUTED }}>🛍</div>
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: T.SERIF, fontSize: 17, color: T.GOLD_L, fontWeight: 400, marginBottom: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.title}
-                      </div>
-                      <div style={{ fontSize: 12, color: T.MUTED }}>
+                  <li key={item._id || i} className="aod-item">
+                    <span className="sf-tile aod-thumb">
+                      {item.mainImage
+                        ? <img src={sized(item.mainImage, 160)} alt={item.title} />
+                        : <Handbag size={22} color="#8C867E" />}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <p className="aod-item__title">{item.title}</p>
+                      <p className="sf-faint sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
                         ${fmt(item.subtotal / (item.quantity || 1))} × {item.quantity || 1}
-                      </div>
+                      </p>
                     </div>
-                    <div style={{ fontFamily: T.SERIF, fontSize: 16, color: T.TEXT, flexShrink: 0 }}>
-                      ${fmt(item.subtotal)}
-                    </div>
-                  </div>
+                    <span className="sf-num" style={{ fontWeight: 600 }}>${fmt(item.subtotal)}</span>
+                  </li>
                 ))}
+              </ul>
 
-                <div style={{ borderTop: `1px solid ${T.BORDER}`, margin: '16px 0' }} />
-
+              <div className="aod-totals">
                 {savings > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#4ade80', marginBottom: 8 }}>
-                    <span>Total Savings</span>
-                    <span>−${fmt(savings)}</span>
+                  <div>
+                    <span className="sf-muted">Savings</span>
+                    <span className="sf-num sf-gold">−${fmt(savings)}</span>
                   </div>
                 )}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontFamily: T.SERIF, fontSize: 18, color: T.TEXT }}>Grand Total</span>
-                  <span style={{ fontFamily: T.SERIF, fontSize: 26, color: T.GOLD }}>${fmt(order.total || 0)}</span>
+                <div className="aod-total">
+                  <span>Total</span>
+                  <span className="sf-num">${fmt(order.total || 0)}</span>
                 </div>
               </div>
+            </section>
 
-              {/* Delivering To */}
-              <div style={{
-                background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.BORDER}`,
-                borderRadius: 10, padding: '24px 28px', marginBottom: 20,
-              }}>
-                <div style={{ fontSize: 10, letterSpacing: '0.18em', color: T.MUTED, textTransform: 'uppercase', fontWeight: 600, marginBottom: 18 }}>
-                  Delivering To
-                </div>
-
-                {[
-                  ['Name',     `${order.delivery?.name || ''} ${order.delivery?.surname || ''}`.trim()],
-                  ['Phone',    `${order.delivery?.phonePrefix || ''} ${order.delivery?.phoneNumber || ''}`.trim()],
-                  ['Email',    order.delivery?.email],
-                  ['Address',  order.delivery?.address],
-                  ['Region',   order.delivery?.region],
-                  ['Notes',    order.delivery?.moreInfo],
-                ].filter(([, v]) => v).map(([label, value]) => (
-                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: T.TEXT, marginBottom: 10, gap: 12 }}>
-                    <span style={{ color: T.MUTED, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, flexShrink: 0, paddingTop: 1 }}>{label}</span>
-                    <span style={{ textAlign: 'right', flex: 1, color: T.TEXT, fontSize: 14 }}>{value}</span>
+            {/* Customer, delivery and actions */}
+            <div className="aod-side">
+              <section className="sf-panel">
+                <h2 className="sf-h3">Customer and delivery</h2>
+                <dl className="aod-info">
+                  <div>
+                    <dt><User size={18} /></dt>
+                    <dd>{customerName || <span className="sf-faint">Name not given</span>}</dd>
                   </div>
-                ))}
-                {order.delivery?.mapLink && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 10, gap: 12 }}>
-                    <span style={{ color: T.MUTED, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500, flexShrink: 0, paddingTop: 1 }}>Location</span>
-                    <a href={order.delivery.mapLink} target="_blank" rel="noreferrer" style={{ textAlign: 'right', flex: 1, color: T.GOLD_L || '#E5C48A', fontSize: 14, textDecoration: 'underline' }}>Open in Google Maps ↗</a>
+                  {phoneDisplay && (
+                    <div>
+                      <dt><Phone size={18} /></dt>
+                      <dd className="aod-phone">
+                        <a href={`tel:${phoneDigits ? '+' + phoneDigits : phoneDisplay}`} className="sf-num">{phoneDisplay}</a>
+                        {phoneDigits && (
+                          <a className="sf-btn sf-btn--ghost sf-btn--sm" href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noreferrer">
+                            <WhatsappLogo size={16} /> WhatsApp
+                          </a>
+                        )}
+                      </dd>
+                    </div>
+                  )}
+                  {d.email && (
+                    <div>
+                      <dt><EnvelopeSimple size={18} /></dt>
+                      <dd><a href={`mailto:${d.email}`}>{d.email}</a></dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt><MapPin size={18} /></dt>
+                    <dd>
+                      {addressLine || <span className="sf-faint">Address not given</span>}
+                      {mapHref && (
+                        <a className="aod-map" href={mapHref} target="_blank" rel="noreferrer">
+                          Open in Google Maps <ArrowSquareOut size={14} />
+                        </a>
+                      )}
+                    </dd>
                   </div>
-                )}
-              </div>
+                  {d.moreInfo && (
+                    <div>
+                      <dt><Note size={18} /></dt>
+                      <dd className="sf-muted" style={{ whiteSpace: 'pre-line' }}>{d.moreInfo}</dd>
+                    </div>
+                  )}
+                </dl>
+              </section>
 
-              {/* Action area — only for pending orders */}
+              {/* Actions: only for pending orders */}
               {!isConfirmed && !isCancelled && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <section className="sf-panel aod-actions">
                   <button
-                    className="admin-confirm-btn"
-                    style={{
-                      width: '100%', padding: '16px 0',
-                      background: confirming
-                        ? 'rgba(223,169,75,0.4)'
-                        : `linear-gradient(135deg, ${T.GOLD_D} 0%, ${T.GOLD} 50%, ${T.GOLD_L} 100%)`,
-                      border: 'none', borderRadius: 8, color: '#080808',
-                      fontFamily: T.SANS, fontSize: 15, fontWeight: 700,
-                      letterSpacing: '0.08em', cursor: confirming ? 'not-allowed' : 'pointer',
-                      textTransform: 'uppercase', transition: 'opacity 0.2s, transform 0.1s',
-                      opacity: confirming ? 0.6 : 1,
-                    }}
+                    className="sf-btn sf-btn--primary sf-btn--block"
                     onClick={handleConfirm}
                     disabled={confirming}
                   >
-                    {confirming ? 'Confirming…' : 'Confirm Payment Received ✓'}
+                    <CheckCircle size={18} weight="bold" />
+                    {confirming ? 'Confirming…' : 'Confirm payment'}
                   </button>
-
                   <button
-                    className="admin-cancel-btn"
-                    style={{
-                      width: '100%', padding: '14px 0',
-                      background: 'rgba(239,68,68,0.08)',
-                      border: '1px solid rgba(239,68,68,0.35)',
-                      borderRadius: 8, color: '#f87171',
-                      fontFamily: T.SANS, fontSize: 14, fontWeight: 600,
-                      letterSpacing: '0.08em', cursor: cancelling ? 'not-allowed' : 'pointer',
-                      textTransform: 'uppercase', transition: 'opacity 0.2s, transform 0.1s',
-                      opacity: cancelling ? 0.6 : 1,
-                    }}
+                    className="sf-btn sf-btn--ghost sf-btn--block aod-cancel"
                     onClick={handleCancel}
                     disabled={cancelling}
                   >
-                    {cancelling ? 'Cancelling…' : 'Cancel Order ✕'}
+                    <XCircle size={18} />
+                    {cancelling ? 'Cancelling…' : 'Cancel order'}
                   </button>
+                  <p className="sf-faint" style={{ fontSize: 13, textAlign: 'center' }}>
+                    Confirming deducts stock. Both actions open WhatsApp with a message for the customer.
+                  </p>
+                </section>
+              )}
 
-                  <div style={{ fontSize: 11, color: T.MUTED, textAlign: 'center', letterSpacing: '0.04em' }}>
-                    Confirming will deduct stock. Cancelling will notify the customer via WhatsApp.
+              {isConfirmed && (
+                <div className="aod-state aod-state--ok">
+                  <CheckCircle size={22} weight="fill" />
+                  <div>
+                    <p>Payment confirmed. Stock has been updated.</p>
+                    {order.confirmedAt && <p className="aod-state__when sf-num">Confirmed on {fmtWhen(order.confirmedAt)}</p>}
                   </div>
                 </div>
               )}
 
-              {isConfirmed && (
-                <div style={{
-                  background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
-                  borderRadius: 8, padding: '18px 24px',
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  fontSize: 14, color: '#4ade80', letterSpacing: '0.03em',
-                }}>
-                  <span style={{ fontSize: 20 }}>✅</span>
-                  <span>Payment confirmed. Stock has been updated.</span>
-                </div>
-              )}
-
               {isCancelled && (
-                <div style={{
-                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-                  borderRadius: 8, padding: '18px 24px',
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  fontSize: 14, color: '#f87171', letterSpacing: '0.03em',
-                }}>
-                  <span style={{ fontSize: 20 }}>❌</span>
-                  <span>Order has been cancelled.</span>
+                <div className="aod-state aod-state--bad">
+                  <XCircle size={22} weight="fill" />
+                  <div>
+                    <p>Order has been cancelled.</p>
+                    {order.cancelledAt && <p className="aod-state__when sf-num">Cancelled on {fmtWhen(order.cancelledAt)}</p>}
+                  </div>
                 </div>
               )}
-            </>
-          )}
-        </div>
-      </div>
-    </>
+            </div>
+          </div>
+        </>
+      )}
+    </AdminShell>
   );
 }
+
+const ORDER_CSS = `
+  .aod-head { display: grid; gap: 12px; margin-top: 24px; }
+  .aod-head h1 { overflow-wrap: anywhere; }
+  .aod-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14px; }
+  .aod-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; margin-top: 28px; align-items: start; }
+  .aod-side { display: grid; gap: 20px; }
+  .aod-panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .aod-items { list-style: none; margin: 16px 0 0; padding: 0; display: grid; }
+  .aod-item { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding-block: 14px; }
+  .aod-item + .aod-item { border-top: 1px solid var(--sf-line); }
+  .aod-thumb { width: 64px; aspect-ratio: 1; border-radius: 12px; cursor: default; display: grid; place-items: center; }
+  .aod-thumb img { padding: 8%; }
+  .aod-item__title { font-weight: 550; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .aod-totals { display: grid; gap: 10px; margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--sf-line); font-size: 15px; }
+  .aod-totals > div { display: flex; justify-content: space-between; gap: 12px; }
+  .aod-total { align-items: baseline; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+  .aod-info { margin: 16px 0 0; display: grid; gap: 14px; font-size: 15px; }
+  .aod-info > div { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .aod-info dt { color: var(--sf-text-3); padding-top: 2px; }
+  .aod-info dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .aod-info a { color: var(--sf-text); text-decoration-color: var(--sf-line-2); text-underline-offset: 3px; }
+  .aod-phone { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+  .aod-phone .sf-btn { text-decoration: none; }
+  .aod-map { display: inline-flex !important; align-items: center; gap: 6px; margin-top: 8px; color: var(--sf-gold) !important; font-size: 14px; font-weight: 500; }
+  .aod-actions { display: grid; gap: 10px; }
+  .aod-cancel { color: var(--sf-danger); }
+  .aod-cancel:hover:not(:disabled) { border-color: rgba(240, 144, 127, 0.5) !important; background: rgba(240, 144, 127, 0.06) !important; }
+  .aod-state { display: flex; gap: 12px; align-items: flex-start; padding: 18px 20px; border-radius: 16px; border: 1px solid; font-size: 15px; }
+  .aod-state--ok { color: #8FCB98; background: rgba(143, 203, 152, 0.08); border-color: rgba(143, 203, 152, 0.25); }
+  .aod-state--bad { color: var(--sf-danger); background: rgba(240, 144, 127, 0.08); border-color: rgba(240, 144, 127, 0.25); }
+  .aod-state svg { flex-shrink: 0; margin-top: 1px; }
+  .aod-state__when { color: var(--sf-text-3); font-size: 13.5px; margin-top: 2px; }
+  .aod-empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 56px 24px; margin-top: 24px; }
+  .aod-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.72); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+  .aod-dialog { max-width: 460px; width: 100%; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+  .aod-stock { list-style: none; margin: 18px 0 22px; padding: 0; display: grid; gap: 8px; }
+  .aod-stock li { padding: 12px 14px; border-radius: 12px; background: var(--sf-surface-2); border: 1px solid var(--sf-line); }
+  .aod-danger { color: var(--sf-danger); font-weight: 600; }
+  @media (max-width: 860px) {
+    .aod-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .aod-item { grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; }
+    .aod-thumb { width: 52px; }
+  }
+`;

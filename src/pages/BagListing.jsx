@@ -379,7 +379,7 @@ const BagListing = () => {
                 }
                 .page-content-wrap {
                     animation: ${pageRevealed && animateReveal ? "pageReveal 0.75s cubic-bezier(0.22,1,0.36,1) forwards" : "none"};
-                    opacity: ${showModal && !pageRevealed ? "0" : "1"};
+                    opacity: ${pageRevealed ? "1" : "0"}; /* stay hidden until the fade-in starts, or it shows, blinks out, then fades in */
                 }
             `}</style>
 

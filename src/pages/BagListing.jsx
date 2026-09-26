@@ -110,6 +110,8 @@ const BagListing = () => {
     const [showModal, setShowModal]                       = useState(!alreadySeen);
     const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(savedCategory);
     const [pageRevealed, setPageRevealed]                 = useState(alreadySeen);
+    // Blur-in only right after the modal closes; a normal visit shows the page as is.
+    const [animateReveal, setAnimateReveal]               = useState(false);
 
     useEffect(() => {
         if (pageRevealed) {
@@ -122,6 +124,7 @@ const BagListing = () => {
     const revealPage = () => {
         sessionStorage.setItem('tresor-modal-seen', '1');
         setShowModal(false);
+        setAnimateReveal(true);
         setTimeout(() => setPageRevealed(true), 650);
     };
 
@@ -209,10 +212,8 @@ const BagListing = () => {
     const WIDTH_RANGE  = { min: 10, max: 60 };
     const WEIGHT_RANGE = { min: 0,  max: 6  };
 
-    const LOGO_SRC = (() => {
-        try { return new URL("../assets/tresor_icon.webp", import.meta.url).href; }
-        catch { return "/tresor_icon.png"; }
-    })();
+    const LOGO_SRC = "/tresor_logo.webp"; // in /public, preloaded by index.html
+    const [heroLoaded, setHeroLoaded] = useState(false);
 
     useEffect(() => {
         const style = document.createElement("style");
@@ -377,7 +378,7 @@ const BagListing = () => {
                     to   { opacity: 1; filter: blur(0px); transform: scale(1);     }
                 }
                 .page-content-wrap {
-                    animation: ${pageRevealed ? "pageReveal 0.75s cubic-bezier(0.22,1,0.36,1) forwards" : "none"};
+                    animation: ${pageRevealed && animateReveal ? "pageReveal 0.75s cubic-bezier(0.22,1,0.36,1) forwards" : "none"};
                     opacity: ${showModal && !pageRevealed ? "0" : "1"};
                 }
             `}</style>
@@ -581,7 +582,10 @@ const BagListing = () => {
                     <img
                         src={heroBagImg}
                         alt="Trésor Bags Collection"
+                        onLoad={() => setHeroLoaded(true)}
                         style={{
+                            opacity: heroLoaded ? 1 : 0,
+                            transition: "opacity 0.5s ease",
                             height: "clamp(260px, 58vh, 440px)",
                             width: "auto",
                             maxWidth: "58%",

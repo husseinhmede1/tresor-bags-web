@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ShopAssistant from "./ShopAssistant";
 
 const GOLD   = "#dfa94b";
 const GOLD_L = "#E5C48A";
@@ -34,7 +35,7 @@ const CategoryIcon = ({ name, color }) => {
     );
 };
 
-export default function TypeSelectorModal({ onStart, onSkip }) {
+export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
     const [selected, setSelected] = useState(null);
     const [isExiting, setIsExiting] = useState(false);
 
@@ -71,7 +72,7 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
         }}>
             <div style={{
                 width: "min(640px, 100%)",
-                height: "min(92vh, 680px)",
+                height: "min(92vh, 760px)",
                 background: BG,
                 border: `1px solid ${BORDER}`,
                 borderRadius: 3,
@@ -114,6 +115,11 @@ export default function TypeSelectorModal({ onStart, onSkip }) {
 
                 {/* Bottom — category grid */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "14px 20px 0", overflowY: "auto", background: BG, minHeight: 0 }}>
+                    {/* Ask the shop: text or photo, answered from the catalog only */}
+                    <div style={{ flexShrink: 0, paddingBottom: 16, marginBottom: 14, borderBottom: `1px solid ${BORDER}` }}>
+                        <ShopAssistant onOpenBag={onOpenBag} />
+                    </div>
+
                     <p style={{ fontFamily: SANS, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, margin: "0 0 10px", flexShrink: 0 }}>
                         {selected ? `Selected: ${selected.title}` : "What are you looking for?"}
                     </p>

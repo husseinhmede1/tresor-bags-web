@@ -11,3 +11,12 @@ export const parseProductFromChat = async ({ images, text, language }) => {
         throw error.response?.data || { message: error.message };
     }
 };
+
+// Customer shop assistant: a question and/or one photo (data URL).
+export const askShop = async ({ text, image }) => {
+    try {
+        return (await api.post('/ai/ask', { text, image })).data;
+    } catch (error) {
+        throw error.response?.data || { message: error.message };
+    }
+};

@@ -8,6 +8,8 @@ import { getAllCollections } from "../services/collectionService";
 import { sized } from "../utils/image";
 import HeroParticleReveal from "../components/HeroParticleReveal";
 import TypeSelectorModal from "../components/TypeSelectorModal";
+import ShopAssistant from "../components/ShopAssistant";
+import { Sparkle } from "@phosphor-icons/react";
 
 /* ── Logo ── */
 const Logo = ({ src }) => (
@@ -134,6 +136,13 @@ const BagListing = () => {
         sessionStorage.setItem('tresor-selected-category', cat.title);
         revealPage();
     };
+    // A bag picked from the assistant's answer: skip the modal next time and open it.
+    const openBag = (id) => {
+        sessionStorage.setItem('tresor-modal-seen', '1');
+        navigate(`/gallery/${id}`);
+    };
+    const [askOpen, setAskOpen] = useState(false);
+
     const handleModalSkip = () => {
         setSelectedPrimaryCategory(null);
         setSelectedCollection(null);
@@ -388,6 +397,7 @@ const BagListing = () => {
                 <TypeSelectorModal
                     onStart={handleModalStart}
                     onSkip={handleModalSkip}
+                    onOpenBag={openBag}
                 />
             )}
 
@@ -715,10 +725,21 @@ const BagListing = () => {
                                     style={S.searchInput} />
                                 {searchInput !== searchQuery && <span style={S.searchSpinner} />}
                             </div>
+                            <button onClick={() => setAskOpen(o => !o)} aria-expanded={askOpen}
+                                style={{ ...S.collapseToggle, color: askOpen ? GOLD_L : S.collapseToggle.color, display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 2 }}>
+                                <Sparkle size={12} weight="fill" color={GOLD_D} aria-hidden="true" />
+                                Ask AI
+                            </button>
                             <button onClick={() => setFilterOpen(o => !o)} style={S.collapseToggle}>
                                 {filterOpen ? "— Less" : "+ Refine"}
                             </button>
                         </div>
+
+                        {askOpen && (
+                            <div style={{ paddingTop: 18 }}>
+                                <ShopAssistant onOpenBag={openBag} autoFocus />
+                            </div>
+                        )}
 
                         <div style={S.collapseBody(filterOpen)}>
                             <div style={S.collapseDivider} />

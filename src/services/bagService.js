@@ -1,13 +1,14 @@
 import axios from 'axios';
+import { withServerErrors } from './serverErrors';
 
 const API_URL = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000';
 
-const api = axios.create({
+const api = withServerErrors(axios.create({
     baseURL: `${API_URL}/api`,
     headers: {
         'Content-Type': 'application/json',
     },
-});
+}));
 
 // Get all bags with pagination, search, and filters
 export const getAllBags = async (params = {}) => {

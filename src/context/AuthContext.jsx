@@ -1,46 +1,44 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { loginAdmin, checkAdmin } from "../services/authService";
+import { TOKEN_KEY, AUTH_EXPIRED } from "../services/serverErrors";
 
 const AuthContext = createContext(null);
 
+// The password is checked by the server, which returns a signed token that expires.
+// Every admin API call sends that token; the server refuses admin actions without it.
 export const AuthProvider = ({ children }) => {
-    const [isAdmin, setIsAdmin] = useState(() => {
-        const stored = localStorage.getItem("isAdmin");
-        return stored ? JSON.parse(stored) : false;
-    });
+    const [isAdmin, setIsAdmin] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)));
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Check if already logged in on mount
     useEffect(() => {
-        const stored = localStorage.getItem("isAdmin");
-        if (stored) {
-            setIsAdmin(JSON.parse(stored));
-        }
+        localStorage.removeItem("isAdmin"); // leftover from the old browser-only login
+        // Expired or revoked token (e.g. the password was changed): drop to the login page.
+        const expire = () => setIsAdmin(false);
+        window.addEventListener(AUTH_EXPIRED, expire);
+        if (localStorage.getItem(TOKEN_KEY)) checkAdmin().catch(() => {});
+        return () => window.removeEventListener(AUTH_EXPIRED, expire);
     }, []);
 
-    const login = (password) => {
+    const login = async (password) => {
         setLoading(true);
         setError("");
-        
-        // Replace with real API call to authenticate
-        // For now, using hardcoded password for demo
-        if (password === "admin123") {
+        try {
+            const { token } = await loginAdmin(password);
+            localStorage.setItem(TOKEN_KEY, token);
             setIsAdmin(true);
-            localStorage.setItem("isAdmin", JSON.stringify(true));
-            localStorage.setItem("adminToken", "mock-token-" + Date.now());
-            setLoading(false);
             return true;
+        } catch (err) {
+            setError(err.response?.status === 401 ? "Invalid credentials. Please try again." : (err.message || "Could not log in"));
+            return false;
+        } finally {
+            setLoading(false);
         }
-        
-        setError("Invalid credentials");
-        setLoading(false);
-        return false;
     };
 
     const logout = () => {
         setIsAdmin(false);
-        localStorage.removeItem("isAdmin");
-        localStorage.removeItem("adminToken");
+        localStorage.removeItem(TOKEN_KEY);
         setError("");
     };
 

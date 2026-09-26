@@ -16,17 +16,9 @@ const EN = [
     ["Your data", "To see or delete your information, message us on WhatsApp at +961\u00A078\u00A0987\u00A0288."],
 ];
 
-const AR = [
-    ["شو منجمع", "وقت الطلب: الاسم، الرقم، الإيميل، عنوان وموقع التوصيل، والشنط اللي اخترتها."],
-    ["ليش", "بس لنأكد طلبك ونوصّلو ونتابع معك، ومنها عالواتساب. ما منبيعها ولا منعطيها لحدا للإعلانات."],
-    ["الدفع", "الدفع بتحويل Whish من تطبيق Whish. نحنا ما منشوف ولا منحفظ أي معلومات بطاقة."],
-    ["المساعد الذكي", "الأسئلة والصور اللي بتبعتها للمساعد بتنعالج بالذكاء الاصطناعي تبع Google ليجاوبك. ما تحط معلومات شخصية فيها."],
-    ["متصفحك", "السلّة وكم إعداد بينحفظوا بمتصفحك."],
-    ["معلوماتك", "لتشوف معلوماتك أو تمحيها، راسلنا عالواتساب ‎+961\u00A078\u00A0987\u00A0288."],
-];
 
-const Section = ({ items, dir }) => (
-    <dl dir={dir} style={{ margin: 0, display: "grid", gap: 18 }}>
+const Section = ({ items }) => (
+    <dl style={{ margin: 0, display: "grid", gap: 18 }}>
         {items.map(([k, v]) => (
             <div key={k}>
                 <dt style={{ fontFamily: SANS, fontSize: 13, fontWeight: 600, color: GOLD_L, marginBottom: 4 }}>{k}</dt>
@@ -50,9 +42,7 @@ export default function PrivacyPage() {
                 </h1>
                 <p style={{ fontFamily: SANS, fontSize: 12, color: SOFT, margin: "0 0 36px" }}>Trésor Bags. Last updated September 2026.</p>
 
-                <Section items={EN} dir="ltr" />
-                <div style={{ height: 1, background: BORDER, margin: "40px 0" }} />
-                <Section items={AR} dir="rtl" />
+                <Section items={EN} />
             </div>
         </main>
     );

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
-    const { login, isAdmin } = useAuth();
+    const { login, isAdmin, error: authError } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const from = location.state?.from || "/admin/dashboard";
@@ -22,13 +22,10 @@ const Login = () => {
         setLoading(true);
         setError("");
 
-        const success = login(password);
-        if (success) {
-            navigate(from, { replace: true });
-        } else {
-            setError("Invalid credentials. Please try again.");
-        }
+        const success = await login(password);
         setLoading(false);
+        if (success) navigate(from, { replace: true });
+        else setError("failed");
     };
 
     return (
@@ -63,7 +60,7 @@ const Login = () => {
                         </div>
                     </div>
 
-                    {error && <p style={styles.error}>{error}</p>}
+                    {error && <p style={styles.error}>{authError || "Could not log in, please try again."}</p>}
 
                     <button 
                         type="submit" 

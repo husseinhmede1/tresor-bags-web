@@ -147,7 +147,7 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false }) {
                 </div>
             )}
 
-            <p className="sa-note">Answers come from our catalog only. Processed by Google Gemini.</p>
+            <p className="sa-note">Answers come from our catalog only.</p>
         </form>
     );
 }

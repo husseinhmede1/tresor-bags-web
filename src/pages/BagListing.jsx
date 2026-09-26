@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import heroBagImg from "../assets/hero_final1.png";
+import heroBagImg from "../assets/hero_final1.webp";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -209,7 +209,7 @@ const BagListing = () => {
     const WEIGHT_RANGE = { min: 0,  max: 6  };
 
     const LOGO_SRC = (() => {
-        try { return new URL("../assets/tresor_icon.png", import.meta.url).href; }
+        try { return new URL("../assets/tresor_icon.webp", import.meta.url).href; }
         catch { return "/tresor_icon.png"; }
     })();
 

@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
-import bag1 from "../assets/bag1.png";
-import bag2 from "../assets/bag2.png";
-import bag3 from "../assets/bag3.png";
-import bag4 from "../assets/bag4.png";
-import bag5 from "../assets/bag5.png";
-import bag6 from "../assets/bag6.png";
-import bag7 from "../assets/bag7.png";
-import bag8 from "../assets/bag8.png";
+import bag1 from "../assets/bag1.webp";
+import bag2 from "../assets/bag2.webp";
+import bag3 from "../assets/bag3.webp";
+import bag4 from "../assets/bag4.webp";
+import bag5 from "../assets/bag5.webp";
+import bag6 from "../assets/bag6.webp";
+import bag7 from "../assets/bag7.webp";
+import bag8 from "../assets/bag8.webp";
 
 const BAGS = [bag1, bag2, bag3, bag4, bag5, bag6, bag7, bag8];
 

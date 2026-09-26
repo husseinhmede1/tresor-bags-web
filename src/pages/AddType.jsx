@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { createType } from "../services/typeService";
+import AdminShell from "../components/storefront/AdminShell";
 
-const G = "#E5C48A", BG = "#080808", BORDER = "rgba(201,168,106,0.15)", MUTED = "#6B6560", TEXT = "#F5F1E8";
-const SERIF = "'Cormorant Garamond', serif", SANS = "'Inter', sans-serif";
 const CATEGORIES = ["Backpacks", "Luggage", "Bags", "Accessories"];
 
-const inputStyle = { width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}`, color: TEXT, fontSize: 15, fontFamily: SANS, padding: "11px 14px", outline: "none", letterSpacing: "0.02em" };
-const labelStyle = { fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, display: "block", marginBottom: 10 };
+// Which field a validation message belongs to, so it can sit under that field.
+const errorField = (msg) =>
+    msg === "Title is required" ? "title"
+        : msg === "Category is required" ? "category"
+            : msg.startsWith("Discount") ? "discount" : null;
 
 export default function AddType() {
     const navigate = useNavigate();
-    const { logout } = useAuth();
     const [form, setForm] = useState({ title: "", category: "", discount: "", note: "" });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -38,54 +38,70 @@ export default function AddType() {
         finally { setLoading(false); }
     };
 
+    const ef = error ? errorField(error) : null;
+    const fieldErr = (k) => ef === k ? <p id={`${k}-error`} className="sf-error" role="alert">{error}</p> : null;
+    const inv = (k) => ef === k ? { "aria-invalid": "true", "aria-describedby": `${k}-error` } : {};
+
     return (
-        <div style={{ minHeight: "100vh", background: BG, fontFamily: SANS, color: TEXT }}>
-            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 32px", borderBottom: `1px solid ${BORDER}`, background: "rgba(8,8,8,0.96)" }}>
-                <span style={{ fontFamily: SERIF, fontSize: 18, color: G, letterSpacing: "0.1em" }}>Add Type</span>
-                <button onClick={logout} style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" }}>Logout</button>
-            </header>
-            <main style={{ maxWidth: 520, margin: "48px auto", padding: "0 24px 80px" }}>
-                <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, margin: "0 0 28px" }}>
-                    A type sits under a category (e.g. “Carry-On Luggage” under Luggage). Any discount and note apply to every bag of this type.
-                </p>
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                    {error && <p style={{ color: "#C9957A", fontSize: 12, letterSpacing: "0.06em" }}>{error}</p>}
-
-                    <div>
-                        <label style={labelStyle}>Category *</label>
-                        <select value={form.category} onChange={e => set("category", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
-                            <option value="">— Select a category —</option>
-                            {CATEGORIES.map(c => <option key={c} value={c} style={{ background: "#111" }}>{c}</option>)}
+        <AdminShell
+            title="Add type"
+            subtitle="A type sits under a category (for example Carry-on luggage under Luggage). Its discount and note apply to every bag of this type."
+            width={720}
+        >
+            <style>{TYPE_FORM_CSS}</style>
+            <form onSubmit={handleSubmit} className="tf">
+                <div className="tf__row">
+                    <div className="sf-field">
+                        <label className="sf-label" htmlFor="type-category">Category</label>
+                        <select id="type-category" className="sf-input" value={form.category} onChange={e => set("category", e.target.value)} {...inv("category")}>
+                            <option value="">Select a category</option>
+                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
+                        {fieldErr("category")}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Title *</label>
-                        <input type="text" value={form.title} onChange={e => set("title", e.target.value)}
-                            placeholder="e.g. Carry-On Luggage, Briefcases…" style={inputStyle} />
+                    <div className="sf-field">
+                        <label className="sf-label" htmlFor="type-title">Title</label>
+                        <input id="type-title" className="sf-input" type="text" value={form.title} onChange={e => set("title", e.target.value)}
+                            placeholder="Carry-on luggage, Briefcases" {...inv("title")} />
+                        {fieldErr("title")}
                     </div>
+                </div>
 
-                    <div>
-                        <label style={labelStyle}>Discount (%) · optional 0–100</label>
-                        <input type="number" min="0" max="100" value={form.discount} onChange={e => set("discount", e.target.value)}
-                            placeholder="e.g. 20" style={inputStyle} />
-                    </div>
+                <div className="sf-field tf__narrow">
+                    <label className="sf-label" htmlFor="type-discount">Discount (%) <small>Optional, 0 to 100</small></label>
+                    <input id="type-discount" className="sf-input sf-num" type="number" min="0" max="100" inputMode="numeric" value={form.discount} onChange={e => set("discount", e.target.value)}
+                        placeholder="20" {...inv("discount")} />
+                    {fieldErr("discount")}
+                </div>
 
-                    <div>
-                        <label style={labelStyle}>Note · optional</label>
-                        <textarea value={form.note} onChange={e => set("note", e.target.value)} rows={3}
-                            placeholder='e.g. "With every 2 items of this type you win 1"'
-                            style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }} />
-                    </div>
+                <div className="sf-field">
+                    <label className="sf-label" htmlFor="type-note">Note <small>Optional</small></label>
+                    <textarea id="type-note" className="sf-input" value={form.note} onChange={e => set("note", e.target.value)} rows={3}
+                        placeholder="With every 2 items of this type you win 1" />
+                </div>
 
-                    <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                        <button type="submit" disabled={loading} style={{ background: `linear-gradient(135deg,#C9A86A,${G})`, color: "#070707", border: "none", padding: "12px 28px", fontFamily: SANS, fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-                            {loading ? "Saving…" : "Save Type"}
-                        </button>
-                        <button type="button" onClick={() => navigate("/admin/dashboard")} style={{ background: "none", border: `1px solid ${BORDER}`, color: MUTED, padding: "12px 20px", fontFamily: SANS, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>Cancel</button>
-                    </div>
-                </form>
-            </main>
-        </div>
+                {error && !ef && <p className="sf-error" role="alert">{error}</p>}
+
+                <div className="tf__actions">
+                    <button type="submit" className="sf-btn sf-btn--primary" disabled={loading} aria-busy={loading}>
+                        {loading ? "Saving…" : "Save type"}
+                    </button>
+                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => navigate("/admin/dashboard")}>Cancel</button>
+                </div>
+            </form>
+        </AdminShell>
     );
 }
+
+const TYPE_FORM_CSS = `
+    .tf { display: grid; gap: 22px; }
+    .tf__row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 16px; align-items: start; }
+    .tf__narrow { max-width: 220px; }
+    .tf__actions { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 22px; border-top: 1px solid var(--sf-line); }
+    @media (max-width: 560px) {
+        .tf__row { grid-template-columns: 1fr; }
+        .tf__narrow { max-width: none; }
+        .tf__actions .sf-btn { flex: 1 1 140px; }
+    }
+`;

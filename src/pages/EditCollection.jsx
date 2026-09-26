@@ -1,18 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { ImageSquare, X, ArrowsClockwise } from "@phosphor-icons/react";
 import { getCollectionById, updateCollection } from "../services/collectionService";
-
-const G = "#E5C48A", BG = "#080808", BORDER = "rgba(201,168,106,0.15)", MUTED = "#6B6560", TEXT = "#F5F1E8";
-const SERIF = "'Cormorant Garamond', serif", SANS = "'Inter', sans-serif";
-
-const inputStyle = { width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}`, color: TEXT, fontSize: 15, fontFamily: SANS, padding: "11px 14px", outline: "none", letterSpacing: "0.02em" };
-const labelStyle = { fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, display: "block", marginBottom: 10 };
+import AdminShell from "../components/storefront/AdminShell";
 
 export default function EditCollection() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { logout } = useAuth();
     const [title, setTitle] = useState("");
     const [logo, setLogo] = useState("");
     const [preview, setPreview] = useState("");
@@ -45,51 +39,83 @@ export default function EditCollection() {
         finally { setLoading(false); }
     };
 
-    if (fetching) return <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center", color: MUTED, fontFamily: SANS, fontSize: 12, letterSpacing: "0.1em" }}>Loading…</div>;
+    const titleErr = error === "Title is required";
 
     return (
-        <div style={{ minHeight: "100vh", background: BG, fontFamily: SANS, color: TEXT }}>
-            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 32px", borderBottom: `1px solid ${BORDER}`, background: "rgba(8,8,8,0.96)" }}>
-                <span style={{ fontFamily: SERIF, fontSize: 18, color: G, letterSpacing: "0.1em" }}>Edit Collection</span>
-                <button onClick={logout} style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" }}>Logout</button>
-            </header>
-            <main style={{ maxWidth: 520, margin: "48px auto", padding: "0 24px 80px" }}>
-                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-                    {error && <p style={{ color: "#C9957A", fontSize: 12, letterSpacing: "0.06em" }}>{error}</p>}
+        <AdminShell
+            title="Edit collection"
+            width={720}
+        >
+            <style>{COLLECTION_FORM_CSS}</style>
+            {fetching ? (
+                <div className="cf" aria-busy="true" aria-label="Loading collection">
+                    <div className="sf-skel" style={{ width: 132, height: 132, borderRadius: 16 }} />
+                    <div className="sf-skel" style={{ height: 76 }} />
+                    <span className="sf-faint" style={{ fontSize: 14 }}>Loading…</span>
+                </div>
+            ) : (
+            <form onSubmit={handleSubmit} className="cf">
+                <div className="sf-field">
+                    <span className="sf-label" id="logo-label">Logo <small>Optional</small></span>
+                    {preview
+                        ? <div className="cf__logo">
+                            <img src={preview} alt="Collection logo preview" />
+                            <button type="button" className="cf__remove" onClick={() => { setLogo(""); setPreview(""); }} aria-label="Remove logo" title="Remove logo">
+                                <X size={16} weight="bold" />
+                            </button>
+                            <label className="cf__change">
+                                <ArrowsClockwise size={13} /> Change
+                                <input type="file" accept="image/*" onChange={handleLogo} className="cf__file" />
+                            </label>
+                          </div>
+                        : <label className="cf__drop">
+                            <ImageSquare size={26} />
+                            <span>Choose image</span>
+                            <input type="file" accept="image/*" onChange={handleLogo} className="cf__file" aria-labelledby="logo-label" />
+                          </label>
+                    }
+                </div>
 
-                    <div>
-                        <label style={labelStyle}>Collection Logo · optional</label>
-                        {preview
-                            ? <div style={{ position: "relative", display: "inline-block" }}>
-                                <img src={preview} alt="logo" style={{ width: 120, height: 120, objectFit: "contain", background: "rgba(255,255,255,0.03)", border: `1px solid ${BORDER}` }} />
-                                <button type="button" onClick={() => { setLogo(""); setPreview(""); }} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.7)", border: "none", color: "#C9957A", cursor: "pointer", fontSize: 11, borderRadius: 2, padding: "2px 6px" }}>✕</button>
-                                <label style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.7)", border: `1px solid ${BORDER}`, color: MUTED, cursor: "pointer", fontSize: 9, padding: "3px 6px", letterSpacing: "0.08em" }}>
-                                    Change
-                                    <input type="file" accept="image/*" onChange={handleLogo} style={{ display: "none" }} />
-                                </label>
-                              </div>
-                            : <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 120, height: 120, border: `1px dashed ${BORDER}`, cursor: "pointer", gap: 8, background: "rgba(255,255,255,0.02)" }}>
-                                <span style={{ fontSize: 28, color: "rgba(201,168,106,0.3)" }}>+</span>
-                                <span style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: MUTED }}>Choose image</span>
-                                <input type="file" accept="image/*" onChange={handleLogo} style={{ display: "none" }} />
-                              </label>
-                        }
-                    </div>
+                <div className="sf-field">
+                    <label className="sf-label" htmlFor="collection-title">Title</label>
+                    <input id="collection-title" className="sf-input" type="text" value={title} onChange={e => setTitle(e.target.value)}
+                        placeholder="Alpha, Voyageur, Harrison"
+                        aria-invalid={titleErr ? "true" : undefined} aria-describedby={titleErr ? "collection-title-error" : undefined} />
+                    {titleErr && <p id="collection-title-error" className="sf-error" role="alert">{error}</p>}
+                </div>
 
-                    <div>
-                        <label style={labelStyle}>Title *</label>
-                        <input type="text" value={title} onChange={e => setTitle(e.target.value)}
-                            placeholder="e.g. Alpha, Voyageur, Harrison…" style={inputStyle} />
-                    </div>
+                {error && !titleErr && <p className="sf-error" role="alert">{error}</p>}
 
-                    <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-                        <button type="submit" disabled={loading} style={{ background: `linear-gradient(135deg,#C9A86A,${G})`, color: "#070707", border: "none", padding: "12px 28px", fontFamily: SANS, fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}>
-                            {loading ? "Saving…" : "Update Collection"}
-                        </button>
-                        <button type="button" onClick={() => navigate("/admin/dashboard")} style={{ background: "none", border: `1px solid ${BORDER}`, color: MUTED, padding: "12px 20px", fontFamily: SANS, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", cursor: "pointer" }}>Cancel</button>
-                    </div>
-                </form>
-            </main>
-        </div>
+                <div className="cf__actions">
+                    <button type="submit" className="sf-btn sf-btn--primary" disabled={loading} aria-busy={loading}>
+                        {loading ? "Saving…" : "Save changes"}
+                    </button>
+                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => navigate("/admin/dashboard")}>Cancel</button>
+                </div>
+            </form>
+            )}
+        </AdminShell>
     );
 }
+
+const COLLECTION_FORM_CSS = `
+    .cf { display: grid; gap: 22px; }
+    .cf__drop, .cf__logo { width: 132px; height: 132px; border-radius: var(--sf-r-card); }
+    .cf__drop { position: relative; display: grid; place-content: center; justify-items: center; gap: 8px; cursor: pointer;
+        border: 1px dashed var(--sf-line-2); background: var(--sf-surface); color: var(--sf-text-2); font-size: 13.5px; transition: border-color .2s, color .2s; }
+    .cf__drop:hover { border-color: rgba(217, 178, 111, 0.6); color: var(--sf-text); }
+    .cf__drop:focus-within { outline: 2px solid var(--sf-gold); outline-offset: 3px; }
+    .cf__drop svg { color: var(--sf-gold); }
+    .cf__file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+    .cf__logo { position: relative; background: var(--sf-tile); overflow: hidden; }
+    .cf__logo img { width: 100%; height: 100%; object-fit: contain; padding: 12px; }
+    .cf__remove { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 999px; border: 0; display: grid; place-items: center;
+        background: rgba(17, 17, 17, 0.85); color: var(--sf-danger); cursor: pointer; }
+    .cf__remove:hover { background: #111; }
+    .cf__change { position: absolute; left: 6px; bottom: 6px; height: 28px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(17, 17, 17, 0.85); color: #fff; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+    .cf__change:hover { background: #111; }
+    .cf__change:focus-within { outline: 2px solid var(--sf-gold); outline-offset: 2px; }
+    .cf__actions { display: flex; gap: 12px; flex-wrap: wrap; padding-top: 22px; border-top: 1px solid var(--sf-line); }
+    @media (max-width: 560px) { .cf__actions .sf-btn { flex: 1 1 140px; } }
+`;

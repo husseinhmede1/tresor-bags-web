@@ -236,3 +236,19 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 .sf-footer__links { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; }
 .sf-footer__links a { color: var(--sf-text-2); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
 .sf-footer__links a:hover { color: var(--sf-text); }
+
+/* ── Admin helpers ────────────────────────────────────────────────────── */
+/* Order status pill. Colour here is semantic state, the one allowed exception to the single accent. */
+.sf-status { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 999px; font: 600 12.5px/1 var(--sf-font); border: 1px solid transparent; white-space: nowrap; }
+.sf-status--pending   { color: #E7C77A; background: rgba(231, 199, 122, 0.12); border-color: rgba(231, 199, 122, 0.3); }
+.sf-status--confirmed { color: #8FCB98; background: rgba(143, 203, 152, 0.12); border-color: rgba(143, 203, 152, 0.3); }
+.sf-status--cancelled { color: #F0907F; background: rgba(240, 144, 127, 0.12); border-color: rgba(240, 144, 127, 0.3); }
+
+/* Clickable list row (orders, etc.) */
+.sf-row { display: grid; gap: 12px; align-items: center; padding: 16px 18px; border-radius: 16px; background: var(--sf-surface); border: 1px solid var(--sf-line); color: inherit; text-align: left; width: 100%; font: inherit; cursor: pointer; transition: border-color .2s, background-color .2s; }
+.sf-row:hover { border-color: rgba(217, 178, 111, 0.4); background: #17171a; }
+
+/* Stat tile */
+.sf-stat { display: grid; gap: 6px; padding: 18px 20px; border-radius: 16px; background: var(--sf-surface); border: 1px solid var(--sf-line); }
+.sf-stat__label { font-size: 13.5px; color: var(--sf-text-2); }
+.sf-stat__value { font-size: clamp(1.5rem, 2.4vw, 2rem); font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }

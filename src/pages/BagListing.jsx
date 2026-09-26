@@ -109,9 +109,11 @@ const BagListing = () => {
     /* ── Category selector modal ── */
     const alreadySeen = sessionStorage.getItem('tresor-modal-seen') === '1';
     const savedCategory = sessionStorage.getItem('tresor-selected-category') || null;
-    const [showModal, setShowModal]                       = useState(!alreadySeen);
+    // Set when a bag was opened from the assistant, so coming back reopens it where it was.
+    const [askReturn] = useState(() => sessionStorage.getItem('tresor-ask-return'));
+    const [showModal, setShowModal]                       = useState(!alreadySeen || askReturn === 'modal');
     const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(savedCategory);
-    const [pageRevealed, setPageRevealed]                 = useState(alreadySeen);
+    const [pageRevealed, setPageRevealed]                 = useState(alreadySeen && askReturn !== 'modal');
     // Blur-in only right after the modal closes; a normal visit shows the page as is.
     const [animateReveal, setAnimateReveal]               = useState(false);
 
@@ -137,11 +139,18 @@ const BagListing = () => {
         revealPage();
     };
     // A bag picked from the assistant's answer: skip the modal next time and open it.
-    const openBag = (id) => {
-        sessionStorage.setItem('tresor-modal-seen', '1');
+    const openBag = (id, from) => {
+        sessionStorage.setItem('tresor-ask-return', from);
+        if (from === 'listing') sessionStorage.setItem('tresor-modal-seen', '1');
         navigate(`/gallery/${id}`);
     };
-    const [askOpen, setAskOpen] = useState(false);
+    const [askOpen, setAskOpen] = useState(askReturn === 'listing');
+    const askRef = useRef(null);
+    useEffect(() => {
+        sessionStorage.removeItem('tresor-ask-return');
+        // Back from a bag opened in the search-bar assistant: scroll to it (after the page's scroll-to-top).
+        if (askReturn === 'listing') setTimeout(() => askRef.current?.scrollIntoView({ block: "center" }), 100);
+    }, [askReturn]);
 
     const handleModalSkip = () => {
         setSelectedPrimaryCategory(null);
@@ -397,7 +406,7 @@ const BagListing = () => {
                 <TypeSelectorModal
                     onStart={handleModalStart}
                     onSkip={handleModalSkip}
-                    onOpenBag={openBag}
+                    onOpenBag={(id) => openBag(id, 'modal')}
                 />
             )}
 
@@ -736,8 +745,8 @@ const BagListing = () => {
                         </div>
 
                         {askOpen && (
-                            <div style={{ paddingTop: 18 }}>
-                                <ShopAssistant onOpenBag={openBag} autoFocus />
+                            <div ref={askRef} style={{ paddingTop: 18 }}>
+                                <ShopAssistant storageKey="listing" onOpenBag={(id) => openBag(id, 'listing')} autoFocus={askReturn !== 'listing'} />
                             </div>
                         )}
 

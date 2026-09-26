@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sparkle, Camera, ArrowRight, X } from "@phosphor-icons/react";
 import { askShop } from "../services/aiService";
 import { sized } from "../utils/image";
@@ -38,13 +38,25 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
 
 const money = (n) => `$${Number(n).toLocaleString("en-US", Number.isInteger(Number(n)) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export default function ShopAssistant({ onOpenBag, autoFocus = false }) {
-    const [text, setText]       = useState("");
-    const [photo, setPhoto]     = useState("");
+// The last question and answer survive a visit to a bag page, so "back" lands on them.
+const loadSaved = (key) => {
+    try { return JSON.parse(sessionStorage.getItem(`tresor-ask-${key}`)) || {}; } catch { return {}; }
+};
+
+export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey = "main" }) {
+    const [saved]               = useState(() => loadSaved(storageKey));
+    const [text, setText]       = useState(saved.text || "");
+    const [photo, setPhoto]     = useState(saved.photo || "");
     const [loading, setLoading] = useState(false);
     const [error, setError]     = useState("");
-    const [result, setResult]   = useState(null);
+    const [result, setResult]   = useState(saved.result || null);
     const fileRef = useRef(null);
+
+    useEffect(() => {
+        const save = (data) => sessionStorage.setItem(`tresor-ask-${storageKey}`, JSON.stringify(data));
+        try { save({ text, photo, result }); }
+        catch { try { save({ text, result }); } catch { /* storage full or blocked */ } }
+    }, [storageKey, text, photo, result]);
 
     const ask = async (q = text) => {
         if (loading || (!q.trim() && !photo)) return;

@@ -117,7 +117,7 @@ export default function TypeSelectorModal({ onStart, onSkip, onOpenBag }) {
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "14px 20px 0", overflowY: "auto", background: BG, minHeight: 0 }}>
                     {/* Ask the shop: text or photo, answered from the catalog only */}
                     <div style={{ flexShrink: 0, paddingBottom: 16, marginBottom: 14, borderBottom: `1px solid ${BORDER}` }}>
-                        <ShopAssistant onOpenBag={onOpenBag} />
+                        <ShopAssistant storageKey="modal" onOpenBag={onOpenBag} />
                     </div>
 
                     <p style={{ fontFamily: SANS, fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: MUTED, margin: "0 0 10px", flexShrink: 0 }}>

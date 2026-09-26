@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import heroBagImg from "../assets/hero_final1.webp";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +17,8 @@ const Logo = ({ src }) => (
 );
 
 /* ── Tokens ── */
+// Served from /public so index.html can preload it.
+const heroBagImg = "/hero_final1.webp";
 const GOLD   = "#dfa94b";
 const GOLD_L = "#E5C48A";
 const GOLD_D = "#C9A86A";

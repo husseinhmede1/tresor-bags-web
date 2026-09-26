@@ -10,7 +10,7 @@ const Field = ({ label, required, error, children }) => (
     <div style={S.formGroup}>
         <label style={S.label}>{label}{required && " *"}</label>
         {children}
-        {error && <p style={S.fieldError}>{error}</p>}
+        {error && <p style={S.fieldError} className="bf-field-error">{error}</p>}
     </div>
 );
 
@@ -207,12 +207,21 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            // The Save button is at the bottom; bring the first missing field into view.
+            setTimeout(() => document.querySelector(".bf-field-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+            return;
+        }
         setLoading(true);
-        try { await onSubmit(formData); }
-        catch (err) { setErrors({ submit: err.message }); }
+        try {
+            const res = await onSubmit(formData);
+            if (res && !res.success) setErrors({ submit: res.message || "Could not save the bag, please try again" });
+        }
+        catch (err) { setErrors({ submit: err?.message || "Could not save the bag, please try again" }); }
         finally { setLoading(false); }
     };
+
+    const missing = Object.keys(errors).filter(k => k !== "submit").length;
 
     const handleCancel = () => navigate("/admin/dashboard");
 
@@ -235,8 +244,6 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
             {/* ── Main ── */}
             <main style={S.container} className="bf-main">
                 <form onSubmit={handleSubmit}>
-                    {errors.submit && <div style={S.errorBox}>{errors.submit}</div>}
-
                     {!bagId && !initialData && <AiQuickAdd onResult={applyAiResult} />}
 
                     <div style={S.splitGrid} className="bf-split">
@@ -267,7 +274,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                             onChange={handleMainImageChange} style={S.hidden} />
                                     </label>
                                 )}
-                                {errors.mainImage && <p style={S.fieldError}>{errors.mainImage}</p>}
+                                {errors.mainImage && <p style={S.fieldError} className="bf-field-error">{errors.mainImage}</p>}
                             </div>
 
                             {/* Gallery */}
@@ -441,6 +448,12 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add New 
                                 <p style={S.publishText}>
                                     Save once the hero image and all specs are complete.
                                 </p>
+                                {errors.submit && <div style={{ ...S.errorBox, marginBottom: 14 }}>{errors.submit}</div>}
+                                {missing > 0 && !errors.submit && (
+                                    <div style={{ ...S.errorBox, marginBottom: 14 }}>
+                                        Please fill the {missing === 1 ? "field" : `${missing} fields`} marked in red before saving.
+                                    </div>
+                                )}
                                 <div style={S.btnGroup}>
                                     <button type="submit" className="bf-submit"
                                         disabled={loading}

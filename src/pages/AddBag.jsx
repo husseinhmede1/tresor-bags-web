@@ -1,23 +1,14 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BagForm from "../components/BagForm";
 import { createBag } from "../services/bagService";
 
 const AddBag = () => {
     const navigate = useNavigate();
-    const [error, setError] = useState("");
-
+    // Errors are shown by BagForm next to the Save button, so the form stays filled in.
     const handleSubmit = async (formData) => {
-        try {
-            setError("");
-            const result = await createBag(formData);
-            if (result.success) {
-                navigate("/admin/dashboard");
-            }
-        } catch (err) {
-            setError(err.message || "Failed to create bag");
-            throw err;
-        }
+        const result = await createBag(formData);
+        if (result.success) navigate("/admin/dashboard");
+        return result;
     };
 
     return (

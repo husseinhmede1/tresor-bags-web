@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { withServerErrors } from './serverErrors';
 
 const API_URL = import.meta.env.VITE_APP_API_URL || 'http://localhost:5000';
-const api = axios.create({ baseURL: `${API_URL}/api`, headers: { 'Content-Type': 'application/json' } });
+const api = withServerErrors(axios.create({ baseURL: `${API_URL}/api`, headers: { 'Content-Type': 'application/json' } }));
 
 export const getAllTypes    = async (params = {}) => (await api.get('/types', { params })).data;
 export const getTypeById   = async (id)     => (await api.get(`/types/${id}`)).data;

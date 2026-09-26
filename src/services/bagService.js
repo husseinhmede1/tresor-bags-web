@@ -15,7 +15,7 @@ export const getAllBags = async (params = {}) => {
         const response = await api.get('/bags', { params });
         return response.data;
     } catch (error) {
-        throw error.response?.data || error.message;
+        throw error.response?.data || { message: error.message };
     }
 };
 
@@ -25,7 +25,7 @@ export const getBagById = async (id) => {
         const response = await api.get(`/bags/${id}`);
         return response.data;
     } catch (error) {
-        throw error.response?.data || error.message;
+        throw error.response?.data || { message: error.message };
     }
 };
 
@@ -35,7 +35,7 @@ export const createBag = async (bagData) => {
         const response = await api.post('/bags', bagData);
         return response.data;
     } catch (error) {
-        throw error.response?.data || error.message;
+        throw error.response?.data || { message: error.message };
     }
 };
 
@@ -45,7 +45,7 @@ export const updateBag = async (id, bagData) => {
         const response = await api.put(`/bags/${id}`, bagData);
         return response.data;
     } catch (error) {
-        throw error.response?.data || error.message;
+        throw error.response?.data || { message: error.message };
     }
 };
 
@@ -55,7 +55,7 @@ export const deleteBag = async (id) => {
         const response = await api.delete(`/bags/${id}`);
         return response.data;
     } catch (error) {
-        throw error.response?.data || error.message;
+        throw error.response?.data || { message: error.message };
     }
 };
 

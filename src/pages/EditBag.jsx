@@ -29,17 +29,11 @@ const EditBag = () => {
         fetchBag();
     }, [id]);
 
+    // Errors are shown by BagForm next to the Save button, so the form stays filled in.
     const handleSubmit = async (formData) => {
-        try {
-            setError("");
-            const result = await updateBag(id, formData);
-            if (result.success) {
-                navigate("/admin/dashboard");
-            }
-        } catch (err) {
-            setError(err.message || "Failed to update bag");
-            throw err;
-        }
+        const result = await updateBag(id, formData);
+        if (result.success) navigate("/admin/dashboard");
+        return result;
     };
 
     if (loading) {

@@ -12,6 +12,7 @@ import { CartProvider } from "./context/CartContext";
 import ProtectedRoute from "./components/common/ProtectedRoute";
 import BagListing from "./pages/BagListing";
 import BagGallery from "./pages/BagGallery";
+import PrivacyPage from "./pages/PrivacyPage";
 import Login from "./pages/Login";
 import AddBag from "./pages/AddBag";
 import EditBag from "./pages/EditBag";
@@ -48,6 +49,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<BagListing />} />
             <Route path="/gallery/:id" element={<BagGallery />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout/delivery" element={<DeliveryPage />} />
             <Route path="/checkout/payment" element={<PaymentPage />} />

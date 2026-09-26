@@ -159,7 +159,7 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
                 </div>
             )}
 
-            <p className="sa-note">Answers come from our catalog only.</p>
+            <p className="sa-note">Answers come from our catalog only. <a href="/privacy">Privacy</a></p>
         </form>
     );
 }
@@ -236,6 +236,8 @@ const CSS = `
 .sa-card-price s { font-weight: 400; color: ${SOFT}; }
 .sa-error { margin: 0; color: #E08A8A; font: 400 13px/1.5 ${SANS}; }
 .sa-note { margin: 0; color: #857D75; font: 400 10.5px/1.4 ${SANS}; }
+.sa-note a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.sa-note a:hover { color: ${GOLD_L}; }
 .sa-skel { height: 12px; border-radius: 2px; background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(229,196,138,0.10) 50%, rgba(255,255,255,0.04) 75%); background-size: 200% 100%; animation: saShimmer 1.3s linear infinite; }
 .sa-skel-card { height: auto; aspect-ratio: 1; }
 .sa-spin { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(10,9,8,0.25); border-top-color: #0A0908; animation: saSpin .7s linear infinite; }

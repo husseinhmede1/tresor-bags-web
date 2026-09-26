@@ -210,6 +210,9 @@ export default function DeliveryPage() {
           <button onClick={() => navigate('/cart')} style={btnSecondary}>Back</button>
           <button onClick={handleContinue} style={{ ...btnPrimary, flex: 1 }}>Continue</button>
         </div>
+        <p style={{ fontFamily: C.SANS, fontSize: 11, color: '#857D75', margin: '14px 0 0' }}>
+          Your details are used only for this order. <a href="/privacy" style={{ color: 'inherit', textUnderlineOffset: 2 }}>Privacy Policy</a>
+        </p>
       </div>
     </div>
   );

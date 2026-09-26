@@ -211,7 +211,8 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 
 /* ── Motion ───────────────────────────────────────────────────────────── */
 /* Hero entrance: the headline, text and buttons arrive in reading order. */
-.sf-rise { animation: sfRise .8s var(--sf-ease) both; animation-delay: var(--d, 0ms); }
+/* 'backwards' only: if the animation never runs the text simply stays visible. */
+.sf-rise { animation: sfRise .8s var(--sf-ease) var(--d, 0ms) backwards; }
 /* Grid items fade up once as they scroll into view (hierarchy, not decoration). */
 .sf-reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s var(--sf-ease), transform .7s var(--sf-ease); }
 .sf-reveal.is-in { opacity: 1; transform: none; }

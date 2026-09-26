@@ -277,11 +277,12 @@ const BagListing = () => {
                 .sf-range { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; background: rgba(255,255,255,0.14); border-radius: 2px; outline: none; cursor: pointer; }
                 .sf-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
                 .sf-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
-                .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; min-height: min(760px, calc(100dvh - 64px)); padding-block: 48px 56px; }
-                .hero__art { position: relative; display: grid; place-items: center; height: min(600px, 68dvh); }
+                .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; min-height: min(760px, calc(100vh - 64px)); padding-block: 48px 56px; }
+                /* The bag gets an explicit width (no percentage heights): Safari sized it differently and it spilled over the shop. */
+                .hero__art { position: relative; display: flex; align-items: center; justify-content: center; padding-block: 24px; }
                 .hero__art::before { content: ""; position: absolute; inset: 8% 6% 14%; background: radial-gradient(closest-side, rgba(217,178,111,0.20), rgba(217,178,111,0.05) 55%, transparent 72%); }
                 .hero__art::after { content: ""; position: absolute; bottom: 6%; width: 46%; height: 5%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,0.75), transparent); filter: blur(6px); }
-                .hero__img { position: relative; z-index: 1; height: 88%; width: auto; max-width: 100%; object-fit: contain; filter: drop-shadow(0 36px 60px rgba(0,0,0,0.6)); }
+                .hero__img { position: relative; z-index: 1; display: block; width: min(100%, 480px); height: auto; aspect-ratio: 1 / 1; object-fit: contain; filter: drop-shadow(0 36px 60px rgba(0,0,0,0.6)); }
                 .shop-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
                 .shop-tools { display: flex; gap: 10px; align-items: center; }
                 .filters-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 32px; }
@@ -293,7 +294,8 @@ const BagListing = () => {
                 .admin-menu button:hover { background: rgba(255,255,255,0.06); }
                 @media (max-width: 900px) {
                     .hero { grid-template-columns: 1fr; min-height: 0; padding-block: 36px 16px; gap: 8px; text-align: left; }
-                    .hero__art { height: 320px; order: 2; }
+                    .hero__art { order: 2; padding-block: 8px 0; }
+                    .hero__img { width: min(82%, 320px); }
                     .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
                 }
                 @media (max-width: 600px) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
+import { usePageMeta } from "../utils/pageMeta";
 import { sized } from "../utils/image";
 
 /* ── Tokens (mirrors BagListing) ── */
@@ -109,6 +110,16 @@ const BagGallery = () => {
             .finally(() => setLoading(false));
     }, [id]);
 
+    // Search engines and link previews for this bag (restored to the site defaults on leave).
+    const bagUrl = bag ? `https://tresorbags.com/gallery/${bag._id}` : undefined;
+    usePageMeta({
+        title: bag ? `${bag.title} | Trésor Bags` : undefined,
+        description: bag ? (bag.description || "").replace(/\s+/g, " ").slice(0, 155) : undefined,
+        url: bagUrl,
+        image: bag?.mainImage?.startsWith("https://") ? bag.mainImage : undefined,
+        type: "product",
+    });
+
     if (loading) return (
         <div style={S.stateWrap}>
             <div style={S.spinner} />
@@ -137,8 +148,28 @@ const BagGallery = () => {
         ? (bag.price * (1 - bag.typeId.discount / 100)).toFixed(2)
         : null;
 
+    // Product data for search engines (price, stock, photos).
+    const pageUrl = bagUrl;
+    const productLd = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: bag.title,
+        description: bag.description,
+        image: [bag.mainImage, ...(bag.sideImages || [])].filter(s => s && !s.startsWith("data:")),
+        color: bag.color || undefined,
+        brand: { "@type": "Brand", name: "Trésor Bags" },
+        offers: {
+            "@type": "Offer",
+            url: pageUrl,
+            priceCurrency: "USD",
+            price: Number(discountedPrice ?? bag.price).toFixed(2),
+            availability: bag.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        },
+    };
+
     return (
         <div style={S.page}>
+            <script type="application/ld+json">{JSON.stringify(productLd)}</script>
 
             {/* ── Header ── */}
             <header style={S.header} className="bg-header">

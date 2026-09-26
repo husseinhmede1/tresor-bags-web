@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { usePageMeta } from "../utils/pageMeta";
 
 const GOLD_L = "#E5C48A";
 const TEXT   = "#F5F1E8";
@@ -30,6 +31,11 @@ const Section = ({ items }) => (
 
 export default function PrivacyPage() {
     const navigate = useNavigate();
+    usePageMeta({
+        title: "Privacy Policy | Trésor Bags",
+        description: "How Trésor Bags uses the details you share when you order or use the shopping assistant.",
+        url: "https://tresorbags.com/privacy",
+    });
     return (
         <main style={{ minHeight: "100dvh", background: "#080808", padding: "48px 20px 72px" }}>
             <div style={{ maxWidth: 720, margin: "0 auto" }}>

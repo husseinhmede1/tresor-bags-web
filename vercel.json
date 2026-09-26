@@ -1,5 +1,6 @@
 {
   "rewrites": [
+    { "source": "/sitemap.xml", "destination": "https://tresor-bags-web-node.onrender.com/sitemap.xml" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

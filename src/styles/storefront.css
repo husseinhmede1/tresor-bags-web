@@ -205,6 +205,7 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 
 /* ── Panels ───────────────────────────────────────────────────────────── */
 .sf-panel { background: var(--sf-surface); border: 1px solid var(--sf-line); border-radius: var(--sf-r-panel); padding: clamp(18px, 2.4vw, 28px); }
+.sf-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ── Skeleton ─────────────────────────────────────────────────────────── */
 .sf-skel { border-radius: 8px; background: linear-gradient(90deg, #17171a 25%, #212125 50%, #17171a 75%); background-size: 200% 100%; animation: sfShimmer 1.4s linear infinite; }

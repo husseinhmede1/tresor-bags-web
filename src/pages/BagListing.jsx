@@ -329,6 +329,7 @@ const BagListing = () => {
                                         { label: "Add collection", to: "/admin/collection/add" },
                                         { label: "Orders", to: "/admin/orders" },
                                         { label: "Stats", to: "/admin/stats" },
+                                        { label: "Store info", to: "/admin/info" },
                                     ].map(item => (
                                         <button key={item.to} role="menuitem" onClick={() => { setAdminMenuOpen(false); navigate(item.to); }}>{item.label}</button>
                                     ))}

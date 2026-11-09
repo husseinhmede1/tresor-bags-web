@@ -28,6 +28,7 @@ import PaymentPage from "./pages/PaymentPage";
 import AdminOrderPage from "./pages/AdminOrderPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminStatsPage from "./pages/AdminStatsPage";
+import AdminInfoPage from "./pages/AdminInfoPage";
 
 const App = () => {
   return (
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/admin/order/:token" element={<ProtectedRoute><AdminOrderPage /></ProtectedRoute>} />
             <Route path="/admin/orders" element={<ProtectedRoute><AdminOrdersPage /></ProtectedRoute>} />
             <Route path="/admin/stats" element={<ProtectedRoute><AdminStatsPage /></ProtectedRoute>} />
+            <Route path="/admin/info" element={<ProtectedRoute><AdminInfoPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

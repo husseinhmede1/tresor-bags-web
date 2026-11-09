@@ -9,6 +9,7 @@ const NAV = [
     { to: "/admin/dashboard", label: "Bags" },
     { to: "/admin/orders", label: "Orders" },
     { to: "/admin/stats", label: "Stats" },
+    { to: "/admin/info", label: "Info" },
 ];
 const ADD = [
     { to: "/admin/add", label: "Bag" },

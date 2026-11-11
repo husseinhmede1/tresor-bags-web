@@ -1,10 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ImageSquare, Plus, Star, Trash, X } from "@phosphor-icons/react";
+import { FilmSlate, ImageSquare, Play, Plus, Star, Trash, X } from "@phosphor-icons/react";
 import AdminShell from "./storefront/AdminShell";
 import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import AiQuickAdd from "./AiQuickAdd";
+import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
+import { videoPoster, videoSrc } from "../utils/image";
+
+const MAX_VIDEOS = 5;
+const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit
+const LONG_VIDEO_S = 45;    // longer clips use more of the free ImageKit allowance
+
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+// Length of a local video file in seconds, or null if the browser can't tell.
+const readDuration = (file) => new Promise((resolve) => {
+    const v = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    const done = (d) => { clearTimeout(t); URL.revokeObjectURL(url); resolve(Number.isFinite(d) ? d : null); };
+    const t = setTimeout(() => done(null), 8000);
+    v.preload = "metadata";
+    v.onloadedmetadata = () => done(v.duration);
+    v.onerror = () => done(null);
+    v.src = url;
+});
 
 /* Field must live OUTSIDE BagForm so it isn't recreated on every render. */
 const Field = ({ id, label, required, hint, error, children }) => (
@@ -49,6 +69,18 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const [types, setTypes]                         = useState([]);
     const [collections, setCollections]             = useState([]);
     const [supplierPrice, setSupplierPrice]         = useState(null);
+    // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
+    const [videos, setVideos] = useState(() =>
+        (initialData?.videos || []).map(url => ({ key: url, url, status: "done" })));
+    const draftIdRef = useRef(null);         // id reserved for a new bag, so its videos share its folder
+    const uploadsRef = useRef(new Map());    // key -> AbortController of the running upload
+    const removedRef = useRef(new Set());    // keys removed while still queued
+    const previewsRef = useRef([]);
+
+    useEffect(() => () => {
+        uploadsRef.current.forEach(c => c.abort());
+        previewsRef.current.forEach(u => URL.revokeObjectURL(u));
+    }, []);
 
     useEffect(() => {
         if (initialData) {
@@ -157,6 +189,66 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         setFormData(p => ({ ...p, mainImage: picked, sideImages: gallery }));
     };
 
+    const patchVideo = (key, patch) => setVideos(p => p.map(v => v.key === key ? { ...v, ...patch } : v));
+
+    const uploadVideo = async (key, file) => {
+        if (removedRef.current.has(key)) return;
+        const controller = new AbortController();
+        uploadsRef.current.set(key, controller);
+        try {
+            const auth = await getVideoUploadAuth(bagId || draftIdRef.current);
+            if (!bagId) draftIdRef.current = auth.bagId;
+            patchVideo(key, { progress: 0 });
+            const url = await uploadVideoFile(file, auth, {
+                signal: controller.signal,
+                onProgress: (progress) => patchVideo(key, { progress }),
+            });
+            patchVideo(key, { status: "done", url });
+            // Ask ImageKit for the cover and the 720p copy now, so they are ready for the first customer.
+            new Image().src = videoPoster(url, 800);
+            fetch(videoSrc(url), { mode: "no-cors", signal: controller.signal }).then(() => controller.abort()).catch(() => {});
+        } catch (err) {
+            if (!controller.signal.aborted) patchVideo(key, { status: "error", error: err?.message || "Upload failed" });
+        } finally {
+            uploadsRef.current.delete(key);
+        }
+    };
+
+    const handleVideoAdd = async (e) => {
+        const files = Array.from(e.target.files || []);
+        e.target.value = "";
+        if (!files.length) return;
+        const room = MAX_VIDEOS - videos.length;
+        setErrors(p => { const n = { ...p }; delete n.videos; delete n.submit; return n; });
+        if (files.length > room) setErrors(p => ({ ...p, videos: `Maximum ${MAX_VIDEOS} videos per bag` }));
+
+        const queue = [];
+        const added = files.slice(0, Math.max(0, room)).map((file, i) => {
+            const key = `new-${Date.now()}-${i}`;
+            const name = file.name || "video";
+            if (!file.type.startsWith("video/")) return { key, name, status: "error", error: "This file is not a video" };
+            if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+                return { key, name, status: "error", error: `Larger than ${MAX_VIDEO_MB} MB. Record in 1080p or trim it, then try again` };
+            }
+            const preview = URL.createObjectURL(file);
+            previewsRef.current.push(preview);
+            queue.push([key, file]);
+            readDuration(file).then(d => { if (d > LONG_VIDEO_S) patchVideo(key, { long: d }); });
+            return { key, name, preview, status: "uploading", progress: null };
+        });
+        setVideos(p => [...p, ...added]);
+        // One at a time: a slow connection does better, and a new bag reserves its id only once.
+        for (const [key, file] of queue) await uploadVideo(key, file);
+    };
+
+    const handleRemoveVideo = (key) => {
+        removedRef.current.add(key);
+        uploadsRef.current.get(key)?.abort();
+        setVideos(p => p.filter(v => v.key !== key));
+    };
+
+    const uploadingVideos = videos.filter(v => v.status === "uploading").length;
+
     const handleRemoveMainImage = () => {
         setFormData(p => ({ ...p, mainImage: "" }));
         setImagePreview("");
@@ -177,6 +269,10 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (uploadingVideos) {
+            setErrors(p => ({ ...p, submit: "Please wait until the video finishes uploading" }));
+            return;
+        }
         if (!validateForm()) {
             // The Save button is at the bottom; bring the first missing field into view.
             setTimeout(() => document.querySelector(".bf-field-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
@@ -184,7 +280,11 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         }
         setLoading(true);
         try {
-            const res = await onSubmit(formData);
+            const res = await onSubmit({
+                ...formData,
+                videos: videos.filter(v => v.status === "done").map(v => v.url),
+                ...(!bagId && draftIdRef.current && { _id: draftIdRef.current }),
+            });
             if (res && !res.success) setErrors({ submit: res.message || "Could not save the bag, please try again" });
         }
         catch (err) { setErrors({ submit: err?.message || "Could not save the bag, please try again" }); }
@@ -273,6 +373,68 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 )}
                             </div>
                             {errors.sideImages && <p className="sf-error bf-err-gap">{errors.sideImages}</p>}
+                        </section>
+
+                        <section className="sf-panel bf-panel" aria-labelledby="bf-videos-h">
+                            <div className="bf-panel__head">
+                                <h2 id="bf-videos-h" className="sf-h3">Videos</h2>
+                                <span className="sf-faint sf-num bf-meta">{videos.length}/{MAX_VIDEOS}</span>
+                            </div>
+                            <p className="sf-muted bf-sub">
+                                Optional. Short clips that show the bag from every side and inside, up to {LONG_VIDEO_S} seconds. Customers tap to play.
+                            </p>
+                            <div className="bf-gallery">
+                                {videos.map((v, i) => (
+                                    <div key={v.key} className={`bf-thumb bf-vid${v.status === "error" ? " bf-vid--err" : ""}`}>
+                                        <div className="sf-tile bf-vid__tile">
+                                            <FilmSlate size={26} weight="light" className="bf-vid__icon" aria-hidden="true" />
+                                            {v.preview ? (
+                                                <video src={`${v.preview}#t=0.5`} muted playsInline preload="metadata" aria-hidden="true" />
+                                            ) : v.url ? (
+                                                <img src={videoPoster(v.url, 300)} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                                            ) : null}
+                                            {v.status === "done" && (
+                                                <a className="bf-vid__play" href={v.url} target="_blank" rel="noreferrer" aria-label={`Watch video ${i + 1}`}>
+                                                    <Play size={16} weight="fill" />
+                                                </a>
+                                            )}
+                                            {v.status === "uploading" && (
+                                                <div className="bf-vid__progress" role="progressbar" aria-label={`Uploading video ${i + 1}`}
+                                                    aria-valuemin={0} aria-valuemax={100} aria-valuenow={v.progress || 0}>
+                                                    <span className="sf-num">{v.progress === null ? "Waiting" : v.progress ? `${v.progress}%` : "Uploading…"}</span>
+                                                    <i style={{ width: `${v.progress || 0}%` }} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button type="button" className="bf-thumb__remove"
+                                            onClick={() => handleRemoveVideo(v.key)}
+                                            aria-label={v.status === "uploading" ? `Cancel video ${i + 1}` : `Remove video ${i + 1}`}>
+                                            <X size={14} weight="bold" />
+                                        </button>
+                                    </div>
+                                ))}
+                                {videos.length < MAX_VIDEOS && (
+                                    <label className="bf-add bf-vid__add">
+                                        <Plus size={22} />
+                                        <span>Add video</span>
+                                        <input type="file" accept="video/*" multiple
+                                            onChange={handleVideoAdd} hidden />
+                                    </label>
+                                )}
+                            </div>
+                            {videos.some(v => v.status === "error" || v.long) && (
+                                <ul className="bf-vid__notes">
+                                    {videos.filter(v => v.status === "error").map(v => (
+                                        <li key={v.key} className="sf-error"><b dir="auto">{v.name}</b>: {v.error}</li>
+                                    ))}
+                                    {videos.filter(v => v.long && v.status !== "error").map(v => (
+                                        <li key={v.key} className="bf-vid__warn">
+                                            <b dir="auto">{v.name}</b> is {clock(v.long)} long. Videos over {LONG_VIDEO_S} seconds use more of the free ImageKit allowance.
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {errors.videos && <p className="sf-error bf-err-gap">{errors.videos}</p>}
                         </section>
                     </div>
 
@@ -413,9 +575,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 <button type="button" className="sf-btn sf-btn--ghost" onClick={handleCancel}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="sf-btn sf-btn--primary bf-save" disabled={loading}>
-                                    {loading && <span className="bf-spinner" aria-hidden="true" />}
-                                    {loading ? "Saving…" : "Save bag"}
+                                <button type="submit" className="sf-btn sf-btn--primary bf-save" disabled={loading || uploadingVideos > 0}>
+                                    {(loading || uploadingVideos > 0) && <span className="bf-spinner" aria-hidden="true" />}
+                                    {loading ? "Saving…" : uploadingVideos ? "Uploading video…" : "Save bag"}
                                 </button>
                             </div>
                         </section>
@@ -460,6 +622,20 @@ const BF_CSS = `
     .bf-thumb__main:hover { background: #111; color: var(--sf-gold-2); }
     .bf-add { aspect-ratio: 1 / 1; display: grid; place-content: center; justify-items: center; gap: 4px; border-radius: var(--sf-r-card); border: 1.5px dashed var(--sf-line-2); color: var(--sf-text-2); font-size: 13px; font-weight: 500; cursor: pointer; transition: border-color .2s, color .2s, background-color .2s; }
     .bf-add:hover { border-color: rgba(217, 178, 111, 0.6); color: var(--sf-gold); background: var(--sf-gold-soft); }
+
+    .bf-vid__tile { aspect-ratio: 3 / 4; cursor: default; position: relative; display: grid; place-items: center; background: var(--sf-surface-2); }
+    .bf-vid__tile video, .bf-vid__tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; padding: 0 !important; }
+    .bf-vid__icon { color: var(--sf-text-3); }
+    .bf-vid--err .bf-vid__tile { outline: 1.5px solid var(--sf-danger); outline-offset: -1.5px; }
+    .bf-vid__play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: rgba(17,17,17,.78); color: var(--sf-gold); border: 1px solid rgba(217,178,111,.45); transition: transform .2s, background-color .2s; }
+    .bf-vid__play:hover { background: #111; transform: translate(-50%, -50%) scale(1.06); }
+    .bf-vid__progress { position: absolute; inset: auto 0 0 0; padding: 8px 8px 0; background: linear-gradient(transparent, rgba(17,17,17,.85)); display: grid; gap: 6px; }
+    .bf-vid__progress span { font-size: 12px; font-weight: 600; color: #fff; }
+    .bf-vid__progress i { display: block; height: 3px; background: var(--sf-gold); border-radius: 3px; transition: width .2s; margin-bottom: 8px; }
+    .bf-vid__add { aspect-ratio: 3 / 4; }
+    .bf-vid__notes { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+    .bf-vid__notes b { font-weight: 600; word-break: break-all; }
+    .bf-vid__warn { color: var(--sf-text-2); }
 
     .bf-hint { display: grid; gap: 4px; padding: 12px 14px; margin-bottom: 20px; border-radius: var(--sf-r-input); font-size: 14px; color: var(--sf-text); background: var(--sf-gold-soft); border: 1px solid rgba(217, 178, 111, 0.3); }
     .bf-hint b { color: var(--sf-gold); font-weight: 600; }

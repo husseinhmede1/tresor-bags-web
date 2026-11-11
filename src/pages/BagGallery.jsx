@@ -1,12 +1,39 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Handbag, Minus, Plus } from "@phosphor-icons/react";
+import { Handbag, Minus, Play, Plus } from "@phosphor-icons/react";
 import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
 import { usePageMeta } from "../utils/pageMeta";
-import { sized } from "../utils/image";
+import { sized, videoPoster, videoSrc } from "../utils/image";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
+
+// Shows only the cover until the customer presses play, so the video costs nothing until watched.
+const ProductVideo = ({ src, label }) => {
+    const [playing, setPlaying] = useState(false);
+    const [ratio, setRatio] = useState(null);
+    const [noCover, setNoCover] = useState(false);
+    return (
+        <div className="pdp__video" style={{ "--r": ratio || 3 / 4 }}>
+            {playing ? (
+                <video controls autoPlay playsInline preload="auto" aria-label={label}
+                    onLoadedMetadata={(e) => { const v = e.currentTarget; if (v.videoWidth) setRatio(v.videoWidth / v.videoHeight); }}>
+                    <source src={videoSrc(src)} type="video/mp4" />
+                    <source src={src} />
+                </video>
+            ) : (
+                <button type="button" className="pdp__video-cover" onClick={() => setPlaying(true)} aria-label={`Play: ${label}`}>
+                    {!noCover && (
+                        <img src={videoPoster(src, 900)} alt="" loading="lazy"
+                            onLoad={(e) => { const i = e.currentTarget; if (i.naturalWidth) setRatio(i.naturalWidth / i.naturalHeight); }}
+                            onError={() => setNoCover(true)} />
+                    )}
+                    <span className="pdp__video-play" aria-hidden="true"><Play size={22} weight="fill" /></span>
+                </button>
+            )}
+        </div>
+    );
+};
 
 const BagGallery = () => {
     const { id } = useParams();
@@ -176,6 +203,16 @@ const BagGallery = () => {
                         </dl>
                     )}
                 </div>
+
+                {/* Videos: under the photos on wide screens, after the details on phones */}
+                {bag.videos?.length > 0 && (
+                    <section className="pdp__videos" aria-label="Videos">
+                        {bag.videos.map((v, i) => (
+                            <ProductVideo key={v} src={v}
+                                label={bag.videos.length > 1 ? `${bag.title}, video ${i + 1}` : `${bag.title}, video`} />
+                        ))}
+                    </section>
+                )}
             </main>
             <SiteFooter />
         </div>
@@ -193,7 +230,17 @@ const PDP_CSS = `
     .pdp__thumb { flex: 0 0 76px; width: 76px; aspect-ratio: 1; border-radius: 12px; outline: 2px solid transparent; outline-offset: 2px; }
     .pdp__thumb img { padding: 10%; }
     .pdp__thumb[aria-pressed="true"] { outline-color: var(--sf-gold); }
-    .pdp__info { position: sticky; top: 96px; display: grid; }
+    .pdp__videos { grid-column: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; margin-top: calc(12px - clamp(28px, 5vw, 72px)); align-items: start; }
+    .pdp__video { --r: 0.75; position: relative; width: 100%; max-width: calc(min(72vh, 680px) * var(--r)); aspect-ratio: var(--r); border-radius: 16px; overflow: hidden; background: var(--sf-surface); border: 1px solid var(--sf-line); }
+    .pdp__video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+    .pdp__video-cover { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+    .pdp__video-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+    .pdp__video-cover:hover img { transform: scale(1.03); }
+    .pdp__video-play { position: relative; width: 64px; height: 64px; border-radius: 999px; display: grid; place-items: center; background: rgba(17,17,17,.72); color: var(--sf-gold); border: 1px solid rgba(217,178,111,.5); backdrop-filter: blur(6px); transition: transform .2s, background-color .2s; }
+    .pdp__video-cover:hover .pdp__video-play { transform: scale(1.06); background: rgba(17,17,17,.9); }
+    .pdp__video-cover:active .pdp__video-play { transform: scale(.97); }
+    .pdp__video-cover:focus-visible { outline: 2px solid var(--sf-gold); outline-offset: -4px; }
+    .pdp__info { position: sticky; top: 96px; display: grid; grid-column: 2; grid-row: 1 / span 2; }
     .pdp__title { font-size: clamp(1.9rem, 3.4vw, 2.75rem); line-height: 1.08; font-weight: 600; letter-spacing: -0.035em; margin-top: 8px; }
     .pdp__buy { display: flex; gap: 10px; margin-top: 28px; }
     .pdp__desc { margin-top: 32px; color: var(--sf-text-2); font-size: 16px; line-height: 1.7; max-width: 60ch; white-space: pre-line; }
@@ -203,7 +250,8 @@ const PDP_CSS = `
     .pdp__spec dd { margin: 0; font-size: 16px; font-weight: 550; font-variant-numeric: tabular-nums; }
     @media (max-width: 860px) {
         .pdp { grid-template-columns: 1fr; padding-top: 16px; }
-        .pdp__info { position: static; }
+        .pdp__info { position: static; grid-column: auto; grid-row: auto; }
+        .pdp__videos { grid-column: auto; margin-top: 0; }
         .pdp__specs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 `;

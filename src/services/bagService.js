@@ -60,4 +60,33 @@ export const deleteBag = async (id) => {
     }
 };
 
+// Videos go from the browser straight to ImageKit (too big to pass through our server).
+// The server only signs each upload; `bagId` is the bag's id, or a new one for an unsaved bag.
+export const getVideoUploadAuth = async (bagId) => (await api.post('/bags/video-upload', { bagId })).data.data;
+
+const IMAGEKIT_UPLOAD = 'https://upload.imagekit.io/api/v1/files/upload';
+
+export const uploadVideoFile = async (file, auth, { onProgress, signal } = {}) => {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('fileName', (file.name || 'video.mp4').replace(/[^\w.-]+/g, '_').slice(-80));
+    form.append('folder', auth.folder);
+    form.append('useUniqueFileName', 'true');
+    form.append('publicKey', auth.publicKey);
+    form.append('signature', auth.signature);
+    form.append('expire', String(auth.expire));
+    form.append('token', auth.token);
+    try {
+        const { data } = await axios.post(IMAGEKIT_UPLOAD, form, {
+            signal,
+            onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
+        });
+        if (!data?.url) throw new Error('Upload failed');
+        return data.url;
+    } catch (error) {
+        if (axios.isCancel(error)) throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Upload failed', { cause: error });
+    }
+};
+
 export default api;

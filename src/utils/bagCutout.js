@@ -56,31 +56,42 @@ const fetchModel = async (url, onProgress) => {
     return bytes;
 };
 
-let ready = null;   // Promise<{ ort, session, ep }>, shared by every photo
-
-const createSession = async (ort, bytes, ep) => ort.InferenceSession.create(bytes, { executionProviders: [ep] });
-
-const loadSession = async (onProgress, { skipGpu = false } = {}) => {
-    const ort = await import("onnxruntime-web");
-    ort.env.logLevel = "error";
-    const bytes = await fetchModel(MODEL_URL, onProgress);
-    const gpu = !skipGpu && typeof navigator !== "undefined" && navigator.gpu
-        && await navigator.gpu.requestAdapter().catch(() => null);
-    // On the processor the work runs in a background worker, so the page stays responsive
-    // (the AI's answer, scrolling, typing) while photos are being cleaned.
-    if (!gpu && !skipGpu) ort.env.wasm.proxy = true;
-    if (gpu) {
-        try {
-            return { ort, session: await createSession(ort, bytes, "webgpu"), ep: "webgpu" };
-        } catch (err) {
-            console.warn("Photo cleaner: graphics card not usable, using the processor", err);
-        }
+// The model runs in a worker of its own (cleanerWorker.js), so the page stays responsive.
+let worker = null;
+let nextId = 0;
+const pending = new Map();
+const ask = (message, transfer = []) => new Promise((resolve, reject) => {
+    if (!worker) {
+        worker = new Worker(new URL("./cleanerWorker.js", import.meta.url), { type: "module" });
+        worker.onmessage = ({ data }) => {
+            const p = pending.get(data.id);
+            pending.delete(data.id);
+            if (data.ok) p?.resolve(data); else p?.reject(new Error(data.error));
+        };
+        worker.onerror = (e) => {
+            const err = new Error(e.message || "The photo cleaner stopped");
+            pending.forEach((p) => p.reject(err));
+            pending.clear();
+            worker.terminate();
+            worker = null;
+            ready = null;
+        };
     }
-    return { ort, session: await createSession(ort, bytes, "wasm"), ep: "wasm" };
+    const id = ++nextId;
+    pending.set(id, { resolve, reject });
+    worker.postMessage({ ...message, id }, transfer);
+});
+
+let ready = null;   // Promise<{ ep }>, shared by every photo
+
+const loadSession = async (onProgress) => {
+    const bytes = await fetchModel(MODEL_URL, onProgress);
+    const { ep } = await ask({ type: "init", bytes }, [bytes.buffer]);
+    return { ep };
 };
 
-export const prepareCleaner = (onProgress, opts) => {
-    ready ??= loadSession(onProgress, opts).catch((err) => { ready = null; throw err; });
+export const prepareCleaner = (onProgress) => {
+    ready ??= loadSession(onProgress).catch((err) => { ready = null; throw err; });
     return ready;
 };
 
@@ -102,7 +113,7 @@ const canvas = (w, h) => {
 };
 
 // 0-255 "how much of this pixel is the bag", at the photo's own size.
-const predictMask = async ({ ort, session }, img) => {
+const predictMask = async (img) => {
     const small = canvas(SIZE, SIZE).getContext("2d", { willReadFrequently: true });
     small.drawImage(img, 0, 0, SIZE, SIZE);
     const px = small.getImageData(0, 0, SIZE, SIZE).data;
@@ -111,9 +122,7 @@ const predictMask = async ({ ort, session }, img) => {
     for (let i = 0; i < plane; i++) {
         for (let c = 0; c < 3; c++) input[c * plane + i] = (px[i * 4 + c] / 255 - MEAN[c]) / STD[c];
     }
-    const name = session.inputNames[0];
-    const out = await session.run({ [name]: new ort.Tensor("float32", input, [1, 3, SIZE, SIZE]) });
-    const prob = out[session.outputNames[0]].data;   // the first output is the finest mask
+    const { mask: prob } = await ask({ type: "run", input }, [input.buffer]);
 
     // Stretch to the full 0-255 range.
     let lo = Infinity, hi = -Infinity;
@@ -281,20 +290,9 @@ const compose = (img, alpha) => {
 };
 
 const cleanNow = async (src, { onModelProgress } = {}) => {
-    let model = await prepareCleaner(onModelProgress);
+    await prepareCleaner(onModelProgress);
     const img = await loadImage(src);
-    let alpha;
-    try {
-        alpha = await predictMask(model, img);
-    } catch (err) {
-        // Some graphics cards open the model but can't run it: use the processor instead.
-        if (model.ep !== "webgpu") throw err;
-        console.warn("Photo cleaner: graphics card failed, using the processor", err);
-        await model.session.release?.().catch(() => {});
-        ready = null;
-        model = await prepareCleaner(onModelProgress, { skipGpu: true });
-        alpha = await predictMask(model, img);
-    }
+    const alpha = await predictMask(img);
     const w = img.naturalWidth, h = img.naturalHeight;
     const ctx = canvas(w, h).getContext("2d", { willReadFrequently: true });
     ctx.drawImage(img, 0, 0);

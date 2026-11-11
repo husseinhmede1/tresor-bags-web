@@ -168,8 +168,9 @@ const tidyMask = (alpha, w, h) => {
 };
 
 // Parts of the bag that look like the background (a grey wheel cap, a light lining seen through
-// a gap) can come out as holes. A hole whose colour is not the background's colour at that height
-// is part of the bag: its own pixels are kept. Real gaps (inside a handle loop) stay see-through.
+// a gap) can come out as holes. A small hole whose colour is not the background's colour at that
+// height is part of the bag: its own pixels are kept. Bigger openings (inside a handle loop, where
+// scenery may show through) always stay see-through.
 const fillBagHoles = (alpha, rgba, w, h) => {
     const solid = (i) => alpha[i] > 128;
     const seen = new Uint8Array(w * h);           // 1 = background reachable from the edge
@@ -198,7 +199,7 @@ const fillBagHoles = (alpha, rgba, w, h) => {
         seen[start] = 2;
         stack.push(start);
         flood(hole);
-        if (hole.length < bagArea * 0.0005) continue;  // specks don't matter
+        if (hole.length < bagArea * 0.0005 || hole.length > bagArea * 0.0035) continue;  // specks; handle loops
         let y0 = h, y1 = 0, hr = 0, hg = 0, hb = 0;
         for (const i of hole) {
             const y = (i / w) | 0;

@@ -136,8 +136,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     // Cut the bag out of a photo and put it on the shop's grey with a soft shadow. The bag's own
     // pixels are kept; the original stays one tap away. Save waits until cleaning is done.
     const cleanOne = (src) => {
-        if (!src || cleanups[src]) return;
+        if (!src || (cleanups[src] && cleanups[src].status !== "failed")) return;
         if (!canClean()) { setCleanerError(NO_CLEANER); return; }
+        setCleanerError("");
         setCleanups(p => ({ ...p, [src]: { status: "cleaning" } }));
         setPreparingPhotos(n => n + 1);
         cleanQueue.current = cleanQueue.current.then(async () => {
@@ -149,7 +150,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                 console.warn("Photo cleaning failed:", err);
                 setCleanups(p => ({ ...p, [src]: { status: "failed" } }));
                 setCleanerError(err?.message === NO_CLEANER ? NO_CLEANER
-                    : "The photo cleaner couldn't finish here, so these photos stay as they are. Try on a laptop in Chrome.");
+                    : `The photo cleaner couldn't finish here, so these photos stay as they are. (${String(err?.message || err).slice(0, 160)})`);
             } finally {
                 setCleanerProgress(null);
                 setPreparingPhotos(n => n - 1);
@@ -180,7 +181,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                 </button>
             );
         }
-        if (st || !canClean()) return null;   // skipped, failed, or no cleaner here: the photo stays as it is
+        // Skipped (no clear bag) or no cleaner in this browser: the photo stays as it is. Failed: try again.
+        if ((st && st.status !== "failed") || !canClean()) return null;
         return (
             <button type="button" className="bf-clean" onClick={() => cleanOne(src)} title="Remove the background and center the bag">
                 <MagicWand size={12} weight="bold" /> Clean

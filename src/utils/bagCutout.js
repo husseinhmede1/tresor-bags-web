@@ -55,16 +55,18 @@ const fetchModel = async (url, onProgress) => {
 
 let ready = null;   // Promise<{ ort, session }>, shared by every photo
 
-const loadSession = async (onProgress) => {
+// `from`: which model in MODELS to start with (1 skips half precision).
+const loadSession = async (onProgress, from = 0) => {
     const ort = await import("onnxruntime-web");
     ort.env.logLevel = "error";
     if (!canClean() || !(await navigator.gpu.requestAdapter().catch(() => null))) throw new Error(NO_CLEANER);
     let lastError;
-    for (const url of MODELS) {
+    for (const [i, url] of MODELS.entries()) {
+        if (i < from) continue;
         try {
             const bytes = await fetchModel(url, onProgress);
             const session = await ort.InferenceSession.create(bytes, { executionProviders: ["webgpu"] });
-            return { ort, session };
+            return { ort, session, model: i };
         } catch (err) {
             lastError = err;
             console.warn(`Photo cleaner: ${url.split("/").pop()} could not start`, err);
@@ -73,8 +75,8 @@ const loadSession = async (onProgress) => {
     throw lastError;
 };
 
-export const prepareCleaner = (onProgress) => {
-    ready ??= loadSession(onProgress).catch((err) => { ready = null; throw err; });
+export const prepareCleaner = (onProgress, from = 0) => {
+    ready ??= loadSession(onProgress, from).catch((err) => { ready = null; throw err; });
     return ready;
 };
 
@@ -287,9 +289,20 @@ const compose = (img, alpha) => {
  * improve (no clear bag in it). Throws if the cleaner can't run on this device.
  */
 export const cleanPhoto = async (src, { onModelProgress } = {}) => {
-    const model = await prepareCleaner(onModelProgress);
+    let model = await prepareCleaner(onModelProgress);
     const img = await loadImage(src);
-    const alpha = await predictMask(model, img);
+    let alpha;
+    try {
+        alpha = await predictMask(model, img);
+    } catch (err) {
+        // Some graphics cards open the half-precision model but can't run it: switch to full precision.
+        if (model.model !== 0) throw err;
+        console.warn("Photo cleaner: half precision failed, trying full precision", err);
+        await model.session.release?.().catch(() => {});
+        ready = null;
+        model = await prepareCleaner(onModelProgress, 1);
+        alpha = await predictMask(model, img);
+    }
     const w = img.naturalWidth, h = img.naturalHeight;
     const ctx = canvas(w, h).getContext("2d", { willReadFrequently: true });
     ctx.drawImage(img, 0, 0);

@@ -1,26 +1,28 @@
 // Professional product photo, made on the admin's device: the bag is cut out of the supplier's
 // photo (wall, floor, the supplier's red text and logos all go), then placed in the middle of a
-// light grey square, the same grey as the shop's photo tiles, with a soft shadow under it.
+// white square with a soft shadow under it. The shop's photo tiles blend white into their own
+// light grey (mix-blend-mode: multiply), so on the site the bag sits on exactly the tile grey.
 //
 // The bag itself is never redrawn: its pixels are copied as they are. The cut-out comes from
-// BiRefNet (MIT licence), an open model that runs in the browser with onnxruntime-web on the
-// graphics card (WebGPU: Chrome and Edge on laptops, Safari on recent iPhones). On the processor
-// alone it needs more memory than a browser tab gets, so without WebGPU photos stay as they are.
-// The model is downloaded from Hugging Face the first time and kept in the browser's cache.
+// ISNet "general use" (DIS, Apache-2.0), an open model run in the browser by onnxruntime-web
+// (served to the logged-in admin by our server, see the backend's routes/modelRoutes.js):
+// on the graphics card (WebGPU) when there is one, else on the processor (a few seconds a photo).
+// The model (~180 MB) is downloaded the first time and kept in the browser's cache.
 // Customers never load any of this.
 
-const MODEL_BASE = "https://huggingface.co/onnx-community/BiRefNet_lite/resolve/main/onnx/";
-// Half precision first (~115 MB); full precision (~225 MB) for graphics cards without it.
-const MODELS = [`${MODEL_BASE}model_fp16.onnx`, `${MODEL_BASE}model.onnx`];
+import { TOKEN_KEY } from "../services/serverErrors";
 
-export const canClean = () => typeof navigator !== "undefined" && "gpu" in navigator;
-export const NO_CLEANER = "This browser can't run the photo cleaner. Use Chrome on a laptop, or Safari on a recent iPhone.";
-const CACHE = "tresor-photo-cleaner-v1";
+const MODEL_URL = import.meta.env.VITE_CLEANER_MODEL_URL
+    || `${(import.meta.env.VITE_APP_API_URL || "http://localhost:5000").replace(/\/$/, "")}/models/isnet-general-use.onnx`;
+const CACHE = "tresor-photo-cleaner-v2";
 const SIZE = 1024;                          // the model works on 1024×1024
-const MEAN = [0.485, 0.456, 0.406];
-const STD = [0.229, 0.224, 0.225];
+const MEAN = [0.5, 0.5, 0.5];               // ISNet input: pixel/255 - 0.5
+const STD = [1, 1, 1];
 
-export const TILE = "#EDEDEE";              // --sf-tile on the storefront
+export const canClean = () => typeof window !== "undefined" && typeof WebAssembly === "object";
+export const NO_CLEANER = "This browser can't run the photo cleaner. Use Chrome on a laptop, or Safari on an iPhone.";
+
+const BACKGROUND = "#FFFFFF";               // turns into the tile grey on the site (see above)
 const OUT = 1600;                           // output square, sharp enough for the product page
 const MARGIN = 0.08;                        // space around the bag, on each side
 
@@ -32,7 +34,8 @@ const fetchModel = async (url, onProgress) => {
     const hit = await cache?.match(url);
     if (hit) return new Uint8Array(await hit.arrayBuffer());
 
-    const res = await fetch(url);
+    const token = localStorage.getItem(TOKEN_KEY);
+    const res = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
     if (!res.ok || !res.body) throw new Error(`Model download failed (${res.status})`);
     const total = Number(res.headers.get("content-length")) || 0;
     const reader = res.body.getReader();
@@ -53,57 +56,30 @@ const fetchModel = async (url, onProgress) => {
     return bytes;
 };
 
-let ready = null;   // Promise<{ ort, session }>, shared by every photo
+let ready = null;   // Promise<{ ort, session, ep }>, shared by every photo
 
-// `from`: which model in MODELS to start with (1 skips half precision).
-const loadSession = async (onProgress, from = 0) => {
+const createSession = async (ort, bytes, ep) => ort.InferenceSession.create(bytes, { executionProviders: [ep] });
+
+const loadSession = async (onProgress, { skipGpu = false } = {}) => {
     const ort = await import("onnxruntime-web");
     ort.env.logLevel = "error";
-    if (!canClean() || !(await navigator.gpu.requestAdapter().catch(() => null))) throw new Error(NO_CLEANER);
-    let lastError;
-    for (const [i, url] of MODELS.entries()) {
-        if (i < from) continue;
+    const bytes = await fetchModel(MODEL_URL, onProgress);
+    const gpu = !skipGpu && typeof navigator !== "undefined" && navigator.gpu
+        && await navigator.gpu.requestAdapter().catch(() => null);
+    if (gpu) {
         try {
-            const bytes = await fetchModel(url, onProgress);
-            const session = await ort.InferenceSession.create(bytes, { executionProviders: ["webgpu"] });
-            return { ort, session, model: i };
+            return { ort, session: await createSession(ort, bytes, "webgpu"), ep: "webgpu" };
         } catch (err) {
-            lastError = err;
-            console.warn(`Photo cleaner: ${url.split("/").pop()} could not start`, err);
+            console.warn("Photo cleaner: graphics card not usable, using the processor", err);
         }
     }
-    throw lastError;
+    return { ort, session: await createSession(ort, bytes, "wasm"), ep: "wasm" };
 };
 
-export const prepareCleaner = (onProgress, from = 0) => {
-    ready ??= loadSession(onProgress, from).catch((err) => { ready = null; throw err; });
+export const prepareCleaner = (onProgress, opts) => {
+    ready ??= loadSession(onProgress, opts).catch((err) => { ready = null; throw err; });
     return ready;
 };
-
-/* ── Half precision (the fp16 model may take and give float16) ──────────── */
-
-const toHalf = (f) => {
-    const b = new DataView(new ArrayBuffer(4));
-    b.setFloat32(0, f);
-    const x = b.getUint32(0);
-    const sign = (x >>> 16) & 0x8000;
-    const exp = ((x >>> 23) & 0xff) - 127 + 15;
-    const man = x & 0x7fffff;
-    if (exp <= 0) return sign;
-    if (exp >= 31) return sign | 0x7c00;
-    return sign | (exp << 10) | (man >>> 13);
-};
-const fromHalf = (h) => {
-    const s = h & 0x8000 ? -1 : 1;
-    const e = (h >>> 10) & 0x1f;
-    const m = h & 0x3ff;
-    if (e === 0) return s * 2 ** -14 * (m / 1024);
-    if (e === 31) return m ? NaN : s * Infinity;
-    return s * 2 ** (e - 15) * (1 + m / 1024);
-};
-const asFloats = (t) => t.type === "float16"
-    ? Float32Array.from(t.data, (v) => (typeof v === "number" && t.data instanceof Uint16Array ? fromHalf(v) : v))
-    : t.data;
 
 /* ── Mask ──────────────────────────────────────────────────────────────── */
 
@@ -133,25 +109,14 @@ const predictMask = async ({ ort, session }, img) => {
         for (let c = 0; c < 3; c++) input[c * plane + i] = (px[i * 4 + c] / 255 - MEAN[c]) / STD[c];
     }
     const name = session.inputNames[0];
-    let out;
-    try {
-        out = await session.run({ [name]: new ort.Tensor("float32", input, [1, 3, SIZE, SIZE]) });
-    } catch (err) {
-        if (!/float16|data type/i.test(err?.message || "")) throw err;
-        const half = new Uint16Array(input.length);
-        for (let i = 0; i < input.length; i++) half[i] = toHalf(input[i]);
-        out = await session.run({ [name]: new ort.Tensor("float16", half, [1, 3, SIZE, SIZE]) });
-    }
-    const logits = asFloats(out[session.outputNames[0]]);
+    const out = await session.run({ [name]: new ort.Tensor("float32", input, [1, 3, SIZE, SIZE]) });
+    const prob = out[session.outputNames[0]].data;   // the first output is the finest mask
 
-    // Sigmoid, then stretch to the full 0-255 range.
-    const prob = new Float32Array(plane);
+    // Stretch to the full 0-255 range.
     let lo = Infinity, hi = -Infinity;
     for (let i = 0; i < plane; i++) {
-        const p = 1 / (1 + Math.exp(-logits[i]));
-        prob[i] = p;
-        if (p < lo) lo = p;
-        if (p > hi) hi = p;
+        if (prob[i] < lo) lo = prob[i];
+        if (prob[i] > hi) hi = prob[i];
     }
     if (!(hi > lo)) throw new Error("The cleaner found no bag");
     const maskSmall = canvas(SIZE, SIZE);
@@ -173,6 +138,33 @@ const predictMask = async ({ ort, session }, img) => {
     const alpha = new Uint8ClampedArray(w * h);
     for (let i = 0; i < alpha.length; i++) alpha[i] = bd[i * 4];
     return alpha;
+};
+
+// Keep the bag and drop the rest: specks and leftovers (a bit of the supplier's text, a mark on
+// the floor) much smaller than the bag, and faint ghost pixels.
+const tidyMask = (alpha, w, h) => {
+    const label = new Int32Array(w * h);
+    const sizes = [0];
+    const stack = [];
+    for (let start = 0; start < w * h; start++) {
+        if (label[start] || alpha[start] <= 128) continue;
+        const id = sizes.length;
+        let size = 0;
+        label[start] = id;
+        stack.push(start);
+        while (stack.length) {
+            const i = stack.pop();
+            size++;
+            const x = i % w;
+            const next = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i < w * (h - 1) ? i + w : -1];
+            for (const j of next) if (j >= 0 && !label[j] && alpha[j] > 128) { label[j] = id; stack.push(j); }
+        }
+        sizes.push(size);
+    }
+    const biggest = Math.max(...sizes);
+    for (let i = 0; i < alpha.length; i++) {
+        if ((label[i] && sizes[label[i]] < biggest * 0.02) || alpha[i] < 40) alpha[i] = 0;
+    }
 };
 
 // Parts of the bag that look like the background (a grey wheel cap, a light lining seen through
@@ -257,7 +249,7 @@ const compose = (img, alpha) => {
 
     const out = canvas(OUT, OUT);
     const ctx = out.getContext("2d");
-    ctx.fillStyle = TILE;
+    ctx.fillStyle = BACKGROUND;
     ctx.fillRect(0, 0, OUT, OUT);
     const scale = (OUT * (1 - 2 * MARGIN)) / Math.max(bw, bh);
     const dw = bw * scale, dh = bh * scale;
@@ -295,17 +287,18 @@ export const cleanPhoto = async (src, { onModelProgress } = {}) => {
     try {
         alpha = await predictMask(model, img);
     } catch (err) {
-        // Some graphics cards open the half-precision model but can't run it: switch to full precision.
-        if (model.model !== 0) throw err;
-        console.warn("Photo cleaner: half precision failed, trying full precision", err);
+        // Some graphics cards open the model but can't run it: use the processor instead.
+        if (model.ep !== "webgpu") throw err;
+        console.warn("Photo cleaner: graphics card failed, using the processor", err);
         await model.session.release?.().catch(() => {});
         ready = null;
-        model = await prepareCleaner(onModelProgress, 1);
+        model = await prepareCleaner(onModelProgress, { skipGpu: true });
         alpha = await predictMask(model, img);
     }
     const w = img.naturalWidth, h = img.naturalHeight;
     const ctx = canvas(w, h).getContext("2d", { willReadFrequently: true });
     ctx.drawImage(img, 0, 0);
+    tidyMask(alpha, w, h);
     fillBagHoles(alpha, ctx.getImageData(0, 0, w, h).data, w, h);
     return compose(img, alpha);
 };

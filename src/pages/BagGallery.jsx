@@ -4,28 +4,28 @@ import { FilmSlate, Handbag, Minus, Play, Plus } from "@phosphor-icons/react";
 import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
 import { usePageMeta } from "../utils/pageMeta";
-import { sized, videoPoster, videoSrc } from "../utils/image";
+import { sized, videoPoster } from "../utils/image";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
 
 // Plays in the main frame once the customer picks the video, so it costs nothing until then.
-// One 720p MP4 from ImageKit, with the original file as fallback.
+// The file as it was uploaded (a 720p MP4), never converted by ImageKit.
 const ProductVideo = ({ src, label }) => (
     <div className="pdp__main pdp__main--video">
         <video controls autoPlay playsInline preload="auto" poster={videoPoster(src, 1200)} aria-label={label}>
-            <source src={videoSrc(src)} type="video/mp4" />
-            {videoSrc(src) !== src && <source src={src} />}
+            <source src={src} />
         </video>
     </div>
 );
 
 // Video thumbnail: the cover frame with a play mark; a film icon if the cover is not ready.
 const VideoThumb = ({ src, selected, onClick, label }) => {
-    const [noCover, setNoCover] = useState(false);
+    const poster = videoPoster(src, 240);
+    const [noCover, setNoCover] = useState(!poster);
     return (
         <button className="sf-tile pdp__thumb pdp__thumb--video" aria-pressed={selected} onClick={onClick} aria-label={label}>
             {noCover ? <FilmSlate size={26} weight="light" className="pdp__thumb-icon" /> : (
-                <img src={videoPoster(src, 240)} alt="" loading="lazy" onError={() => setNoCover(true)} />
+                <img src={poster} alt="" loading="lazy" onError={() => setNoCover(true)} />
             )}
             <span className="pdp__thumb-play" aria-hidden="true"><Play size={14} weight="fill" /></span>
         </button>

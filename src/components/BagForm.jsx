@@ -6,13 +6,14 @@ import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import AiQuickAdd from "./AiQuickAdd";
 import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
-import { posterFileOf, videoPoster, videoSrc } from "../utils/image";
+import { isCompressedVideo, posterFileOf, videoPoster } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 import { compressImage } from "../utils/imageCompress";
 
 const MAX_VIDEOS = 5;
 const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
 const MAX_SOURCE_MB = 2048; // before compression on this device
+const NO_COMPRESS = "This device can't prepare videos. Add it from a laptop (Chrome) or an iPhone";
 const LONG_VIDEO_S = 45;    // longer clips use more of the monthly bandwidth when watched
 
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
@@ -202,10 +203,13 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         setFormData(p => ({ ...p, mainImage: picked, sideImages: gallery }));
     };
 
+    // Saved before compression existed: ImageKit would have to convert it.
+    const isOld = (v) => v.status === "done" && v.url && !isCompressedVideo(v.url);
     const patchVideo = (key, patch) => setVideos(p => p.map(v => v.key === key ? { ...v, ...patch } : v));
 
     // Compress on this device (nothing is saved on it), make the cover, then upload both.
-    // If this browser can't compress, the original is uploaded and ImageKit converts it.
+    // Only compressed videos are uploaded: ImageKit would use its monthly processing units to
+    // convert anything else, so a device that can't compress is asked to use another one.
     const uploadVideo = async (key, file) => {
         if (removedRef.current.has(key)) return;
         const controller = new AbortController();
@@ -227,20 +231,15 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                 }
             } catch (err) {
                 if (signal.aborted) throw err;
-                console.warn("Video compression failed, uploading the original:", err);
+                console.warn("Video compression failed:", err);
             }
-            if (!upload) {
-                const ext = (file.name || "").split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
-                const base = (file.name || "video").replace(/\.[^.]+$/, "").replace(/[^\w-]+/g, "_").slice(0, 60);
-                upload = new File([file], `raw_${base}.${ext}`, { type: file.type });
-                notes.push("this browser couldn't compress it, so it was uploaded as recorded");
-            }
+            if (!upload) throw new Error(NO_COMPRESS);
             if (upload.size > MAX_VIDEO_MB * 1024 * 1024) {
-                throw new Error(`Still larger than ${MAX_VIDEO_MB} MB. Trim it or use the Saver quality, then try again`);
+                throw new Error(`Still larger than ${MAX_VIDEO_MB} MB after compressing. Trim it, then try again`);
             }
 
             patchVideo(key, { stage: "uploading", progress: 0 });
-            const poster = posterBlob || await capturePoster(upload.name.startsWith("opt_") ? upload : file);
+            const poster = posterBlob || await capturePoster(upload);
             const auth = await getVideoUploadAuth(bagId || draftIdRef.current);
             if (!bagId) draftIdRef.current = auth.bagId;
             const url = await uploadVideoFile(upload, auth, {
@@ -254,10 +253,6 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                     .catch(() => notes.push("its cover could not be saved"));
             }
             patchVideo(key, { status: "done", url, note: notes.join("; ") || null });
-            // A video that was not compressed is converted by ImageKit on first play: start that now.
-            if (!upload.name.startsWith("opt_")) {
-                fetch(videoSrc(url), { mode: "no-cors", signal }).then(() => controller.abort()).catch(() => {});
-            }
         } catch (err) {
             if (!signal.aborted) patchVideo(key, { status: "error", error: err?.message || "Upload failed" });
         } finally {
@@ -278,9 +273,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             const key = `new-${Date.now()}-${i}`;
             const name = file.name || "video";
             if (!file.type.startsWith("video/")) return { key, name, status: "error", error: "This file is not a video" };
-            const maxMb = canCompress() ? MAX_SOURCE_MB : MAX_VIDEO_MB;
-            if (file.size > maxMb * 1024 * 1024) {
-                return { key, name, status: "error", error: `Larger than ${maxMb >= 1024 ? `${maxMb / 1024} GB` : `${maxMb} MB`}. Trim it, then try again` };
+            if (!canCompress()) return { key, name, status: "error", error: NO_COMPRESS };
+            if (file.size > MAX_SOURCE_MB * 1024 * 1024) {
+                return { key, name, status: "error", error: `Larger than ${MAX_SOURCE_MB / 1024} GB. Trim it, then try again` };
             }
             const preview = URL.createObjectURL(file);
             previewsRef.current.push(preview);
@@ -443,7 +438,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                             <FilmSlate size={26} weight="light" className="bf-vid__icon" aria-hidden="true" />
                                             {v.preview ? (
                                                 <video src={`${v.preview}#t=0.5`} muted playsInline preload="metadata" aria-hidden="true" />
-                                            ) : v.url ? (
+                                            ) : videoPoster(v.url, 300) ? (
                                                 <img src={videoPoster(v.url, 300)} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                                             ) : null}
                                             {v.status === "done" && (
@@ -478,7 +473,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                     </label>
                                 )}
                             </div>
-                            {videos.some(v => v.status === "error" || v.long || v.note) && (
+                            {videos.some(v => v.status === "error" || v.long || v.note || isOld(v)) && (
                                 <ul className="bf-vid__notes">
                                     {videos.filter(v => v.status === "error").map(v => (
                                         <li key={v.key} className="sf-error"><b dir="auto">{v.name}</b>: {v.error}</li>
@@ -490,6 +485,11 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                     ))}
                                     {videos.filter(v => v.note && v.status === "done").map(v => (
                                         <li key={`${v.key}-note`} className="bf-vid__warn"><b dir="auto">{v.name}</b>: {v.note}.</li>
+                                    ))}
+                                    {videos.filter(isOld).map(v => (
+                                        <li key={`${v.key}-old`} className="bf-vid__warn">
+                                            Video {videos.indexOf(v) + 1} was uploaded before videos were compressed. Remove it and add it again, so it plays faster and costs nothing to show.
+                                        </li>
                                     ))}
                                 </ul>
                             )}

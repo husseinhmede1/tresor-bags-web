@@ -26,6 +26,26 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
     reader.readAsDataURL(file);
 });
 
+// The AI gets smaller copies of the bag photos (it only needs their shape and color, and a
+// smaller request is faster and cheaper). Phone screenshots, tall and full of small text, keep
+// their size so every character stays readable.
+const AI_PHOTO_EDGE = 1024;
+const forAi = (dataUrl) => new Promise((resolve) => {
+    const img = new Image();
+    img.onerror = () => resolve(dataUrl);
+    img.onload = () => {
+        const long = Math.max(img.width, img.height);
+        if (img.height / img.width >= 1.6 || long <= AI_PHOTO_EDGE) return resolve(dataUrl);
+        const scale = AI_PHOTO_EDGE / long;
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = dataUrl;
+});
+
 // Status lines while the AI works, same gold language as the storefront assistant.
 const STEPS = ["Reading the screenshots", "Translating the details", "Sorting the photos", "Filling the form"];
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -37,7 +57,7 @@ const AiQuickAdd = ({ onResult }) => {
     const [loading, setLoading]   = useState(false);
     const [error, setError]       = useState("");
     const [done, setDone]         = useState(false);
-    const [kinds, setKinds]       = useState({}); // image index -> "screenshot" | "product" | "main" | "other"
+    const [kinds, setKinds]       = useState({}); // image index -> "screenshot" | "product" | "detail" | "main" | "other"
     const [step, setStep]         = useState(0);
     const [fresh, setFresh]       = useState(false); // badges just arrived, animate them in
     const rootRef = useRef(null);
@@ -107,7 +127,7 @@ const AiQuickAdd = ({ onResult }) => {
         setStep(0);
         setFresh(false);
         try {
-            const res = await parseProductFromChat({ images: shots, text, language });
+            const res = await parseProductFromChat({ images: await Promise.all(shots.map(forAi)), text, language });
             if (res.success) {
                 const k = {};
                 (res.data.images || []).forEach(i => { k[i.number - 1] = i.kind; });
@@ -208,7 +228,7 @@ const AiQuickAdd = ({ onResult }) => {
     );
 };
 
-const KIND_LABEL = { main: "Main", product: "Photo", screenshot: "Info", other: "Skipped" };
+const KIND_LABEL = { main: "Main", product: "Photo", detail: "Detail", screenshot: "Info", other: "Skipped" };
 
 const AQ_CSS = `
     @property --aq-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
@@ -278,7 +298,7 @@ const AQ_CSS = `
     .aq__num { position: absolute; bottom: 6px; left: 6px; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: rgba(17,17,17,.82); color: var(--sf-text); font: 600 11px/20px var(--sf-font); text-align: center; }
     .aq__kind { position: absolute; top: 6px; left: 6px; height: 20px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; gap: 3px; font: 600 10.5px/1 var(--sf-font); background: rgba(17,17,17,.86); color: var(--sf-text-2); }
     .aq__kind--main { background: var(--sf-gold); color: var(--sf-on-gold); }
-    .aq__kind--product { color: var(--sf-gold); }
+    .aq__kind--product, .aq__kind--detail { color: var(--sf-gold); }
     .aq__kind--other { color: var(--sf-text-3); }
     .aq__remove { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: #fff; display: grid; place-items: center; cursor: pointer; }
     .aq__remove:hover { color: var(--sf-danger); }

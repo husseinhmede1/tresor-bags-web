@@ -118,12 +118,13 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
 
     /* Merge what the AI read from the chat into the form; blanks never overwrite. */
     const applyAiResult = (d, uploaded = []) => {
-        // Photos the AI marked as product shots: main first, the rest go to the gallery.
-        const productNums = (d.images || []).filter(i => i.kind === "product").map(i => i.number);
-        if (productNums.length) {
-            const mainNum = d.mainImage || productNums[0];
+        // Photos of the bag (whole-bag shots and details), in the order given: main first,
+        // the rest go to the gallery.
+        const photoNums = (d.images || []).filter(i => i.kind === "product" || i.kind === "detail").map(i => i.number);
+        if (photoNums.length) {
+            const mainNum = d.mainImage || photoNums[0];
             const main = uploaded[mainNum - 1];
-            const gallery = productNums.filter(n => n !== mainNum).map(n => uploaded[n - 1]).slice(0, 10);
+            const gallery = photoNums.filter(n => n !== mainNum).map(n => uploaded[n - 1]).slice(0, 10);
             setFormData(p => ({ ...p, mainImage: main, sideImages: gallery }));
             setImagePreview(main);
             setSideImagePreviews(gallery);

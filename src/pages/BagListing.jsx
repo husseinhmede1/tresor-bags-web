@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllTypes, deleteType } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
@@ -11,13 +11,14 @@ import ShopAssistant from "../components/ShopAssistant";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
 import Reveal from "../components/storefront/Reveal";
+import { SHOP_CATEGORIES } from "../utils/shopCategories";
 import {
-    Sparkle, MagnifyingGlass, SlidersHorizontal, Plus, Minus, PencilSimple, Trash, ArrowLeft, CaretDown,
+    Sparkle, MagnifyingGlass, SlidersHorizontal, Plus, Minus, PencilSimple, Trash, ArrowLeft, CaretDown, X,
 } from "@phosphor-icons/react";
 
 // Served from /public so index.html can preload it.
 const heroBagImg = "/hero_final1.webp";
-const CATEGORIES = ["Luggage", "Backpacks", "Bags", "Accessories"];
+const CATEGORIES = SHOP_CATEGORIES.map(c => c.title);
 const money = (n) => `$${Number(n).toLocaleString("en-US", Number.isInteger(Number(n)) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 /* ── Range slider (filters) ── */
@@ -41,15 +42,18 @@ const BagListing = () => {
     const { isAdmin, logout } = useAuth();
     const { getQuantity, setQuantity } = useCart();
     const navigate = useNavigate();
+    const location = useLocation();
+    // A choice from the header's shop menu (see ShopMenu): open straight on the shop with it.
+    const shopPick = location.state?.shopPick;
 
     /* ── Category selector modal ── */
     const alreadySeen = sessionStorage.getItem('tresor-modal-seen') === '1';
     const savedCategory = sessionStorage.getItem('tresor-selected-category') || null;
     // Set when a bag was opened from the assistant, so coming back reopens it where it was.
     const [askReturn] = useState(() => sessionStorage.getItem('tresor-ask-return'));
-    const [showModal, setShowModal]                       = useState(!alreadySeen || askReturn === 'modal');
+    const [showModal, setShowModal]                       = useState(!shopPick && (!alreadySeen || askReturn === 'modal'));
     const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(savedCategory);
-    const [pageRevealed, setPageRevealed]                 = useState(alreadySeen && askReturn !== 'modal');
+    const [pageRevealed, setPageRevealed]                 = useState(Boolean(shopPick) || (alreadySeen && askReturn !== 'modal'));
     // Blur-in only right after the modal closes; a normal visit shows the page as is.
     const [animateReveal, setAnimateReveal]               = useState(false);
 
@@ -144,6 +148,8 @@ const BagListing = () => {
     const scrollToShop = () => shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     const openAssistant = () => { setActiveTab("items"); setAskOpen(true); setTimeout(() => askRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
     const pickPrimaryCategory = (cat) => {
+        // A type from another category would leave nothing to show.
+        if (selectedCategory && selectedCategory.category !== cat) setSelectedCategory(null);
         setSelectedPrimaryCategory(cat);
         if (cat) sessionStorage.setItem('tresor-selected-category', cat);
         else sessionStorage.removeItem('tresor-selected-category');
@@ -246,6 +252,35 @@ const BagListing = () => {
         setColor(""); setCapacity("");
     };
     const handleCategoryClick = (cat) => { setSelectedCategory(cat); setActiveTab("items"); };
+
+    // Apply a pick from the header menu: a whole category, one type, or one collection.
+    const [appliedPick, setAppliedPick] = useState(null);
+    if (shopPick && appliedPick !== location.key) {
+        setAppliedPick(location.key);
+        setShowModal(false);
+        setPageRevealed(true);
+        setSearchInput(""); setSearchQuery("");
+        setMinPrice(""); setMaxPrice(""); setMinHeight(""); setMaxHeight("");
+        setMinWidth(""); setMaxWidth(""); setMinWeight(""); setMaxWeight("");
+        setColor(""); setCapacity("");
+        setFilterOpen(false);
+        setActiveTab("items");
+        setSelectedCategory(shopPick.type || null);
+        setSelectedCollection(shopPick.collection || null);
+        setSelectedPrimaryCategory(shopPick.type?.category ?? shopPick.category ?? null);
+    }
+    useEffect(() => {
+        if (!shopPick) return;
+        clearTimeout(debounceRef.current);   // a search still being typed
+        const category = shopPick.type?.category ?? shopPick.category ?? null;
+        sessionStorage.setItem('tresor-modal-seen', '1');
+        if (category) sessionStorage.setItem('tresor-selected-category', category);
+        else sessionStorage.removeItem('tresor-selected-category');
+        // Done with it: a refresh or coming back from a bag shouldn't apply it again.
+        navigate(".", { replace: true, state: null });
+        // Not cancelled on cleanup: clearing the state above re-runs this effect right away.
+        setTimeout(() => shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    }, [shopPick, navigate]);
     const resetCategoryFilter = () => { setSelectedCategory(null); resetFilters(); };
 
 
@@ -370,7 +405,7 @@ const BagListing = () => {
                 <section ref={shopRef} id="shop" className="sf-container" style={{ paddingTop: 56, scrollMarginTop: 72 }}>
                     <div className="shop-head">
                         <div>
-                            <h2 className="sf-h2">{activeTab === "items" ? (selectedPrimaryCategory || "The collection") : "Shop by type"}</h2>
+                            <h2 className="sf-h2">{activeTab === "items" ? (selectedCollection?.title || selectedPrimaryCategory || "The collection") : "Shop by type"}</h2>
                             <p className="sf-faint sf-num" style={{ marginTop: 6, fontSize: 14 }}>
                                 {activeTab === "items" ? `${bagTotal} ${bagTotal === 1 ? "piece" : "pieces"}` : `${catTotal} ${catTotal === 1 ? "type" : "types"}`}
                             </p>
@@ -458,7 +493,16 @@ const BagListing = () => {
                                 </div>
                             )}
 
-                            {/* A type picked from the Types tab */}
+                            {/* A collection picked from the menu or the filters */}
+                            {selectedCollection && !filterOpen && (
+                                <div className="sf-chips" style={{ marginTop: 16 }}>
+                                    <button className="sf-chip" aria-pressed="true" onClick={() => setSelectedCollection(null)} aria-label={`Remove collection ${selectedCollection.title}`}>
+                                        {selectedCollection.title} <X size={14} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* A type picked from the Types tab or the menu */}
                             {selectedCategory && (
                                 <div className="sf-panel" style={{ marginTop: 16, display: "flex", alignItems: "flex-start", gap: 16 }}>
                                     <button className="sf-icon-btn" onClick={resetCategoryFilter} aria-label="Back to all bags"><ArrowLeft size={20} /></button>

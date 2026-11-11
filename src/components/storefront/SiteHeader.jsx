@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Handbag } from "@phosphor-icons/react";
 import { useCart } from "../../context/CartContext";
+import ShopMenu from "./ShopMenu";
 
-// Shared storefront header: logo (home), optional back button, extra actions, cart.
+// Shared storefront header: logo (home), optional back button, the shop menu, extra actions, cart.
 export default function SiteHeader({ back, children }) {
     const navigate = useNavigate();
     const { totalItems } = useCart();
@@ -19,6 +20,7 @@ export default function SiteHeader({ back, children }) {
                         <img className="sf-header__logo" src="/tresor_logo.webp" alt="Trésor Outlet Store" />
                     </Link>
                 </div>
+                <ShopMenu />
                 <div className="sf-header__right">
                     {children}
                     <button type="button" className="sf-icon-btn" onClick={() => navigate("/cart")} aria-label={`Shopping bag, ${totalItems} items`}>

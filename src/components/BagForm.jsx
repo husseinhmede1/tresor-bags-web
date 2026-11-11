@@ -166,7 +166,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         return found ? { original: found[0], showing: "clean", ...found[1] } : null;
     };
 
-    const cleanChip = (src) => {
+    // `small`: gallery thumbnails, where a long label would cover the remove button.
+    const cleanChip = (src, small = false) => {
         const st = photoState(src);
         if (st?.status === "cleaning") {
             return <span className="bf-clean bf-clean--busy" role="status"><span className="bf-clean__dot" aria-hidden="true" /> Cleaning</span>;
@@ -175,7 +176,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             return st.showing === "clean" ? (
                 <button type="button" className={`bf-clean${st.check ? " bf-clean--check" : ""}`} onClick={() => replacePhoto(src, st.original)}
                     title={st.check ? "Busy photo: check the result, tap to go back to the original" : "Show the supplier's photo"}>
-                    <ArrowCounterClockwise size={12} weight="bold" /> {st.check ? "Check · Original" : "Original"}
+                    <ArrowCounterClockwise size={12} weight="bold" /> {st.check ? (small ? "Check" : "Check · Original") : "Original"}
                 </button>
             ) : (
                 <button type="button" className="bf-clean" onClick={() => replacePhoto(src, st.clean)} title="Use the cleaned photo">
@@ -496,7 +497,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                         <div className="sf-tile bf-thumb__tile">
                                             <img src={src} alt={`Gallery photo ${i + 1}`} />
                                         </div>
-                                        {cleanChip(src)}
+                                        {cleanChip(src, true)}
                                         <button type="button" className="bf-thumb__remove"
                                             onClick={() => handleRemoveSideImage(i)}
                                             aria-label={`Remove gallery photo ${i + 1}`}>

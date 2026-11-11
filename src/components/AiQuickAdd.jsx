@@ -50,7 +50,7 @@ const forAi = (dataUrl) => new Promise((resolve) => {
 const STEPS = ["Reading the screenshots", "Translating the details", "Sorting the photos", "Filling the form"];
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-const AiQuickAdd = ({ onResult }) => {
+const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
     const [shots, setShots]       = useState([]);
     const [text, setText]         = useState("");
     const [language, setLanguage] = useState("en");   // the site is in English
@@ -102,6 +102,7 @@ const AiQuickAdd = ({ onResult }) => {
         const urls = await Promise.all(imgs.map(fileToDataUrl));
         setShots(p => [...p, ...urls]);
         setKinds({});
+        onPhotosAdded?.(urls);
     };
 
     // Ctrl/Cmd+V a screenshot straight into the box

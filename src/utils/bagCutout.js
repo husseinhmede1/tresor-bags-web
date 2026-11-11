@@ -66,6 +66,9 @@ const loadSession = async (onProgress, { skipGpu = false } = {}) => {
     const bytes = await fetchModel(MODEL_URL, onProgress);
     const gpu = !skipGpu && typeof navigator !== "undefined" && navigator.gpu
         && await navigator.gpu.requestAdapter().catch(() => null);
+    // On the processor the work runs in a background worker, so the page stays responsive
+    // (the AI's answer, scrolling, typing) while photos are being cleaned.
+    if (!gpu && !skipGpu) ort.env.wasm.proxy = true;
     if (gpu) {
         try {
             return { ort, session: await createSession(ort, bytes, "webgpu"), ep: "webgpu" };
@@ -277,11 +280,7 @@ const compose = (img, alpha) => {
     return out.toDataURL("image/jpeg", 0.9);
 };
 
-/**
- * Clean one product photo. Returns a JPEG data URL, or null when the photo isn't one this can
- * improve (no clear bag in it). Throws if the cleaner can't run on this device.
- */
-export const cleanPhoto = async (src, { onModelProgress } = {}) => {
+const cleanNow = async (src, { onModelProgress } = {}) => {
     let model = await prepareCleaner(onModelProgress);
     const img = await loadImage(src);
     let alpha;
@@ -302,4 +301,45 @@ export const cleanPhoto = async (src, { onModelProgress } = {}) => {
     tidyMask(alpha, w, h);
     fillBagHoles(alpha, ctx.getImageData(0, 0, w, h).data, w, h);
     return compose(img, alpha);
+};
+
+// One photo at a time (the device works hard on each), each photo only once: a photo cleaned
+// ahead of time (see precleanPhotos) is ready the moment it is asked for.
+const results = new Map();   // photo -> Promise<cleaned photo | null>
+const dropped = new Set();   // cleaned ahead of time, then not needed: skipped if not started yet
+let line = Promise.resolve();
+const queue = (src, opts) => {
+    dropped.delete(src);
+    if (!results.has(src)) {
+        const job = line.then(() => {
+            if (!dropped.has(src)) return cleanNow(src, opts);
+            dropped.delete(src);
+            results.delete(src);   // asked for later after all: it is queued again
+            return null;
+        });
+        line = job.catch(() => {});
+        results.set(src, job);
+        job.catch(() => results.delete(src));   // a failure can be tried again
+    }
+    return results.get(src);
+};
+
+/**
+ * Clean one product photo. Resolves to a JPEG data URL, or null when the photo isn't one this
+ * can improve (no clear bag in it). Rejects if the cleaner can't run on this device.
+ */
+export const cleanPhoto = (src, opts) => queue(src, opts);
+
+// Photos the AI says are not whole-bag shots: no need to clean them ahead of time.
+export const skipPrecleaning = (srcs) => srcs.forEach((src) => dropped.add(src));
+
+// Start cleaning photos while the AI is still reading them, so the whole-bag ones are ready
+// when it answers. Phone screenshots (tall) are skipped. Errors surface later, in cleanPhoto.
+export const precleanPhotos = async (srcs, opts) => {
+    if (!canClean()) return;
+    for (const src of srcs) {
+        const img = await loadImage(src).catch(() => null);
+        if (!img || img.naturalHeight / img.naturalWidth >= 1.6) continue;
+        queue(src, opts).catch(() => {});
+    }
 };

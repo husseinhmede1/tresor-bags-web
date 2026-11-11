@@ -9,7 +9,7 @@ import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
 import { isCompressedVideo, posterFileOf, videoPoster } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 import { compressImage } from "../utils/imageCompress";
-import { canClean, cleanPhoto, NO_CLEANER } from "../utils/bagCutout";
+import { canClean, cleanPhoto, NO_CLEANER, precleanPhotos, skipPrecleaning } from "../utils/bagCutout";
 
 const MAX_VIDEOS = 5;
 const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
@@ -209,6 +209,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             // marked "Check" for a quick look. Close-ups and inside shots stay as they are.
             (d.images || []).filter(i => i.kind === "product")
                 .forEach(i => cleanOne(uploaded[i.number - 1], { check: i.plainBackground !== true }));
+            skipPrecleaning(uploaded.filter((_, n) => !(d.images || []).some(i => i.number === n + 1 && i.kind === "product")));
         }
 
         const has = v => v !== null && v !== undefined && v !== "";
@@ -434,7 +435,10 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         >
             <style>{BF_CSS}</style>
             <form onSubmit={handleSubmit} className="bf">
-                {!bagId && !initialData && <AiQuickAdd onResult={applyAiResult} />}
+                {!bagId && !initialData && (
+                    <AiQuickAdd onResult={applyAiResult}
+                        onPhotosAdded={(srcs) => precleanPhotos(srcs, { onModelProgress: setCleanerProgress })} />
+                )}
 
                 <div className="bf-split">
 

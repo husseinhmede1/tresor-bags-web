@@ -135,7 +135,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
 
     // Cut the bag out of a photo and put it on the shop's grey with a soft shadow. The bag's own
     // pixels are kept; the original stays one tap away. Save waits until cleaning is done.
-    const cleanOne = (src) => {
+    // `check`: a busy photo (advertising, outdoors), worth a look once cleaned.
+    const cleanOne = (src, { check = false } = {}) => {
         if (!src || (cleanups[src] && cleanups[src].status !== "failed")) return;
         if (!canClean()) { setCleanerError(NO_CLEANER); return; }
         setCleanerError("");
@@ -144,7 +145,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         cleanQueue.current = cleanQueue.current.then(async () => {
             try {
                 const clean = await cleanPhoto(src, { onModelProgress: setCleanerProgress });
-                setCleanups(p => ({ ...p, [src]: clean ? { status: "done", clean } : { status: "skipped" } }));
+                setCleanups(p => ({ ...p, [src]: clean ? { status: "done", clean, check } : { status: "skipped" } }));
                 if (clean) replacePhoto(src, clean);
             } catch (err) {
                 console.warn("Photo cleaning failed:", err);
@@ -172,8 +173,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         }
         if (st?.status === "done") {
             return st.showing === "clean" ? (
-                <button type="button" className="bf-clean" onClick={() => replacePhoto(src, st.original)} title="Show the supplier's photo">
-                    <ArrowCounterClockwise size={12} weight="bold" /> Original
+                <button type="button" className={`bf-clean${st.check ? " bf-clean--check" : ""}`} onClick={() => replacePhoto(src, st.original)}
+                    title={st.check ? "Busy photo: check the result, tap to go back to the original" : "Show the supplier's photo"}>
+                    <ArrowCounterClockwise size={12} weight="bold" /> {st.check ? "Check · Original" : "Original"}
                 </button>
             ) : (
                 <button type="button" className="bf-clean" onClick={() => replacePhoto(src, st.clean)} title="Use the cleaned photo">
@@ -202,10 +204,10 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             setFormData(p => ({ ...p, mainImage: main, sideImages: gallery }));
             setImagePreview(main);
             setSideImagePreviews(gallery);
-            // Supplier-style shots (whole bag, plain background) are cleaned straight away. Close-ups,
-            // inside shots and advertising photos stay as they are; "Clean" is there if wanted.
-            (d.images || []).filter(i => i.kind === "product" && i.plainBackground === true)
-                .forEach(i => cleanOne(uploaded[i.number - 1]));
+            // Every whole-bag photo is cleaned straight away. Busy ones (advertising, outdoors) are
+            // marked "Check" for a quick look. Close-ups and inside shots stay as they are.
+            (d.images || []).filter(i => i.kind === "product")
+                .forEach(i => cleanOne(uploaded[i.number - 1], { check: i.plainBackground !== true }));
         }
 
         const has = v => v !== null && v !== undefined && v !== "";
@@ -470,6 +472,16 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 </p>
                             )}
                             {cleanerError && <p className="bf-vid__warn bf-cleaner-note">{cleanerError}</p>}
+                            {(() => {
+                                const shown = new Set([imagePreview, ...sideImagePreviews]);
+                                const n = Object.values(cleanups).filter(v => v.status === "done" && v.check && shown.has(v.clean)).length;
+                                return n > 0 && (
+                                    <p className="bf-vid__warn bf-cleaner-note">
+                                        {n === 1 ? "1 cleaned photo had a busy background" : `${n} cleaned photos had busy backgrounds`} (marked Check):
+                                        {" "}have a look, and tap Original if the original looks better.
+                                    </p>
+                                );
+                            })()}
                         </section>
 
                         <section className="sf-panel bf-panel" aria-labelledby="bf-gallery-h">
@@ -755,6 +767,8 @@ const BF_CSS = `
     .bf-clean { position: absolute; top: 6px; left: 6px; z-index: 1; height: 26px; padding: 0 10px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: var(--sf-gold); display: inline-flex; align-items: center; gap: 5px; font: 600 12px/1 var(--sf-font); cursor: pointer; white-space: nowrap; }
     .bf-clean:hover { background: #111; color: var(--sf-gold-2); }
     .bf-clean--busy { cursor: default; color: var(--sf-text-2); }
+    .bf-clean--check { background: var(--sf-gold); color: var(--sf-on-gold); }
+    .bf-clean--check:hover { background: var(--sf-gold-2); color: var(--sf-on-gold); }
     .bf-clean__dot { width: 10px; height: 10px; border-radius: 999px; border: 2px solid rgba(217,178,111,.3); border-top-color: var(--sf-gold); animation: sfSpin .7s linear infinite; }
     .bf-cleaner-note { margin-top: 10px; font-size: 13px; }
     .bf-drop { display: grid; justify-items: center; gap: 6px; padding: 48px 20px; border-radius: var(--sf-r-card); border: 1.5px dashed var(--sf-line-2); background: var(--sf-surface-2); cursor: pointer; text-align: center; transition: border-color .2s, background-color .2s; }

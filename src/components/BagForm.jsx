@@ -213,6 +213,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         uploadsRef.current.set(key, controller);
         try {
             let upload = null;
+            let posterBlob = null;
             const notes = [];
             patchVideo(key, { stage: "compressing", progress: 0 });
             try {
@@ -221,6 +222,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                 });
                 if (out) {
                     upload = out.file;
+                    posterBlob = out.poster;
                     if (!out.audio) notes.push("saved without sound (this browser can't keep it)");
                 }
             } catch (err) {
@@ -238,7 +240,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             }
 
             patchVideo(key, { stage: "uploading", progress: 0 });
-            const poster = await capturePoster(upload.name.startsWith("opt_") ? upload : file);
+            const poster = posterBlob || await capturePoster(upload.name.startsWith("opt_") ? upload : file);
             const auth = await getVideoUploadAuth(bagId || draftIdRef.current);
             if (!bagId) draftIdRef.current = auth.bagId;
             const url = await uploadVideoFile(upload, auth, {

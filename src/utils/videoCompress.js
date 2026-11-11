@@ -68,8 +68,10 @@ export const compressVideo = async (file, presetKey = DEFAULT_PRESET, { onProgre
         if (signal?.aborted) throw new DOMException("Canceled", "AbortError");
 
         const base = (file.name || "video").replace(/\.[^.]+$/, "").replace(/[^\w-]+/g, "_").slice(0, 60) || "video";
+        const buffer = output.target.buffer;
         return {
-            file: new File([output.target.buffer], `opt_${base}.mp4`, { type: "video/mp4" }),
+            file: new File([buffer], `opt_${base}.mp4`, { type: "video/mp4" }),
+            poster: await posterFromVideo(mb, buffer, width, height).catch(() => null),
             width, height,
             duration: await input.computeDuration(),
             hdr: await track.hasHighDynamicRange().catch(() => false),
@@ -80,12 +82,60 @@ export const compressVideo = async (file, presetKey = DEFAULT_PRESET, { onProgre
     }
 };
 
-// A JPEG cover from about one second in, made on the device (ImageKit charges for its own
-// video thumbnails). Resolves to null if this browser can't show the video.
+// --- Cover image -----------------------------------------------------------------------
+// A JPEG cover made on the device (ImageKit charges processing units for its own covers).
+// Frames are taken from the decoded video itself; a frame that is almost black (the start of
+// a clip, or a frame the browser had not drawn yet) is skipped for a later one.
+
+const COVER_TIMES = (d) => [Math.min(1, d / 2), d * 0.25, d * 0.5, d * 0.75, 0.1].filter(t => t >= 0 && t < d);
+
+// Average brightness 0-255 of a downscaled copy.
+const brightness = (source) => {
+    const c = document.createElement("canvas");
+    c.width = 24;
+    c.height = 24;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(source, 0, 0, 24, 24);
+    const d = ctx.getImageData(0, 0, 24, 24).data;
+    let sum = 0;
+    for (let i = 0; i < d.length; i += 4) sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    return sum / (d.length / 4);
+};
+const isDark = (source) => brightness(source) < 12;
+
+const toJpeg = (canvas) => typeof canvas.convertToBlob === "function"
+    ? canvas.convertToBlob({ type: "image/jpeg", quality: 0.85 })
+    : new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+
+// From the compressed MP4, decoded with WebCodecs (no <video> element involved).
+const posterFromVideo = async (mb, buffer, width, height) => {
+    const input = new mb.Input({ source: new mb.BlobSource(new Blob([buffer])), formats: mb.ALL_FORMATS });
+    try {
+        const track = await input.getPrimaryVideoTrack();
+        if (!track) return null;
+        const sink = new mb.CanvasSink(track, { width, height, fit: "fill" });
+        const duration = await track.computeDuration();
+        let fallback = null;
+        for (const t of COVER_TIMES(duration)) {
+            const frame = await sink.getCanvas(t);
+            if (!frame) continue;
+            if (!isDark(frame.canvas)) return await toJpeg(frame.canvas);
+            fallback ??= frame.canvas;
+        }
+        return fallback ? await toJpeg(fallback) : null;   // a clip that is dark all along
+    } finally {
+        input.dispose();
+    }
+};
+
+// For a video that was not compressed: through a <video> element, waiting until the frame is
+// really drawn. Resolves to null if this browser can't show the video.
 export const capturePoster = (file, long = 1280) => new Promise((resolve) => {
     const v = document.createElement("video");
     const url = URL.createObjectURL(file);
     let settled = false;
+    let times = [];
+    let fallback = null;
     const done = (blob) => {
         if (settled) return;
         settled = true;
@@ -95,20 +145,38 @@ export const capturePoster = (file, long = 1280) => new Promise((resolve) => {
         resolve(blob);
     };
     const timer = setTimeout(() => done(null), 15000);
-    v.muted = true;
-    v.playsInline = true;
-    v.preload = "auto";
-    v.onloadedmetadata = () => { v.currentTime = Math.min(1, (v.duration || 2) / 2); };
-    v.onseeked = () => {
+    const grab = () => {
         try {
             const { width, height } = fitSize(v.videoWidth, v.videoHeight, long);
             const c = document.createElement("canvas");
             c.width = width;
             c.height = height;
             c.getContext("2d").drawImage(v, 0, 0, width, height);
+            if (isDark(c) && times.length) {
+                fallback ??= c;
+                v.currentTime = times.shift();
+                return;
+            }
             c.toBlob((b) => done(b), "image/jpeg", 0.85);
         } catch {
-            done(null);
+            fallback ? fallback.toBlob((b) => done(b), "image/jpeg", 0.85) : done(null);
+        }
+    };
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.onloadedmetadata = () => {
+        times = COVER_TIMES(v.duration || 2);
+        v.currentTime = times.shift();
+    };
+    // "seeked" can fire before the new frame is painted: wait for it when the browser can tell us.
+    v.onseeked = () => {
+        if (typeof v.requestVideoFrameCallback === "function") {
+            let waited = false;
+            v.requestVideoFrameCallback(() => { if (!waited) { waited = true; grab(); } });
+            setTimeout(() => { if (!waited) { waited = true; grab(); } }, 300);
+        } else {
+            setTimeout(grab, 150);
         }
     };
     v.onerror = () => done(null);

@@ -53,7 +53,7 @@ const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce
 const AiQuickAdd = ({ onResult }) => {
     const [shots, setShots]       = useState([]);
     const [text, setText]         = useState("");
-    const [language, setLanguage] = useState("ar");
+    const [language, setLanguage] = useState("en");   // the site is in English
     const [loading, setLoading]   = useState(false);
     const [error, setError]       = useState("");
     const [done, setDone]         = useState(false);

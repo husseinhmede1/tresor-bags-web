@@ -200,8 +200,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             setFormData(p => ({ ...p, mainImage: main, sideImages: gallery }));
             setImagePreview(main);
             setSideImagePreviews(gallery);
-            // Whole-bag photos get cleaned straight away; close-ups and inside shots stay as they are.
-            (d.images || []).filter(i => i.kind === "product").forEach(i => cleanOne(uploaded[i.number - 1]));
+            // While the cleaner is being tried out, photos are cleaned only when the admin taps "Clean".
+            // To clean whole-bag photos straight away (close-ups and inside shots stay as they are):
+            // (d.images || []).filter(i => i.kind === "product").forEach(i => cleanOne(uploaded[i.number - 1]));
         }
 
         const has = v => v !== null && v !== undefined && v !== "";

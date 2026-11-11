@@ -49,6 +49,8 @@ export default function ShopMenu() {
     const [drawer, setDrawer] = useState(false);     // narrow screens
     const closeTimer = useRef(null);
     const hoveredAt = useRef(0);
+    const panelRef = useRef(null);
+    const focusPanel = useRef(false);
 
     const go = (shopPick) => {
         setOpen(null);
@@ -65,7 +67,13 @@ export default function ShopMenu() {
     }
     useEffect(() => {
         if (!open && !drawer) return;
-        const onKey = (e) => { if (e.key === "Escape") { setOpen(null); setDrawer(false); } };
+        const onKey = (e) => {
+            if (e.key !== "Escape") return;
+            // Back to the link whose panel was open, so keyboard users don't lose their place.
+            if (open) document.querySelector(".shop-nav__link[aria-expanded='true']")?.focus();
+            setOpen(null);
+            setDrawer(false);
+        };
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
     }, [open, drawer]);
@@ -86,7 +94,15 @@ export default function ShopMenu() {
         setOpen(name);
     };
     // The click that follows the hover that just opened a panel must not close it again.
-    const clickLink = (name) => () => setOpen(o => (o === name && Date.now() - hoveredAt.current > 600 ? null : name));
+    // From the keyboard (no mouse click, detail 0) focus moves into the panel that opens.
+    const clickLink = (name) => (e) => {
+        focusPanel.current = e.detail === 0 && open !== name;
+        setOpen(o => (o === name && Date.now() - hoveredAt.current > 600 ? null : name));
+    };
+    useEffect(() => {
+        if (open && focusPanel.current) panelRef.current?.querySelector("button")?.focus();
+        focusPanel.current = false;
+    }, [open]);
     const hoverClose = (e) => {
         if (e.pointerType !== "mouse") return;
         clearTimeout(closeTimer.current);
@@ -116,8 +132,8 @@ export default function ShopMenu() {
                 ))}
 
                 {open && (
-                    <div id="shop-panel" className="shop-panel" onPointerEnter={hoverKeep}>
-                        <div className="sf-container shop-panel__inner" key={open}>
+                    <div id="shop-panel" className="shop-panel" ref={panelRef} onPointerEnter={hoverKeep}>
+                        <div className="sf-container shop-panel__inner" key={open} onPointerEnter={hoverKeep}>
                             {active ? (
                                 <>
                                     <div className="shop-panel__lead">
@@ -155,7 +171,8 @@ export default function ShopMenu() {
                                 </>
                             )}
                         </div>
-                        <div className="shop-panel__scrim" onClick={() => setOpen(null)} aria-hidden="true" />
+                        {/* Inside the nav, so the pointer reaching it doesn't count as leaving: close here. */}
+                        <div className="shop-panel__scrim" onClick={() => setOpen(null)} onPointerEnter={hoverClose} aria-hidden="true" />
                     </div>
                 )}
             </nav>

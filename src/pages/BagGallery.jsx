@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Handbag, Minus, Play, Plus } from "@phosphor-icons/react";
+import { FilmSlate, Handbag, Minus, Play, Plus } from "@phosphor-icons/react";
 import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
 import { usePageMeta } from "../utils/pageMeta";
@@ -8,30 +8,27 @@ import { sized, videoPoster, videoSrc } from "../utils/image";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
 
-// Shows only the cover until the customer presses play, so the video costs nothing until watched.
-const ProductVideo = ({ src, label }) => {
-    const [playing, setPlaying] = useState(false);
-    const [ratio, setRatio] = useState(null);
+// Plays in the main frame once the customer picks the video, so it costs nothing until then.
+// One 720p MP4 from ImageKit, with the original file as fallback.
+const ProductVideo = ({ src, label }) => (
+    <div className="pdp__main pdp__main--video">
+        <video controls autoPlay playsInline preload="auto" poster={videoPoster(src, 1200)} aria-label={label}>
+            <source src={videoSrc(src)} type="video/mp4" />
+            <source src={src} />
+        </video>
+    </div>
+);
+
+// Video thumbnail: the cover frame with a play mark; a film icon if the cover is not ready.
+const VideoThumb = ({ src, selected, onClick, label }) => {
     const [noCover, setNoCover] = useState(false);
     return (
-        <div className="pdp__video" style={{ "--r": ratio || 3 / 4 }}>
-            {playing ? (
-                <video controls autoPlay playsInline preload="auto" aria-label={label}
-                    onLoadedMetadata={(e) => { const v = e.currentTarget; if (v.videoWidth) setRatio(v.videoWidth / v.videoHeight); }}>
-                    <source src={videoSrc(src)} type="video/mp4" />
-                    <source src={src} />
-                </video>
-            ) : (
-                <button type="button" className="pdp__video-cover" onClick={() => setPlaying(true)} aria-label={`Play: ${label}`}>
-                    {!noCover && (
-                        <img src={videoPoster(src, 900)} alt="" loading="lazy"
-                            onLoad={(e) => { const i = e.currentTarget; if (i.naturalWidth) setRatio(i.naturalWidth / i.naturalHeight); }}
-                            onError={() => setNoCover(true)} />
-                    )}
-                    <span className="pdp__video-play" aria-hidden="true"><Play size={22} weight="fill" /></span>
-                </button>
+        <button className="sf-tile pdp__thumb pdp__thumb--video" aria-pressed={selected} onClick={onClick} aria-label={label}>
+            {noCover ? <FilmSlate size={26} weight="light" className="pdp__thumb-icon" /> : (
+                <img src={videoPoster(src, 240)} alt="" loading="lazy" onError={() => setNoCover(true)} />
             )}
-        </div>
+            <span className="pdp__thumb-play" aria-hidden="true"><Play size={14} weight="fill" /></span>
+        </button>
     );
 };
 
@@ -93,6 +90,7 @@ const BagGallery = () => {
         </div>
     );
 
+    const videos = bag.videos || [];
     const allImages = [...new Set([...(bag.mainImage ? [bag.mainImage] : []), ...(bag.sideImages || [])])];
 
     const specs = [
@@ -142,16 +140,35 @@ const BagGallery = () => {
             <main className="sf-container pdp">
                 {/* Photos */}
                 <div className="pdp__media">
-                    <button className="sf-tile pdp__main" onClick={() => window.open(selectedImage, "_blank")} aria-label="Open the full-size photo">
-                        <img src={sized(selectedImage, 1400)} alt={bag.title} />
-                    </button>
-                    {allImages.length > 1 && (
-                        <div className="pdp__thumbs" role="group" aria-label="Photos">
-                            {allImages.map((img, i) => (
-                                <button key={img} className="sf-tile pdp__thumb" aria-pressed={selectedImage === img}
-                                    onClick={() => setSelectedImage(img)} aria-label={`Photo ${i + 1}`}>
-                                    <img src={sized(img, 240)} alt="" />
+                    {videos.includes(selectedImage) ? (
+                        <ProductVideo key={selectedImage} src={selectedImage}
+                            label={videos.length > 1 ? `${bag.title}, video ${videos.indexOf(selectedImage) + 1}` : `${bag.title}, video`} />
+                    ) : (
+                        <div className="pdp__stage">
+                            <button key={selectedImage} className="sf-tile pdp__main" onClick={() => window.open(selectedImage, "_blank")} aria-label="Open the full-size photo">
+                                <img src={sized(selectedImage, 1400)} alt={bag.title} />
+                            </button>
+                            {videos.length > 0 && (
+                                <button type="button" className="pdp__watch" onClick={() => setSelectedImage(videos[0])}>
+                                    <Play size={14} weight="fill" /> Watch video
                                 </button>
+                            )}
+                        </div>
+                    )}
+                    {allImages.length + videos.length > 1 && (
+                        <div className="pdp__thumbs" role="group" aria-label="Photos and videos">
+                            {/* Videos right after the first photo, so they are in view even with many photos */}
+                            {allImages.map((img, i) => (
+                                <Fragment key={img}>
+                                    <button className="sf-tile pdp__thumb" aria-pressed={selectedImage === img}
+                                        onClick={() => setSelectedImage(img)} aria-label={`Photo ${i + 1}`}>
+                                        <img src={sized(img, 240)} alt="" />
+                                    </button>
+                                    {i === 0 && videos.map((v, j) => (
+                                        <VideoThumb key={v} src={v} selected={selectedImage === v} onClick={() => setSelectedImage(v)}
+                                            label={videos.length > 1 ? `Video ${j + 1}` : "Video"} />
+                                    ))}
+                                </Fragment>
                             ))}
                         </div>
                     )}
@@ -204,15 +221,6 @@ const BagGallery = () => {
                     )}
                 </div>
 
-                {/* Videos: under the photos on wide screens, after the details on phones */}
-                {bag.videos?.length > 0 && (
-                    <section className="pdp__videos" aria-label="Videos">
-                        {bag.videos.map((v, i) => (
-                            <ProductVideo key={v} src={v}
-                                label={bag.videos.length > 1 ? `${bag.title}, video ${i + 1}` : `${bag.title}, video`} />
-                        ))}
-                    </section>
-                )}
             </main>
             <SiteFooter />
         </div>
@@ -230,17 +238,25 @@ const PDP_CSS = `
     .pdp__thumb { flex: 0 0 76px; width: 76px; aspect-ratio: 1; border-radius: 12px; outline: 2px solid transparent; outline-offset: 2px; }
     .pdp__thumb img { padding: 10%; }
     .pdp__thumb[aria-pressed="true"] { outline-color: var(--sf-gold); }
-    .pdp__videos { grid-column: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; margin-top: calc(12px - clamp(28px, 5vw, 72px)); align-items: start; }
-    .pdp__video { --r: 0.75; position: relative; width: 100%; max-width: calc(min(72vh, 680px) * var(--r)); aspect-ratio: var(--r); border-radius: 16px; overflow: hidden; background: var(--sf-surface); border: 1px solid var(--sf-line); }
-    .pdp__video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
-    .pdp__video-cover { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
-    .pdp__video-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s cubic-bezier(.2,.7,.2,1); }
-    .pdp__video-cover:hover img { transform: scale(1.03); }
-    .pdp__video-play { position: relative; width: 64px; height: 64px; border-radius: 999px; display: grid; place-items: center; background: rgba(17,17,17,.72); color: var(--sf-gold); border: 1px solid rgba(217,178,111,.5); backdrop-filter: blur(6px); transition: transform .2s, background-color .2s; }
-    .pdp__video-cover:hover .pdp__video-play { transform: scale(1.06); background: rgba(17,17,17,.9); }
-    .pdp__video-cover:active .pdp__video-play { transform: scale(.97); }
-    .pdp__video-cover:focus-visible { outline: 2px solid var(--sf-gold); outline-offset: -4px; }
-    .pdp__info { position: sticky; top: 96px; display: grid; grid-column: 2; grid-row: 1 / span 2; }
+    .pdp__stage { position: relative; }
+    .pdp__main--video { position: relative; aspect-ratio: 1 / 1; border-radius: var(--sf-r-card); overflow: hidden; background: #0b0b0b; }
+    .pdp__main--video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #0b0b0b; }
+    .pdp__watch { position: absolute; left: 14px; bottom: 14px; height: 36px; padding: 0 14px 0 12px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px;
+        border: 1px solid rgba(217,178,111,.45); background: rgba(17,17,17,.82); color: #f3efe7; font: 600 13px/1 var(--sf-font); cursor: pointer;
+        backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: background-color .2s, transform .2s; }
+    .pdp__watch svg { color: var(--sf-gold); }
+    .pdp__watch:hover { background: #111; }
+    .pdp__watch:active { transform: scale(.97); }
+    .pdp__watch:focus-visible { outline: 2px solid var(--sf-gold); outline-offset: 2px; }
+    .pdp__thumb--video { background: #161616; display: grid; place-items: center; }
+    .pdp__thumb--video img { position: absolute; inset: 0; padding: 0 !important; object-fit: cover; mix-blend-mode: normal; }
+    .pdp__thumb-icon { color: var(--sf-text-3); }
+    .pdp__thumb-play { position: relative; width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center; background: rgba(17,17,17,.78); color: var(--sf-gold); border: 1px solid rgba(217,178,111,.5); }
+    @media (prefers-reduced-motion: no-preference) {
+        .pdp__main, .pdp__main--video { animation: pdpIn .35s cubic-bezier(.16,1,.3,1); }
+        @keyframes pdpIn { from { opacity: 0; } to { opacity: 1; } }
+    }
+    .pdp__info { position: sticky; top: 96px; display: grid; }
     .pdp__title { font-size: clamp(1.9rem, 3.4vw, 2.75rem); line-height: 1.08; font-weight: 600; letter-spacing: -0.035em; margin-top: 8px; }
     .pdp__buy { display: flex; gap: 10px; margin-top: 28px; }
     .pdp__desc { margin-top: 32px; color: var(--sf-text-2); font-size: 16px; line-height: 1.7; max-width: 60ch; white-space: pre-line; }
@@ -250,8 +266,7 @@ const PDP_CSS = `
     .pdp__spec dd { margin: 0; font-size: 16px; font-weight: 550; font-variant-numeric: tabular-nums; }
     @media (max-width: 860px) {
         .pdp { grid-template-columns: 1fr; padding-top: 16px; }
-        .pdp__info { position: static; grid-column: auto; grid-row: auto; }
-        .pdp__videos { grid-column: auto; margin-top: 0; }
+        .pdp__info { position: static; }
         .pdp__specs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 `;

@@ -1,0 +1,298 @@
+// Professional product photo, made on the admin's device: the bag is cut out of the supplier's
+// photo (wall, floor, the supplier's red text and logos all go), then placed in the middle of a
+// light grey square, the same grey as the shop's photo tiles, with a soft shadow under it.
+//
+// The bag itself is never redrawn: its pixels are copied as they are. The cut-out comes from
+// BiRefNet (MIT licence), an open model that runs in the browser with onnxruntime-web on the
+// graphics card (WebGPU: Chrome and Edge on laptops, Safari on recent iPhones). On the processor
+// alone it needs more memory than a browser tab gets, so without WebGPU photos stay as they are.
+// The model is downloaded from Hugging Face the first time and kept in the browser's cache.
+// Customers never load any of this.
+
+const MODEL_BASE = "https://huggingface.co/onnx-community/BiRefNet_lite/resolve/main/onnx/";
+// Half precision first (~115 MB); full precision (~225 MB) for graphics cards without it.
+const MODELS = [`${MODEL_BASE}model_fp16.onnx`, `${MODEL_BASE}model.onnx`];
+
+export const canClean = () => typeof navigator !== "undefined" && "gpu" in navigator;
+export const NO_CLEANER = "This browser can't run the photo cleaner. Use Chrome on a laptop, or Safari on a recent iPhone.";
+const CACHE = "tresor-photo-cleaner-v1";
+const SIZE = 1024;                          // the model works on 1024×1024
+const MEAN = [0.485, 0.456, 0.406];
+const STD = [0.229, 0.224, 0.225];
+
+export const TILE = "#EDEDEE";              // --sf-tile on the storefront
+const OUT = 1600;                           // output square, sharp enough for the product page
+const MARGIN = 0.08;                        // space around the bag, on each side
+
+/* ── Model ─────────────────────────────────────────────────────────────── */
+
+// Download with progress, once; later visits read it from the browser's cache.
+const fetchModel = async (url, onProgress) => {
+    const cache = typeof caches !== "undefined" ? await caches.open(CACHE).catch(() => null) : null;
+    const hit = await cache?.match(url);
+    if (hit) return new Uint8Array(await hit.arrayBuffer());
+
+    const res = await fetch(url);
+    if (!res.ok || !res.body) throw new Error(`Model download failed (${res.status})`);
+    const total = Number(res.headers.get("content-length")) || 0;
+    const reader = res.body.getReader();
+    const chunks = [];
+    let loaded = 0;
+    for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        loaded += value.length;
+        if (total) onProgress?.(Math.min(99, Math.round((loaded / total) * 100)));
+    }
+    const bytes = new Uint8Array(loaded);
+    let at = 0;
+    for (const c of chunks) { bytes.set(c, at); at += c.length; }
+    await cache?.put(url, new Response(bytes, { headers: { "content-type": "application/octet-stream" } })).catch(() => {});
+    onProgress?.(100);
+    return bytes;
+};
+
+let ready = null;   // Promise<{ ort, session }>, shared by every photo
+
+const loadSession = async (onProgress) => {
+    const ort = await import("onnxruntime-web");
+    ort.env.logLevel = "error";
+    if (!canClean() || !(await navigator.gpu.requestAdapter().catch(() => null))) throw new Error(NO_CLEANER);
+    let lastError;
+    for (const url of MODELS) {
+        try {
+            const bytes = await fetchModel(url, onProgress);
+            const session = await ort.InferenceSession.create(bytes, { executionProviders: ["webgpu"] });
+            return { ort, session };
+        } catch (err) {
+            lastError = err;
+            console.warn(`Photo cleaner: ${url.split("/").pop()} could not start`, err);
+        }
+    }
+    throw lastError;
+};
+
+export const prepareCleaner = (onProgress) => {
+    ready ??= loadSession(onProgress).catch((err) => { ready = null; throw err; });
+    return ready;
+};
+
+/* ── Half precision (the fp16 model may take and give float16) ──────────── */
+
+const toHalf = (f) => {
+    const b = new DataView(new ArrayBuffer(4));
+    b.setFloat32(0, f);
+    const x = b.getUint32(0);
+    const sign = (x >>> 16) & 0x8000;
+    const exp = ((x >>> 23) & 0xff) - 127 + 15;
+    const man = x & 0x7fffff;
+    if (exp <= 0) return sign;
+    if (exp >= 31) return sign | 0x7c00;
+    return sign | (exp << 10) | (man >>> 13);
+};
+const fromHalf = (h) => {
+    const s = h & 0x8000 ? -1 : 1;
+    const e = (h >>> 10) & 0x1f;
+    const m = h & 0x3ff;
+    if (e === 0) return s * 2 ** -14 * (m / 1024);
+    if (e === 31) return m ? NaN : s * Infinity;
+    return s * 2 ** (e - 15) * (1 + m / 1024);
+};
+const asFloats = (t) => t.type === "float16"
+    ? Float32Array.from(t.data, (v) => (typeof v === "number" && t.data instanceof Uint16Array ? fromHalf(v) : v))
+    : t.data;
+
+/* ── Mask ──────────────────────────────────────────────────────────────── */
+
+const loadImage = (src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    if (/^https?:/.test(src)) img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Photo could not be read"));
+    img.src = src;
+});
+
+const canvas = (w, h) => {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    return c;
+};
+
+// 0-255 "how much of this pixel is the bag", at the photo's own size.
+const predictMask = async ({ ort, session }, img) => {
+    const small = canvas(SIZE, SIZE).getContext("2d", { willReadFrequently: true });
+    small.drawImage(img, 0, 0, SIZE, SIZE);
+    const px = small.getImageData(0, 0, SIZE, SIZE).data;
+    const plane = SIZE * SIZE;
+    const input = new Float32Array(3 * plane);
+    for (let i = 0; i < plane; i++) {
+        for (let c = 0; c < 3; c++) input[c * plane + i] = (px[i * 4 + c] / 255 - MEAN[c]) / STD[c];
+    }
+    const name = session.inputNames[0];
+    let out;
+    try {
+        out = await session.run({ [name]: new ort.Tensor("float32", input, [1, 3, SIZE, SIZE]) });
+    } catch (err) {
+        if (!/float16|data type/i.test(err?.message || "")) throw err;
+        const half = new Uint16Array(input.length);
+        for (let i = 0; i < input.length; i++) half[i] = toHalf(input[i]);
+        out = await session.run({ [name]: new ort.Tensor("float16", half, [1, 3, SIZE, SIZE]) });
+    }
+    const logits = asFloats(out[session.outputNames[0]]);
+
+    // Sigmoid, then stretch to the full 0-255 range.
+    const prob = new Float32Array(plane);
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < plane; i++) {
+        const p = 1 / (1 + Math.exp(-logits[i]));
+        prob[i] = p;
+        if (p < lo) lo = p;
+        if (p > hi) hi = p;
+    }
+    if (!(hi > lo)) throw new Error("The cleaner found no bag");
+    const maskSmall = canvas(SIZE, SIZE);
+    const mctx = maskSmall.getContext("2d");
+    const md = mctx.createImageData(SIZE, SIZE);
+    for (let i = 0; i < plane; i++) {
+        const v = Math.round(((prob[i] - lo) / (hi - lo)) * 255);
+        md.data[i * 4] = md.data[i * 4 + 1] = md.data[i * 4 + 2] = v;
+        md.data[i * 4 + 3] = 255;
+    }
+    mctx.putImageData(md, 0, 0);
+
+    // Smooth resize back to the photo's size.
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const big = canvas(w, h).getContext("2d", { willReadFrequently: true });
+    big.imageSmoothingQuality = "high";
+    big.drawImage(maskSmall, 0, 0, w, h);
+    const bd = big.getImageData(0, 0, w, h).data;
+    const alpha = new Uint8ClampedArray(w * h);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = bd[i * 4];
+    return alpha;
+};
+
+// Parts of the bag that look like the background (a grey wheel cap, a light lining seen through
+// a gap) can come out as holes. A hole whose colour is not the background's colour at that height
+// is part of the bag: its own pixels are kept. Real gaps (inside a handle loop) stay see-through.
+const fillBagHoles = (alpha, rgba, w, h) => {
+    const solid = (i) => alpha[i] > 128;
+    const seen = new Uint8Array(w * h);           // 1 = background reachable from the edge
+    const stack = [];
+    const push = (i) => { if (!seen[i] && !solid(i)) { seen[i] = 1; stack.push(i); } };
+    for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+    for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+    const flood = (out) => {
+        while (stack.length) {
+            const i = stack.pop();
+            out?.push(i);
+            const x = i % w;
+            if (x > 0) out ? pushHole(i - 1) : push(i - 1);
+            if (x < w - 1) out ? pushHole(i + 1) : push(i + 1);
+            if (i >= w) out ? pushHole(i - w) : push(i - w);
+            if (i < w * (h - 1)) out ? pushHole(i + w) : push(i + w);
+        }
+    };
+    const pushHole = (i) => { if (!seen[i] && !solid(i)) { seen[i] = 2; stack.push(i); } };
+    flood(null);
+
+    const bagArea = alpha.reduce((n, a) => n + (a > 128 ? 1 : 0), 0);
+    for (let start = 0; start < w * h; start++) {
+        if (seen[start] || solid(start)) continue;
+        const hole = [];
+        seen[start] = 2;
+        stack.push(start);
+        flood(hole);
+        if (hole.length < bagArea * 0.0005) continue;  // specks don't matter
+        let y0 = h, y1 = 0, hr = 0, hg = 0, hb = 0;
+        for (const i of hole) {
+            const y = (i / w) | 0;
+            if (y < y0) y0 = y;
+            if (y > y1) y1 = y;
+            hr += rgba[i * 4]; hg += rgba[i * 4 + 1]; hb += rgba[i * 4 + 2];
+        }
+        let br = 0, bg = 0, bb = 0, n = 0;
+        for (let y = Math.max(0, y0 - 20); y < Math.min(h, y1 + 20); y++) {
+            for (let x = 0; x < w; x++) {
+                const i = y * w + x;
+                if (alpha[i] < 10) { br += rgba[i * 4]; bg += rgba[i * 4 + 1]; bb += rgba[i * 4 + 2]; n++; }
+            }
+        }
+        if (!n) continue;
+        const k = hole.length;
+        const dist = Math.hypot(hr / k - br / n, hg / k - bg / n, hb / k - bb / n);
+        if (dist > 30) for (const i of hole) alpha[i] = 255;
+    }
+};
+
+/* ── Composition ───────────────────────────────────────────────────────── */
+
+const compose = (img, alpha) => {
+    const w = img.naturalWidth, h = img.naturalHeight;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (alpha[y * w + x] > 128) {
+                if (x < x0) x0 = x;
+                if (x > x1) x1 = x;
+                if (y < y0) y0 = y;
+                if (y > y1) y1 = y;
+            }
+        }
+    }
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+    // Nothing found, or the "bag" is the whole photo: not a photo this can improve.
+    if (x1 < 0 || bw * bh < w * h * 0.03 || (bw > w * 0.98 && bh > h * 0.98)) return null;
+
+    // The bag on a transparent layer: its own pixels, only the alpha changes.
+    const cut = canvas(w, h);
+    const cctx = cut.getContext("2d", { willReadFrequently: true });
+    cctx.drawImage(img, 0, 0);
+    const data = cctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < alpha.length; i++) data.data[i * 4 + 3] = alpha[i];
+    cctx.putImageData(data, 0, 0);
+
+    const out = canvas(OUT, OUT);
+    const ctx = out.getContext("2d");
+    ctx.fillStyle = TILE;
+    ctx.fillRect(0, 0, OUT, OUT);
+    const scale = (OUT * (1 - 2 * MARGIN)) / Math.max(bw, bh);
+    const dw = bw * scale, dh = bh * scale;
+    const dx = (OUT - dw) / 2, dy = (OUT - dh) / 2;
+
+    // Soft contact shadow under the bag (a gradient, so it looks the same in every browser).
+    const cy = dy + dh;
+    const rx = dw * 0.46, ry = OUT * 0.022;
+    ctx.save();
+    ctx.translate(OUT / 2, cy);
+    ctx.scale(1, ry / rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+    g.addColorStop(0, "rgba(60,60,64,0.30)");
+    g.addColorStop(0.6, "rgba(60,60,64,0.12)");
+    g.addColorStop(1, "rgba(60,60,64,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, rx, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(cut, x0, y0, bw, bh, dx, dy, dw, dh);
+    return out.toDataURL("image/jpeg", 0.9);
+};
+
+/**
+ * Clean one product photo. Returns a JPEG data URL, or null when the photo isn't one this can
+ * improve (no clear bag in it). Throws if the cleaner can't run on this device.
+ */
+export const cleanPhoto = async (src, { onModelProgress } = {}) => {
+    const model = await prepareCleaner(onModelProgress);
+    const img = await loadImage(src);
+    const alpha = await predictMask(model, img);
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const ctx = canvas(w, h).getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0);
+    fillBagHoles(alpha, ctx.getImageData(0, 0, w, h).data, w, h);
+    return compose(img, alpha);
+};

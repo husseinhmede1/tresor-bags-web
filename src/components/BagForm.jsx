@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FilmSlate, ImageSquare, Play, Plus, Star, Trash, X } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, FilmSlate, ImageSquare, MagicWand, Play, Plus, Star, Trash, X } from "@phosphor-icons/react";
 import AdminShell from "./storefront/AdminShell";
 import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
@@ -9,6 +9,7 @@ import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
 import { isCompressedVideo, posterFileOf, videoPoster } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 import { compressImage } from "../utils/imageCompress";
+import { canClean, cleanPhoto, NO_CLEANER } from "../utils/bagCutout";
 
 const MAX_VIDEOS = 5;
 const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
@@ -74,6 +75,11 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const [collections, setCollections]             = useState([]);
     const [supplierPrice, setSupplierPrice]         = useState(null);
     const [preparingPhotos, setPreparingPhotos]     = useState(0);
+    // Photo cleaning (utils/bagCutout): original photo -> { status: "cleaning" | "done" | "skipped" | "failed", clean? }
+    const [cleanups, setCleanups]                   = useState({});
+    const [cleanerProgress, setCleanerProgress]     = useState(null);  // first download of the cleaner, %
+    const [cleanerError, setCleanerError]           = useState("");
+    const cleanQueue = useRef(Promise.resolve());                       // one photo at a time
     // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
     const [videos, setVideos] = useState(() =>
         (initialData?.videos || []).map(url => ({ key: url, url, status: "done" })));
@@ -116,6 +122,72 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         if (errors[name]) setErrors(p => { const n = { ...p }; delete n[name]; return n; });
     };
 
+    // Put one photo in place of another, wherever it is (main image or gallery).
+    const replacePhoto = (from, to) => {
+        setImagePreview(p => (p === from ? to : p));
+        setSideImagePreviews(arr => arr.map(x => (x === from ? to : x)));
+        setFormData(p => ({
+            ...p,
+            mainImage: p.mainImage === from ? to : p.mainImage,
+            sideImages: (p.sideImages || []).map(x => (x === from ? to : x)),
+        }));
+    };
+
+    // Cut the bag out of a photo and put it on the shop's grey with a soft shadow. The bag's own
+    // pixels are kept; the original stays one tap away. Save waits until cleaning is done.
+    const cleanOne = (src) => {
+        if (!src || cleanups[src]) return;
+        if (!canClean()) { setCleanerError(NO_CLEANER); return; }
+        setCleanups(p => ({ ...p, [src]: { status: "cleaning" } }));
+        setPreparingPhotos(n => n + 1);
+        cleanQueue.current = cleanQueue.current.then(async () => {
+            try {
+                const clean = await cleanPhoto(src, { onModelProgress: setCleanerProgress });
+                setCleanups(p => ({ ...p, [src]: clean ? { status: "done", clean } : { status: "skipped" } }));
+                if (clean) replacePhoto(src, clean);
+            } catch (err) {
+                console.warn("Photo cleaning failed:", err);
+                setCleanups(p => ({ ...p, [src]: { status: "failed" } }));
+                setCleanerError(err?.message === NO_CLEANER ? NO_CLEANER
+                    : "The photo cleaner couldn't finish here, so these photos stay as they are. Try on a laptop in Chrome.");
+            } finally {
+                setCleanerProgress(null);
+                setPreparingPhotos(n => n - 1);
+            }
+        });
+    };
+
+    // What the photo shown at `src` is: an original (maybe cleaned already) or a cleaned copy.
+    const photoState = (src) => {
+        if (cleanups[src]) return { original: src, showing: "original", ...cleanups[src] };
+        const found = Object.entries(cleanups).find(([, v]) => v.clean === src);
+        return found ? { original: found[0], showing: "clean", ...found[1] } : null;
+    };
+
+    const cleanChip = (src) => {
+        const st = photoState(src);
+        if (st?.status === "cleaning") {
+            return <span className="bf-clean bf-clean--busy" role="status"><span className="bf-clean__dot" aria-hidden="true" /> Cleaning</span>;
+        }
+        if (st?.status === "done") {
+            return st.showing === "clean" ? (
+                <button type="button" className="bf-clean" onClick={() => replacePhoto(src, st.original)} title="Show the supplier's photo">
+                    <ArrowCounterClockwise size={12} weight="bold" /> Original
+                </button>
+            ) : (
+                <button type="button" className="bf-clean" onClick={() => replacePhoto(src, st.clean)} title="Use the cleaned photo">
+                    <MagicWand size={12} weight="bold" /> Clean
+                </button>
+            );
+        }
+        if (st || !canClean()) return null;   // skipped, failed, or no cleaner here: the photo stays as it is
+        return (
+            <button type="button" className="bf-clean" onClick={() => cleanOne(src)} title="Remove the background and center the bag">
+                <MagicWand size={12} weight="bold" /> Clean
+            </button>
+        );
+    };
+
     /* Merge what the AI read from the chat into the form; blanks never overwrite. */
     const applyAiResult = (d, uploaded = []) => {
         // Photos of the bag (whole-bag shots and details), in the order given: main first,
@@ -128,6 +200,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             setFormData(p => ({ ...p, mainImage: main, sideImages: gallery }));
             setImagePreview(main);
             setSideImagePreviews(gallery);
+            // Whole-bag photos get cleaned straight away; close-ups and inside shots stay as they are.
+            (d.images || []).filter(i => i.kind === "product").forEach(i => cleanOne(uploaded[i.number - 1]));
         }
 
         const has = v => v !== null && v !== undefined && v !== "";
@@ -369,6 +443,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 <div className="bf-main">
                                     <div className="sf-tile bf-main__tile">
                                         <img src={imagePreview} alt="Main" />
+                                        {cleanChip(imagePreview)}
                                     </div>
                                     <button type="button" className="sf-btn sf-btn--ghost sf-btn--sm"
                                         onClick={handleRemoveMainImage}>
@@ -385,6 +460,12 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 </label>
                             )}
                             {errors.mainImage && <p className="sf-error bf-field-error bf-err-gap">{errors.mainImage}</p>}
+                            {cleanerProgress !== null && cleanerProgress < 100 && (
+                                <p className="sf-faint bf-cleaner-note sf-num" role="status">
+                                    Getting the photo cleaner ready, first time only: {cleanerProgress}%
+                                </p>
+                            )}
+                            {cleanerError && <p className="bf-vid__warn bf-cleaner-note">{cleanerError}</p>}
                         </section>
 
                         <section className="sf-panel bf-panel" aria-labelledby="bf-gallery-h">
@@ -399,6 +480,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                         <div className="sf-tile bf-thumb__tile">
                                             <img src={src} alt={`Gallery photo ${i + 1}`} />
                                         </div>
+                                        {cleanChip(src)}
                                         <button type="button" className="bf-thumb__remove"
                                             onClick={() => handleRemoveSideImage(i)}
                                             aria-label={`Remove gallery photo ${i + 1}`}>
@@ -665,7 +747,12 @@ const BF_CSS = `
     .bf .sf-label span.sf-gold { margin-left: -4px; }
 
     .bf-main { display: grid; gap: 12px; justify-items: start; }
-    .bf-main__tile { aspect-ratio: 1 / 1; cursor: default; }
+    .bf-main__tile { aspect-ratio: 1 / 1; cursor: default; position: relative; }
+    .bf-clean { position: absolute; top: 6px; left: 6px; z-index: 1; height: 26px; padding: 0 10px; border-radius: 999px; border: 0; background: rgba(17,17,17,.82); color: var(--sf-gold); display: inline-flex; align-items: center; gap: 5px; font: 600 12px/1 var(--sf-font); cursor: pointer; white-space: nowrap; }
+    .bf-clean:hover { background: #111; color: var(--sf-gold-2); }
+    .bf-clean--busy { cursor: default; color: var(--sf-text-2); }
+    .bf-clean__dot { width: 10px; height: 10px; border-radius: 999px; border: 2px solid rgba(217,178,111,.3); border-top-color: var(--sf-gold); animation: sfSpin .7s linear infinite; }
+    .bf-cleaner-note { margin-top: 10px; font-size: 13px; }
     .bf-drop { display: grid; justify-items: center; gap: 6px; padding: 48px 20px; border-radius: var(--sf-r-card); border: 1.5px dashed var(--sf-line-2); background: var(--sf-surface-2); cursor: pointer; text-align: center; transition: border-color .2s, background-color .2s; }
     .bf-drop:hover { border-color: rgba(217, 178, 111, 0.6); background: var(--sf-gold-soft); }
     .bf-drop--err { border-color: var(--sf-danger); }

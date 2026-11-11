@@ -29,6 +29,7 @@ import AdminOrderPage from "./pages/AdminOrderPage";
 import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminStatsPage from "./pages/AdminStatsPage";
 import AdminInfoPage from "./pages/AdminInfoPage";
+import AdminVideoQualityPage from "./pages/AdminVideoQualityPage";
 
 const App = () => {
   return (
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="/admin/orders" element={<ProtectedRoute><AdminOrdersPage /></ProtectedRoute>} />
             <Route path="/admin/stats" element={<ProtectedRoute><AdminStatsPage /></ProtectedRoute>} />
             <Route path="/admin/info" element={<ProtectedRoute><AdminInfoPage /></ProtectedRoute>} />
+            <Route path="/admin/video-quality" element={<ProtectedRoute><AdminVideoQualityPage /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

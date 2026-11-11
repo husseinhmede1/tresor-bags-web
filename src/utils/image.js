@@ -6,9 +6,21 @@ export const sized = (src, width) =>
         ? `${src}${src.includes("?") ? "&" : "?"}tr=w-${width}`
         : src;
 
-// Product videos on ImageKit: served as one MP4 that fits in 1280×1280 (720p for phone
-// videos), so every browser can play it and ImageKit converts each video only once.
+// Product videos on ImageKit.
+// - "opt_" videos were compressed in the admin's browser: served as they are, at no ImageKit
+//   processing cost, with a cover "<same name>.jpg" made on the device.
+// - "raw_" videos could not be compressed: ImageKit converts them once to an MP4 that fits
+//   1280×1280; their cover was still made on the device.
+// - Older videos (no prefix) also get ImageKit's own cover, in one size only, because
+//   ImageKit charges processing units for every cover size it makes.
 const isIk = (src) => typeof src === "string" && src.startsWith("https://ik.imagekit.io/");
-export const videoSrc = (src) => isIk(src) ? `${src}?tr=w-1280,h-1280,c-at_max,f-mp4` : src;
-// A frame from the first second, as the cover shown before the customer presses play.
-export const videoPoster = (src, width = 800) => isIk(src) ? `${src}/ik-thumbnail.jpg?tr=so-1,w-${width}` : undefined;
+const fileOf = (src) => src.split("?")[0].split("/").pop();
+const isOptimized = (src) => isIk(src) && fileOf(src).startsWith("opt_");
+const hasOwnPoster = (src) => isIk(src) && /^(opt|raw)_/.test(fileOf(src));
+export const posterFileOf = (src) => src.split("?")[0].replace(/\.[^./]+$/, ".jpg");
+
+export const videoSrc = (src) => !isIk(src) || isOptimized(src) ? src : `${src}?tr=w-1280,h-1280,c-at_max,f-mp4`;
+export const videoPoster = (src, width = 800) =>
+    !isIk(src) ? undefined
+        : hasOwnPoster(src) ? sized(posterFileOf(src), width)
+        : `${src}/ik-thumbnail.jpg?tr=so-1,w-800`;

@@ -14,7 +14,7 @@ const ProductVideo = ({ src, label }) => (
     <div className="pdp__main pdp__main--video">
         <video controls autoPlay playsInline preload="auto" poster={videoPoster(src, 1200)} aria-label={label}>
             <source src={videoSrc(src)} type="video/mp4" />
-            <source src={src} />
+            {videoSrc(src) !== src && <source src={src} />}
         </video>
     </div>
 );

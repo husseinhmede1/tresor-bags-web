@@ -66,12 +66,14 @@ export const getVideoUploadAuth = async (bagId) => (await api.post('/bags/video-
 
 const IMAGEKIT_UPLOAD = 'https://upload.imagekit.io/api/v1/files/upload';
 
-export const uploadVideoFile = async (file, auth, { onProgress, signal } = {}) => {
+// Upload one file into the signed folder. `unique: false` keeps the exact name (used for a
+// video's cover, which is named after its video so the site can find it).
+export const uploadVideoFile = async (file, auth, { onProgress, signal, fileName, unique = true } = {}) => {
     const form = new FormData();
     form.append('file', file);
-    form.append('fileName', (file.name || 'video.mp4').replace(/[^\w.-]+/g, '_').slice(-80));
+    form.append('fileName', fileName || (file.name || 'video.mp4').replace(/[^\w.-]+/g, '_').slice(-80));
     form.append('folder', auth.folder);
-    form.append('useUniqueFileName', 'true');
+    form.append('useUniqueFileName', unique ? 'true' : 'false');
     form.append('publicKey', auth.publicKey);
     form.append('signature', auth.signature);
     form.append('expire', String(auth.expire));
@@ -88,5 +90,9 @@ export const uploadVideoFile = async (file, auth, { onProgress, signal } = {}) =
         throw new Error(error.response?.data?.message || error.message || 'Upload failed', { cause: error });
     }
 };
+
+// Admin settings shared by every device (e.g. the video quality chosen on the test page).
+export const getSettings = async () => (await api.get('/settings')).data.data;
+export const saveSettings = async (data) => (await api.put('/settings', data)).data.data;
 
 export default api;

@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FilmSlate, ImageSquare, Play, Plus, Star, Trash, X } from "@phosphor-icons/react";
 import AdminShell from "./storefront/AdminShell";
 import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import AiQuickAdd from "./AiQuickAdd";
-import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
-import { videoPoster, videoSrc } from "../utils/image";
+import { getSettings, getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
+import { posterFileOf, videoPoster, videoSrc } from "../utils/image";
+import { DEFAULT_PRESET, VIDEO_PRESETS, canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 
 const MAX_VIDEOS = 5;
-const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit
-const LONG_VIDEO_S = 45;    // longer clips use more of the free ImageKit allowance
+const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
+const MAX_SOURCE_MB = 2048; // before compression on this device
+const LONG_VIDEO_S = 45;    // longer clips use more of the monthly bandwidth when watched
 
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 
@@ -76,6 +78,14 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const uploadsRef = useRef(new Map());    // key -> AbortController of the running upload
     const removedRef = useRef(new Set());    // keys removed while still queued
     const previewsRef = useRef([]);
+    const presetRef = useRef(DEFAULT_PRESET);   // video quality chosen on the comparison page
+    const [presetKey, setPresetKey] = useState(DEFAULT_PRESET);
+
+    useEffect(() => {
+        getSettings()
+            .then(s => { if (VIDEO_PRESETS[s?.videoQuality]) { presetRef.current = s.videoQuality; setPresetKey(s.videoQuality); } })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => () => {
         uploadsRef.current.forEach(c => c.abort());
@@ -191,24 +201,60 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
 
     const patchVideo = (key, patch) => setVideos(p => p.map(v => v.key === key ? { ...v, ...patch } : v));
 
+    // Compress on this device (nothing is saved on it), make the cover, then upload both.
+    // If this browser can't compress, the original is uploaded and ImageKit converts it.
     const uploadVideo = async (key, file) => {
         if (removedRef.current.has(key)) return;
         const controller = new AbortController();
+        const { signal } = controller;
         uploadsRef.current.set(key, controller);
         try {
+            let upload = null;
+            const notes = [];
+            patchVideo(key, { stage: "compressing", progress: 0 });
+            try {
+                const out = await compressVideo(file, presetRef.current, {
+                    signal, onProgress: (progress) => patchVideo(key, { progress }),
+                });
+                if (out) {
+                    upload = out.file;
+                    if (!out.audio) notes.push("saved without sound (this browser can't keep it)");
+                }
+            } catch (err) {
+                if (signal.aborted) throw err;
+                console.warn("Video compression failed, uploading the original:", err);
+            }
+            if (!upload) {
+                const ext = (file.name || "").split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "mp4";
+                const base = (file.name || "video").replace(/\.[^.]+$/, "").replace(/[^\w-]+/g, "_").slice(0, 60);
+                upload = new File([file], `raw_${base}.${ext}`, { type: file.type });
+                notes.push("this browser couldn't compress it, so it was uploaded as recorded");
+            }
+            if (upload.size > MAX_VIDEO_MB * 1024 * 1024) {
+                throw new Error(`Still larger than ${MAX_VIDEO_MB} MB. Trim it or use the Saver quality, then try again`);
+            }
+
+            patchVideo(key, { stage: "uploading", progress: 0 });
+            const poster = await capturePoster(upload.name.startsWith("opt_") ? upload : file);
             const auth = await getVideoUploadAuth(bagId || draftIdRef.current);
             if (!bagId) draftIdRef.current = auth.bagId;
-            patchVideo(key, { progress: 0 });
-            const url = await uploadVideoFile(file, auth, {
-                signal: controller.signal,
-                onProgress: (progress) => patchVideo(key, { progress }),
+            const url = await uploadVideoFile(upload, auth, {
+                signal, fileName: upload.name, onProgress: (progress) => patchVideo(key, { progress }),
             });
-            patchVideo(key, { status: "done", url });
-            // Ask ImageKit for the cover and the 720p copy now, so they are ready for the first customer.
-            new Image().src = videoPoster(url, 800);
-            fetch(videoSrc(url), { mode: "no-cors", signal: controller.signal }).then(() => controller.abort()).catch(() => {});
+            // The cover is named after the video, so the shop finds it without asking ImageKit.
+            if (poster) {
+                const posterAuth = await getVideoUploadAuth(auth.bagId);
+                const posterName = posterFileOf(url).split("/").pop();
+                await uploadVideoFile(new File([poster], posterName, { type: "image/jpeg" }), posterAuth, { signal, fileName: posterName, unique: false })
+                    .catch(() => notes.push("its cover could not be saved"));
+            }
+            patchVideo(key, { status: "done", url, note: notes.join("; ") || null });
+            // A video that was not compressed is converted by ImageKit on first play: start that now.
+            if (!upload.name.startsWith("opt_")) {
+                fetch(videoSrc(url), { mode: "no-cors", signal }).then(() => controller.abort()).catch(() => {});
+            }
         } catch (err) {
-            if (!controller.signal.aborted) patchVideo(key, { status: "error", error: err?.message || "Upload failed" });
+            if (!signal.aborted) patchVideo(key, { status: "error", error: err?.message || "Upload failed" });
         } finally {
             uploadsRef.current.delete(key);
         }
@@ -227,8 +273,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             const key = `new-${Date.now()}-${i}`;
             const name = file.name || "video";
             if (!file.type.startsWith("video/")) return { key, name, status: "error", error: "This file is not a video" };
-            if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
-                return { key, name, status: "error", error: `Larger than ${MAX_VIDEO_MB} MB. Record in 1080p or trim it, then try again` };
+            const maxMb = canCompress() ? MAX_SOURCE_MB : MAX_VIDEO_MB;
+            if (file.size > maxMb * 1024 * 1024) {
+                return { key, name, status: "error", error: `Larger than ${maxMb >= 1024 ? `${maxMb / 1024} GB` : `${maxMb} MB`}. Trim it, then try again` };
             }
             const preview = URL.createObjectURL(file);
             previewsRef.current.push(preview);
@@ -382,6 +429,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                             </div>
                             <p className="sf-muted bf-sub">
                                 Optional. Short clips that show the bag from every side and inside, up to {LONG_VIDEO_S} seconds. Customers tap to play.
+                                {" "}Videos are compressed on this device before upload; quality: <b className="sf-gold">{VIDEO_PRESETS[presetKey].label}</b>
+                                {" "}(<Link to="/admin/video-quality" className="bf-link">compare</Link>).
                             </p>
                             <div className="bf-gallery">
                                 {videos.map((v, i) => (
@@ -399,9 +448,12 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                                 </a>
                                             )}
                                             {v.status === "uploading" && (
-                                                <div className="bf-vid__progress" role="progressbar" aria-label={`Uploading video ${i + 1}`}
+                                                <div className="bf-vid__progress" role="progressbar"
+                                                    aria-label={`${v.stage === "compressing" ? "Compressing" : "Uploading"} video ${i + 1}`}
                                                     aria-valuemin={0} aria-valuemax={100} aria-valuenow={v.progress || 0}>
-                                                    <span className="sf-num">{v.progress === null ? "Waiting" : v.progress ? `${v.progress}%` : "Uploading…"}</span>
+                                                    <span className="sf-num">
+                                                        {!v.stage ? "Waiting" : `${v.stage === "compressing" ? "Compressing" : "Uploading"} ${v.progress || 0}%`}
+                                                    </span>
                                                     <i style={{ width: `${v.progress || 0}%` }} />
                                                 </div>
                                             )}
@@ -422,15 +474,18 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                     </label>
                                 )}
                             </div>
-                            {videos.some(v => v.status === "error" || v.long) && (
+                            {videos.some(v => v.status === "error" || v.long || v.note) && (
                                 <ul className="bf-vid__notes">
                                     {videos.filter(v => v.status === "error").map(v => (
                                         <li key={v.key} className="sf-error"><b dir="auto">{v.name}</b>: {v.error}</li>
                                     ))}
                                     {videos.filter(v => v.long && v.status !== "error").map(v => (
                                         <li key={v.key} className="bf-vid__warn">
-                                            <b dir="auto">{v.name}</b> is {clock(v.long)} long. Videos over {LONG_VIDEO_S} seconds use more of the free ImageKit allowance.
+                                            <b dir="auto">{v.name}</b> is {clock(v.long)} long. Videos over {LONG_VIDEO_S} seconds use more of the monthly bandwidth when customers watch them.
                                         </li>
+                                    ))}
+                                    {videos.filter(v => v.note && v.status === "done").map(v => (
+                                        <li key={`${v.key}-note`} className="bf-vid__warn"><b dir="auto">{v.name}</b>: {v.note}.</li>
                                     ))}
                                 </ul>
                             )}
@@ -636,6 +691,7 @@ const BF_CSS = `
     .bf-vid__notes { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
     .bf-vid__notes b { font-weight: 600; word-break: break-all; }
     .bf-vid__warn { color: var(--sf-text-2); }
+    .bf-link { color: var(--sf-gold); text-decoration: underline; text-underline-offset: 2px; }
 
     .bf-hint { display: grid; gap: 4px; padding: 12px 14px; margin-bottom: 20px; border-radius: var(--sf-r-input); font-size: 14px; color: var(--sf-text); background: var(--sf-gold-soft); border: 1px solid rgba(217, 178, 111, 0.3); }
     .bf-hint b { color: var(--sf-gold); font-weight: 600; }

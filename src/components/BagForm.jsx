@@ -8,6 +8,7 @@ import AiQuickAdd from "./AiQuickAdd";
 import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
 import { posterFileOf, videoPoster, videoSrc } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
+import { compressImage } from "../utils/imageCompress";
 
 const MAX_VIDEOS = 5;
 const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
@@ -71,6 +72,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const [types, setTypes]                         = useState([]);
     const [collections, setCollections]             = useState([]);
     const [supplierPrice, setSupplierPrice]         = useState(null);
+    const [preparingPhotos, setPreparingPhotos]     = useState(0);
     // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
     const [videos, setVideos] = useState(() =>
         (initialData?.videos || []).map(url => ({ key: url, url, status: "done" })));
@@ -149,31 +151,40 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         setErrors({});
     };
 
-    const handleMainImageChange = (e) => {
+    // Photos are shrunk on this device before saving (see utils/imageCompress).
+    const handleMainImageChange = async (e) => {
         const file = e.target.files[0];
+        e.target.value = "";
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            setFormData(p => ({ ...p, mainImage: ev.target.result }));
-            setImagePreview(ev.target.result);
-        };
-        reader.readAsDataURL(file);
+        setPreparingPhotos(n => n + 1);
+        try {
+            const src = await compressImage(file);
+            setFormData(p => ({ ...p, mainImage: src }));
+            setImagePreview(src);
+            setErrors(p => { const n = { ...p }; delete n.mainImage; return n; });
+        } catch {
+            setErrors(p => ({ ...p, mainImage: "Could not read this photo, please try another" }));
+        } finally {
+            setPreparingPhotos(n => n - 1);
+        }
     };
 
-    const handleSideImageAdd = (e) => {
+    const handleSideImageAdd = async (e) => {
         const files = Array.from(e.target.files);
+        e.target.value = "";
         if (sideImagePreviews.length + files.length > 10) {
             setErrors(p => ({ ...p, sideImages: "Maximum 10 side images allowed" }));
             return;
         }
-        files.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setSideImagePreviews(p => [...p, ev.target.result]);
-                setFormData(p => ({ ...p, sideImages: [...p.sideImages, ev.target.result] }));
-            };
-            reader.readAsDataURL(file);
-        });
+        setPreparingPhotos(n => n + 1);
+        try {
+            const srcs = (await Promise.all(files.map(f => compressImage(f).catch(() => null)))).filter(Boolean);
+            setSideImagePreviews(p => [...p, ...srcs]);
+            setFormData(p => ({ ...p, sideImages: [...p.sideImages, ...srcs] }));
+            if (srcs.length < files.length) setErrors(p => ({ ...p, sideImages: "Some photos could not be read" }));
+        } finally {
+            setPreparingPhotos(n => n - 1);
+        }
     };
 
     const handleRemoveSideImage = (i) => {
@@ -621,9 +632,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 <button type="button" className="sf-btn sf-btn--ghost" onClick={handleCancel}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="sf-btn sf-btn--primary bf-save" disabled={loading || uploadingVideos > 0}>
-                                    {(loading || uploadingVideos > 0) && <span className="bf-spinner" aria-hidden="true" />}
-                                    {loading ? "Saving…" : uploadingVideos ? "Uploading video…" : "Save bag"}
+                                <button type="submit" className="sf-btn sf-btn--primary bf-save" disabled={loading || uploadingVideos > 0 || preparingPhotos > 0}>
+                                    {(loading || uploadingVideos > 0 || preparingPhotos > 0) && <span className="bf-spinner" aria-hidden="true" />}
+                                    {loading ? "Saving…" : uploadingVideos ? "Uploading video…" : preparingPhotos ? "Preparing photos…" : "Save bag"}
                                 </button>
                             </div>
                         </section>

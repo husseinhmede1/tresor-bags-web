@@ -91,8 +91,4 @@ export const uploadVideoFile = async (file, auth, { onProgress, signal, fileName
     }
 };
 
-// Admin settings shared by every device (e.g. the video quality chosen on the test page).
-export const getSettings = async () => (await api.get('/settings')).data.data;
-export const saveSettings = async (data) => (await api.put('/settings', data)).data.data;
-
 export default api;

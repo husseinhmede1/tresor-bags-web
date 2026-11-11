@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FilmSlate, ImageSquare, Play, Plus, Star, Trash, X } from "@phosphor-icons/react";
 import AdminShell from "./storefront/AdminShell";
 import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import AiQuickAdd from "./AiQuickAdd";
-import { getSettings, getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
+import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
 import { posterFileOf, videoPoster, videoSrc } from "../utils/image";
-import { DEFAULT_PRESET, VIDEO_PRESETS, canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
+import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 
 const MAX_VIDEOS = 5;
 const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
@@ -78,14 +78,6 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const uploadsRef = useRef(new Map());    // key -> AbortController of the running upload
     const removedRef = useRef(new Set());    // keys removed while still queued
     const previewsRef = useRef([]);
-    const presetRef = useRef(DEFAULT_PRESET);   // video quality chosen on the comparison page
-    const [presetKey, setPresetKey] = useState(DEFAULT_PRESET);
-
-    useEffect(() => {
-        getSettings()
-            .then(s => { if (VIDEO_PRESETS[s?.videoQuality]) { presetRef.current = s.videoQuality; setPresetKey(s.videoQuality); } })
-            .catch(() => {});
-    }, []);
 
     useEffect(() => () => {
         uploadsRef.current.forEach(c => c.abort());
@@ -213,7 +205,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
             const notes = [];
             patchVideo(key, { stage: "compressing", progress: 0 });
             try {
-                const out = await compressVideo(file, presetRef.current, {
+                const out = await compressVideo(file, undefined, {
                     signal, onProgress: (progress) => patchVideo(key, { progress }),
                 });
                 if (out) {
@@ -429,8 +421,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                             </div>
                             <p className="sf-muted bf-sub">
                                 Optional. Short clips that show the bag from every side and inside, up to {LONG_VIDEO_S} seconds. Customers tap to play.
-                                {" "}Videos are compressed on this device before upload; quality: <b className="sf-gold">{VIDEO_PRESETS[presetKey].label}</b>
-                                {" "}(<Link to="/admin/video-quality" className="bf-link">compare</Link>).
+                                {" "}Videos are compressed on this device before upload.
                             </p>
                             <div className="bf-gallery">
                                 {videos.map((v, i) => (
@@ -691,7 +682,6 @@ const BF_CSS = `
     .bf-vid__notes { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
     .bf-vid__notes b { font-weight: 600; word-break: break-all; }
     .bf-vid__warn { color: var(--sf-text-2); }
-    .bf-link { color: var(--sf-gold); text-decoration: underline; text-underline-offset: 2px; }
 
     .bf-hint { display: grid; gap: 4px; padding: 12px 14px; margin-bottom: 20px; border-radius: var(--sf-r-input); font-size: 14px; color: var(--sf-text); background: var(--sf-gold-soft); border: 1px solid rgba(217, 178, 111, 0.3); }
     .bf-hint b { color: var(--sf-gold); font-weight: 600; }

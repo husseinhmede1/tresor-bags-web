@@ -3,12 +3,13 @@
 // Nothing is saved on the device: the result lives in memory until it is uploaded.
 // Returns null when this browser can't compress; the caller then uploads the original file.
 
-export const VIDEO_PRESETS = {
-    saver:    { label: "Saver",    long: 1280, videoBps: 1_100_000, audioBps: 96_000,  note: "Smallest files, softer fine detail" },
-    balanced: { label: "Balanced", long: 1280, videoBps: 1_700_000, audioBps: 128_000, note: "Sharp on phones, like Instagram" },
-    high:     { label: "High",     long: 1920, videoBps: 3_500_000, audioBps: 128_000, note: "1080p, about twice the size" },
+// 720p ("Balanced"): sharp on phones, about 6-7 MB per 30 seconds.
+const VIDEO_PRESETS = {
+    saver:    { long: 1280, videoBps: 1_100_000, audioBps: 96_000 },
+    balanced: { long: 1280, videoBps: 1_700_000, audioBps: 128_000 },
+    high:     { long: 1920, videoBps: 3_500_000, audioBps: 128_000 },
 };
-export const DEFAULT_PRESET = "balanced";
+const DEFAULT_PRESET = "balanced";
 
 export const canCompress = () =>
     typeof window !== "undefined" && window.isSecureContext && typeof window.VideoEncoder === "function";

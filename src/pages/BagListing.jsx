@@ -13,7 +13,7 @@ import SiteFooter from "../components/storefront/SiteFooter";
 import Reveal from "../components/storefront/Reveal";
 import { SHOP_CATEGORIES } from "../utils/shopCategories";
 import {
-    Sparkle, MagnifyingGlass, SlidersHorizontal, Plus, Minus, PencilSimple, Trash, ArrowLeft, CaretDown, X,
+    Sparkle, MagnifyingGlass, SlidersHorizontal, Plus, Minus, PencilSimple, Trash, ArrowLeft, ArrowDown, CaretDown, X,
 } from "@phosphor-icons/react";
 
 // Served from /public so index.html can preload it.
@@ -196,6 +196,12 @@ const BagListing = () => {
         getAllCollections().then(res => { if (res.success) setCollections(res.data); }).catch(() => {});
     }, []);
 
+    // How many bags the shop has, for the hero's "Or browse all N bags" (no number if it can't load).
+    const [allBagsCount, setAllBagsCount] = useState(null);
+    useEffect(() => {
+        getAllBags({ page: 1, limit: 1 }).then(res => setAllBagsCount(res.total ?? null)).catch(() => {});
+    }, []);
+
     useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection]);
     useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection, activeTab]);
     useEffect(() => { setCatPage(1); }, [catSearchQuery, hasDiscount]);
@@ -244,6 +250,12 @@ const BagListing = () => {
         setTimeout(() => shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
     }, [shopPick, navigate]);
     const resetCategoryFilter = () => { setSelectedCategory(null); resetFilters(); };
+    const browseAll = () => {
+        resetFilters(); setFilterOpen(false);
+        setSelectedCategory(null); setSelectedCollection(null); pickPrimaryCategory(null);
+        setActiveTab("items");
+        scrollToShop();
+    };
 
 
     const pagination = (page, totalPages, setPage) => {
@@ -339,8 +351,9 @@ const BagListing = () => {
                                 onOpenBag={(id) => openBag(id, 'home')}
                             />
                         </div>
-                        <button className="sf-btn sf-btn--ghost sf-rise" style={{ "--d": "340ms", marginTop: 24 }} onClick={scrollToShop}>
-                            Shop the collection <CaretDown size={16} />
+                        {/* The other way in: look through everything (any category or filter picked earlier is cleared) */}
+                        <button className="sf-btn sf-btn--ghost sf-rise" style={{ "--d": "340ms", marginTop: 24 }} onClick={browseAll}>
+                            <span>{allBagsCount > 1 ? `Or browse all ${allBagsCount} bags` : "Or browse all bags"}</span> <ArrowDown size={16} />
                         </button>
                     </div>
                     <div className="hero__art">

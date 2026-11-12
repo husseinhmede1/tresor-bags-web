@@ -164,10 +164,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                 </div>
             </div>
             <p className="sf-muted aq__sub">
-                Drop everything for <b>one bag</b> here: the WeChat screenshots (one or several) and
-                the bag's photos. You can also paste a screenshot. The AI reads the details, translates
-                them, and puts the photos in Main image and Gallery. Review everything, set your
-                selling price, then save.
+                Screenshots and photos of <b>one bag</b>.
             </p>
 
             <div className="aq__shots">

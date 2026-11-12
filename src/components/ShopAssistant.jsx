@@ -334,6 +334,7 @@ const CSS = `
     color: ${TEXT}; font: 400 16px/1.4 ${SANS}; padding: 9px 0;   /* 16px: iPhone zooms the page into smaller fields */
 }
 .sa-field input::placeholder { color: #8C867E; }
+.sa-field input:focus-visible { outline: none; }   /* the rounded field lights up instead (the site's focus ring drew a box inside it) */
 .sa-icon, .sa-send {
     flex-shrink: 0; width: 40px; height: 40px; display: grid; place-items: center;
     border-radius: 999px; cursor: pointer; transition: background-color .2s, color .2s, transform .15s, opacity .2s;

@@ -356,8 +356,9 @@ const CSS = `
     scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; text-align: left;
     padding: 0; background: none; border: none; cursor: pointer; color: inherit;
 }
+/* A fixed square (the cards are 140px wide): Safari can collapse an aspect-ratio box inside a button. */
 .sa-card-img {
-    position: relative; display: block; aspect-ratio: 1; border-radius: 16px; overflow: hidden; isolation: isolate;
+    position: relative; display: block; flex: none; width: 140px; height: 140px; border-radius: 16px; overflow: hidden; isolation: isolate;
     background: #EDEDEE;
 }
 .sa-card-img img { width: 100%; height: 100%; object-fit: contain; padding: 10%; mix-blend-mode: multiply; transition: transform .5s cubic-bezier(0.16,1,0.3,1); }
@@ -413,7 +414,7 @@ const CSS = `
 }
 
 .sa-skel { height: 12px; border-radius: 8px; background: linear-gradient(90deg, #17171a 25%, #212125 50%, #17171a 75%); background-size: 200% 100%; animation: saShimmer 1.4s linear infinite; }
-.sa-skel-card { height: auto; aspect-ratio: 1; border-radius: 16px; }
+.sa-skel-card { width: 140px; height: 140px; border-radius: 16px; }
 .sa-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(23,19,11,0.25); border-top-color: #17130B; animation: saSpin .7s linear infinite; }
 @keyframes saIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes saShimmer { to { background-position: -200% 0; } }

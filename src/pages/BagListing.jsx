@@ -6,8 +6,8 @@ import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllTypes, deleteType } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import { sized } from "../utils/image";
-import TypeSelectorModal from "../components/TypeSelectorModal";
 import ShopAssistant from "../components/ShopAssistant";
+import BrandFilm from "../components/storefront/BrandFilm";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
 import Reveal from "../components/storefront/Reveal";
@@ -46,36 +46,14 @@ const BagListing = () => {
     // A choice from the header's shop menu (see ShopMenu): open straight on the shop with it.
     const shopPick = location.state?.shopPick;
 
-    /* ── Category selector modal ── */
-    const alreadySeen = sessionStorage.getItem('tresor-modal-seen') === '1';
     const savedCategory = sessionStorage.getItem('tresor-selected-category') || null;
     // Set when a bag was opened from the assistant, so coming back reopens it where it was.
     const [askReturn] = useState(() => sessionStorage.getItem('tresor-ask-return'));
-    const [showModal, setShowModal]                       = useState(!shopPick && (!alreadySeen || askReturn === 'modal'));
     const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(savedCategory);
-    const [pageRevealed, setPageRevealed]                 = useState(Boolean(shopPick) || (alreadySeen && askReturn !== 'modal'));
-    // Blur-in only right after the modal closes; a normal visit shows the page as is.
-    const [animateReveal, setAnimateReveal]               = useState(false);
 
-    useEffect(() => {
-        if (pageRevealed) {
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
-        }
-    }, [pageRevealed]);
-
-    const revealPage = () => {
-        sessionStorage.setItem('tresor-modal-seen', '1');
-        setShowModal(false);
-        setAnimateReveal(true);
-        setTimeout(() => setPageRevealed(true), 650);
-    };
-
-    // A bag picked from the assistant's answer: skip the modal next time and open it.
+    // A bag picked from an assistant's answer ('home': the hero, 'listing': the shop's panel).
     const openBag = (id, from) => {
         sessionStorage.setItem('tresor-ask-return', from);
-        if (from === 'listing') sessionStorage.setItem('tresor-modal-seen', '1');
         navigate(`/gallery/${id}`);
     };
     const [askOpen, setAskOpen] = useState(askReturn === 'listing');
@@ -85,13 +63,6 @@ const BagListing = () => {
         // Back from a bag opened in the search-bar assistant: scroll to it (after the page's scroll-to-top).
         if (askReturn === 'listing') setTimeout(() => askRef.current?.scrollIntoView({ block: "center" }), 100);
     }, [askReturn]);
-
-    const handleModalSkip = () => {
-        setSelectedPrimaryCategory(null);
-        setSelectedCollection(null);
-        sessionStorage.removeItem('tresor-selected-category');
-        revealPage();
-    };
 
     const [activeTab, setActiveTab] = useState("items");
 
@@ -251,8 +222,6 @@ const BagListing = () => {
     const [appliedPick, setAppliedPick] = useState(null);
     if (shopPick && appliedPick !== location.key) {
         setAppliedPick(location.key);
-        setShowModal(false);
-        setPageRevealed(true);
         setSearchInput(""); setSearchQuery("");
         setMinPrice(""); setMaxPrice(""); setMinHeight(""); setMaxHeight("");
         setMinWidth(""); setMaxWidth(""); setMinWeight(""); setMaxWeight("");
@@ -267,7 +236,6 @@ const BagListing = () => {
         if (!shopPick) return;
         clearTimeout(debounceRef.current);   // a search still being typed
         const category = shopPick.type?.category ?? shopPick.category ?? null;
-        sessionStorage.setItem('tresor-modal-seen', '1');
         if (category) sessionStorage.setItem('tresor-selected-category', category);
         else sessionStorage.removeItem('tresor-selected-category');
         // Done with it: a refresh or coming back from a bag shouldn't apply it again.
@@ -294,19 +262,11 @@ const BagListing = () => {
     return (
         <div className="sf" onTouchStart={handleSwipeStart} onTouchEnd={handleSwipeEnd}>
             <style>{`
-                @keyframes pageReveal {
-                    from { opacity: 0; filter: blur(8px); transform: scale(0.985); }
-                    to   { opacity: 1; filter: blur(0px); transform: scale(1);     }
-                }
-                .page-content-wrap {
-                    animation: ${pageRevealed && animateReveal ? "pageReveal 0.75s cubic-bezier(0.22,1,0.36,1) forwards" : "none"};
-                    opacity: ${pageRevealed ? "1" : "0"}; /* stay hidden until the fade-in starts, or it shows, blinks out, then fades in */
-                }
-                @media (prefers-reduced-motion: reduce) { .page-content-wrap { animation: none !important; } }
                 .sf-range { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; background: rgba(255,255,255,0.14); border-radius: 2px; outline: none; cursor: pointer; }
                 .sf-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
                 .sf-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
                 .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; min-height: min(760px, calc(100vh - 64px)); padding-block: 48px 56px; }
+                .hero__ask { margin-top: 32px; max-width: 560px; }
                 /* The bag gets an explicit width (no percentage heights): Safari sized it differently and it spilled over the shop. */
                 .hero__art { position: relative; display: flex; align-items: center; justify-content: center; padding-block: 24px; }
                 .hero__art::before { content: ""; position: absolute; inset: 8% 6% 14%; background: radial-gradient(closest-side, rgba(217,178,111,0.20), rgba(217,178,111,0.05) 55%, transparent 72%); }
@@ -322,7 +282,7 @@ const BagListing = () => {
                 .admin-menu button { text-align: left; height: 40px; padding: 0 12px; border-radius: 10px; border: 0; background: transparent; color: #F2F0EB; font: 500 14px/1 var(--sf-font); cursor: pointer; }
                 .admin-menu button:hover { background: rgba(255,255,255,0.06); }
                 @media (max-width: 900px) {
-                    .hero { grid-template-columns: 1fr; min-height: 0; padding-block: 36px 16px; gap: 8px; text-align: left; }
+                    .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; padding-block: 36px 16px; gap: 8px; text-align: left; }
                     .hero__art { order: 2; padding-block: 8px 0; }
                     .hero__img { width: min(82%, 320px); }
                     .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -334,15 +294,7 @@ const BagListing = () => {
                 }
             `}</style>
 
-            {/* Type selector modal, rendered outside the dimmed content */}
-            {showModal && (
-                <TypeSelectorModal
-                    onSkip={handleModalSkip}
-                    onOpenBag={(id) => openBag(id, 'modal')}
-                />
-            )}
-
-            <div className="page-content-wrap">
+            <div>
                 <SiteHeader>
                     {isAdmin && (
                         <div style={{ position: "relative" }} ref={adminMenuRef}>
@@ -378,10 +330,18 @@ const BagListing = () => {
                         <p className="sf-lead sf-rise" style={{ "--d": "160ms", marginTop: 20 }}>
                             Business, travel and luxury bags, delivered across Lebanon. Order online and pay with Whish.
                         </p>
-                        <div className="sf-rise" style={{ "--d": "260ms", display: "flex", gap: 12, flexWrap: "wrap", marginTop: 32 }}>
-                            <button className="sf-btn sf-btn--primary" onClick={scrollToShop}>Shop the collection</button>
-                            <button className="sf-btn sf-btn--ghost" onClick={openAssistant}><Sparkle size={16} weight="fill" color="#D9B26F" /> Ask AI</button>
+                        {/* Ask Trésor, open right away: a question or a photo of a bag they like */}
+                        <div className="hero__ask sf-rise" style={{ "--d": "260ms" }}>
+                            <ShopAssistant
+                                storageKey="home"
+                                place="home"
+                                title="Looking for a specific bag? Ask us, or send a photo of one you like."
+                                onOpenBag={(id) => openBag(id, 'home')}
+                            />
                         </div>
+                        <button className="sf-btn sf-btn--ghost sf-rise" style={{ "--d": "340ms", marginTop: 24 }} onClick={scrollToShop}>
+                            Shop the collection <CaretDown size={16} />
+                        </button>
                     </div>
                     <div className="hero__art">
                         <img
@@ -393,6 +353,8 @@ const BagListing = () => {
                         />
                     </div>
                 </section>
+
+                <BrandFilm />
 
                 {/* ── Shop ── */}
                 <section ref={shopRef} id="shop" className="sf-container" style={{ paddingTop: 56, scrollMarginTop: 72 }}>
@@ -430,13 +392,13 @@ const BagListing = () => {
                                     <SlidersHorizontal size={18} /> <span>Filters</span>
                                 </button>
                                 <button className="sf-btn sf-btn--ghost" onClick={() => setAskOpen(o => !o)} aria-expanded={askOpen}>
-                                    <Sparkle size={18} weight="fill" color="#D9B26F" /> <span>Ask AI</span>
+                                    <Sparkle size={18} weight="fill" color="#D9B26F" /> <span>Ask Trésor</span>
                                 </button>
                             </div>
 
                             {askOpen && (
                                 <div ref={askRef} className="sf-panel" style={{ marginTop: 16 }}>
-                                    <ShopAssistant storageKey="listing" onOpenBag={(id) => openBag(id, 'listing')} autoFocus={askReturn !== 'listing'} />
+                                    <ShopAssistant storageKey="listing" place="shop" onOpenBag={(id) => openBag(id, 'listing')} autoFocus={askReturn !== 'listing'} />
                                 </div>
                             )}
 
@@ -525,10 +487,10 @@ const BagListing = () => {
                                 ) : bags.length === 0 ? (
                                     <div className="sf-panel" style={{ textAlign: "center", padding: "56px 24px", display: "grid", gap: 12, justifyItems: "center" }}>
                                         <h3 className="sf-h3">No bags match this search</h3>
-                                        <p className="sf-muted" style={{ maxWidth: "44ch" }}>Try another word, clear the filters, or ask our AI to find something close.</p>
+                                        <p className="sf-muted" style={{ maxWidth: "44ch" }}>Try another word, clear the filters, or ask Trésor to find something close.</p>
                                         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center", marginTop: 8 }}>
                                             <button className="sf-btn sf-btn--ghost sf-btn--sm" onClick={() => { resetFilters(); setSelectedCollection(null); pickPrimaryCategory(null); }}>Clear filters</button>
-                                            <button className="sf-btn sf-btn--primary sf-btn--sm" onClick={openAssistant}>Ask AI</button>
+                                            <button className="sf-btn sf-btn--primary sf-btn--sm" onClick={openAssistant}>Ask Trésor</button>
                                         </div>
                                     </div>
                                 ) : (

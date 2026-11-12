@@ -13,10 +13,11 @@ export const parseProductFromChat = async ({ images, text, language }) => {
     }
 };
 
-// Customer shop assistant: a question and/or one photo (data URL).
-export const askShop = async ({ text, image }) => {
+// Customer shop assistant: a question and/or one photo (data URL). `place` (home or shop) is
+// counted for the shop's stats; `bagId` when asked on that bag's page.
+export const askShop = async ({ text, image, place, bagId }) => {
     try {
-        return (await api.post('/ai/ask', { text, image })).data;
+        return (await api.post('/ai/ask', { text, image, place, bagId })).data;
     } catch (error) {
         throw error.response?.data || { message: error.message };
     }

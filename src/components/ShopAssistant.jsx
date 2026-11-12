@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Sparkle, Camera, ArrowRight, X } from "@phosphor-icons/react";
 import { askShop } from "../services/aiService";
 import { sized } from "../utils/image";
 
-// Ask-the-shop box: a question and/or a photo in, a short answer plus matching bags out.
-// Answers come only from the catalog (enforced on the server).
+// "Ask Trésor": a question and/or a photo in, a short answer plus matching bags out.
+// Answers come only from the catalog (enforced on the server). On a bag's page (bagId) the
+// questions are about that bag; `place` tells the shop's stats where people ask.
 
 const GOLD_L = "#D9B26F";
 const GOLD_D = "#D9B26F";
@@ -56,7 +57,10 @@ const loadSaved = (key) => {
     try { return JSON.parse(sessionStorage.getItem(`tresor-ask-${key}`)) || {}; } catch { return {}; }
 };
 
-export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey = "main" }) {
+export default function ShopAssistant({
+    onOpenBag, autoFocus = false, storageKey = "main", place = "shop", bagId,
+    title, suggestions = SUGGESTIONS, examples = EXAMPLES, hint = "Ask about a bag, or search by photo",
+}) {
     const [saved]               = useState(() => loadSaved(storageKey));
     const [text, setText]       = useState(saved.text || "");
     const [photo, setPhoto]     = useState(saved.photo || "");
@@ -69,22 +73,24 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
     const fileRef  = useRef(null);
     const rootRef  = useRef(null);
     const inputRef = useRef(null);
-    const idleHint = photo ? "Anything to add? Or just send" : "Ask about a bag, or search by photo";
+    const inputId  = useId();
+    const idleHint = photo ? "Anything to add? Or just send" : hint;
+    const photos   = !bagId;   // searching by photo is for finding a bag, not for one bag's page
 
     // Typing placeholder: runs only while the field is empty and not focused.
     // Writes straight to the DOM so the rest of the box never re-renders.
     useEffect(() => {
         const el = inputRef.current;
-        if (!el || text || photo || reducedMotion()) return;
+        if (!el || text || photo || !examples.length || reducedMotion()) return;
         let timer, phrase = 0, chars = 0, deleting = false, focused = document.activeElement === el;
         const tick = () => {
             if (focused) { el.placeholder = idleHint; return; }
-            const full = EXAMPLES[phrase];
+            const full = examples[phrase];
             chars += deleting ? -1 : 1;
             el.placeholder = full.slice(0, chars) || "​";
             let wait = deleting ? 28 : 55;
             if (!deleting && chars === full.length) { deleting = true; wait = 1800; }
-            else if (deleting && chars === 0) { deleting = false; phrase = (phrase + 1) % EXAMPLES.length; wait = 400; }
+            else if (deleting && chars === 0) { deleting = false; phrase = (phrase + 1) % examples.length; wait = 400; }
             timer = setTimeout(tick, wait);
         };
         const onFocus = () => { focused = true; clearTimeout(timer); el.placeholder = idleHint; };
@@ -98,7 +104,7 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
             el.removeEventListener("blur", onBlur);
             el.placeholder = idleHint;
         };
-    }, [text, photo, idleHint]);
+    }, [text, photo, idleHint, examples]);
 
     // Status line under the loading state.
     useEffect(() => {
@@ -144,7 +150,7 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
         setAsked(photo);
         setStep(0);
         try {
-            const res = await askShop({ text: q.trim(), image: photo || undefined });
+            const res = await askShop({ text: q.trim(), image: photo || undefined, place, bagId });
             if (res.success) { setFresh(!reducedMotion()); setResult(res.data); }
             else setError(res.message || "Please try again.");
         } catch (err) {
@@ -172,7 +178,7 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
             <style>{CSS}</style>
             <span className="sa-glow" aria-hidden="true" />
 
-            <label htmlFor="sa-input" className="sa-sr">Ask the Trésor assistant</label>
+            <label htmlFor={inputId} className={title ? "sa-title" : "sa-sr"} dir="auto">{title || "Ask Trésor"}</label>
             <div className={`sa-field${loading ? " is-busy" : ""}`}>
                 <Sparkle size={16} weight="fill" color={GOLD_D} aria-hidden="true" style={{ flexShrink: 0 }} />
                 {photo && (
@@ -183,7 +189,7 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
                 )}
                 <input
                     ref={inputRef}
-                    id="sa-input"
+                    id={inputId}
                     dir="auto"
                     autoComplete="off"
                     autoFocus={autoFocus}
@@ -192,9 +198,11 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
                     onChange={(e) => setText(e.target.value)}
                     placeholder={idleHint}
                 />
-                <button type="button" className="sa-icon" onClick={() => fileRef.current?.click()} aria-label="Search with a photo" title="Search with a photo">
-                    <Camera size={18} />
-                </button>
+                {photos && (
+                    <button type="button" className="sa-icon" onClick={() => fileRef.current?.click()} aria-label="Search with a photo" title="Search with a photo">
+                        <Camera size={18} />
+                    </button>
+                )}
                 <button type="submit" className="sa-send" disabled={!loading && !canSend} aria-busy={loading} aria-label="Ask">
                     {loading ? <span className="sa-spin" /> : <ArrowRight size={16} weight="bold" />}
                 </button>
@@ -203,7 +211,12 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
 
             {!result && !loading && !error && (
                 <div className="sa-suggest">
-                    {SUGGESTIONS.map(s => (
+                    {photos && !photo && (
+                        <button type="button" className="sa-photo" onClick={() => fileRef.current?.click()}>
+                            <Camera size={16} weight="bold" /> Send a photo
+                        </button>
+                    )}
+                    {suggestions.map(s => (
                         <button key={s} type="button" dir="auto" onClick={() => { setText(s); ask(s); }}>{s}</button>
                     ))}
                 </div>
@@ -276,14 +289,17 @@ export default function ShopAssistant({ onOpenBag, autoFocus = false, storageKey
 
 const CSS = `
 @property --sa-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
-.sa { position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 12px; }
+.sa { position: relative; isolation: isolate; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .sa-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* 6. Gold light behind the box, trailing the mouse on desktop, still on touch screens */
 .sa > .sa-glow {
     position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: 20px;
     background: radial-gradient(300px circle at var(--sa-mx, 22%) var(--sa-my, 28px), rgba(217,178,111,0.10), transparent 70%);
+    opacity: 0; transition: opacity .4s;
 }
+.sa:hover > .sa-glow { opacity: 1; }
+@media (hover: none) { .sa > .sa-glow { display: none; } }
 
 /* 1. Light running around the field: slow while idle, fast and bright while thinking */
 .sa-field::before, .sa-field::after {
@@ -345,6 +361,9 @@ const CSS = `
     font: 500 13px/1 ${SANS}; transition: color .2s, border-color .2s;
 }
 .sa-suggest button:hover { color: ${TEXT}; border-color: rgba(255,255,255,0.22); }
+.sa-suggest .sa-photo { display: inline-flex; align-items: center; gap: 7px; color: ${GOLD_L}; border-color: rgba(217,178,111,0.5); font-weight: 600; }
+.sa-suggest .sa-photo:hover { color: #F3D9A6; border-color: ${GOLD_L}; background: rgba(217,178,111,0.08); }
+.sa-title { color: ${TEXT}; font: 550 15px/1.45 ${SANS}; }
 .sa-result { animation: saIn .35s cubic-bezier(0.16,1,0.3,1); }
 .sa-answer { margin: 0; color: ${TEXT}; font: 400 15px/1.65 ${SANS}; max-width: 62ch; }
 .sa-cards {

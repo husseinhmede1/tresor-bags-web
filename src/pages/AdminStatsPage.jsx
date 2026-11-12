@@ -25,6 +25,7 @@ export default function AdminStatsPage() {
     }, [period]);
 
     const k = stats?.kpis || {};
+    const a = stats?.assistant || {};
     const series = stats?.timeseries || [];
     const maxRev = Math.max(1, ...series.map((s) => s.revenue));
     const kpiCards = [
@@ -134,6 +135,26 @@ export default function AdminStatsPage() {
                             )}
                         </section>
                     </div>
+
+                    {/* How much customers use Ask Trésor (counts only, not what they asked) */}
+                    <section className="sf-panel" style={{ marginTop: 20 }}>
+                        <h2 className="sf-h3">Ask Trésor</h2>
+                        <p className="sf-faint" style={{ fontSize: 14, marginTop: 4 }}>Questions customers asked the shop assistant in this period</p>
+                        <div className="ast-asks">
+                            {[
+                                ["Questions", a.questions],
+                                ["With a photo", a.photos],
+                                ["On the homepage", a.home],
+                                ["In the shop", a.shop],
+                                ["On bag pages", a.bag],
+                            ].map(([label, value]) => (
+                                <div key={label} className="ast-ask">
+                                    <span className="sf-stat__label">{label}</span>
+                                    <span className="ast-ask__value sf-num">{value ?? 0}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
                 </>
             )}
         </AdminShell>
@@ -141,6 +162,10 @@ export default function AdminStatsPage() {
 }
 
 const STATS_CSS = `
+    .ast-asks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .ast-ask { display: grid; gap: 6px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+    .ast-ask__value { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+    @media (max-width: 760px) { .ast-asks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .ast-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
     .ast-stat--btn { font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .2s, background-color .2s; }
     .ast-stat--btn:hover { border-color: rgba(217, 178, 111, 0.4); background: #17171a; }

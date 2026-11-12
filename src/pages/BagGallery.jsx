@@ -7,6 +7,16 @@ import { usePageMeta } from "../utils/pageMeta";
 import { sized, videoPoster } from "../utils/image";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
+import ShopAssistant from "../components/ShopAssistant";
+
+// Ready questions under "Ask about this bag", by kind of bag.
+const BAG_QUESTIONS = {
+    Luggage:     ["Is it cabin size?", "How much does it weigh?", "Other colours?"],
+    Backpacks:   ["Does a 15-inch laptop fit?", "Is it good for travel?", "Other colours?"],
+    Bags:        ["Does a laptop fit?", "Other colours?", "Something similar?"],
+    Accessories: ["Other colours?", "Something similar?"],
+};
+const DEFAULT_QUESTIONS = ["Does a laptop fit?", "Other colours?", "Something similar?"];
 
 // Plays in the main frame once the customer picks the video, so it costs nothing until then.
 // The file as it was uploaded (a 720p MP4), never converted by ImageKit.
@@ -207,6 +217,21 @@ const BagGallery = () => {
                         )}
                     </div>
 
+                    {/* Questions about this bag, answered from its details */}
+                    <div className="pdp__ask">
+                        <ShopAssistant
+                            key={bag._id}
+                            storageKey={`bag-${bag._id}`}
+                            bagId={bag._id}
+                            place="bag"
+                            title="Ask about this bag"
+                            hint="Size, laptop fit, colours..."
+                            examples={[]}
+                            suggestions={BAG_QUESTIONS[bag.typeId?.category] || DEFAULT_QUESTIONS}
+                            onOpenBag={(other) => navigate(`/gallery/${other}`)}
+                        />
+                    </div>
+
                     {bag.description && <p className="pdp__desc">{bag.description}</p>}
 
                     {specs.length > 0 && (
@@ -256,9 +281,10 @@ const PDP_CSS = `
         .pdp__main, .pdp__main--video { animation: pdpIn .35s cubic-bezier(.16,1,.3,1); }
         @keyframes pdpIn { from { opacity: 0; } to { opacity: 1; } }
     }
-    .pdp__info { position: sticky; top: 96px; display: grid; }
+    .pdp__info { position: sticky; top: 96px; display: grid; min-width: 0; }
     .pdp__title { font-size: clamp(1.9rem, 3.4vw, 2.75rem); line-height: 1.08; font-weight: 600; letter-spacing: -0.035em; margin-top: 8px; }
     .pdp__buy { display: flex; gap: 10px; margin-top: 28px; }
+    .pdp__ask { min-width: 0; margin-top: 24px; padding: 18px; border-radius: var(--sf-r-card); background: var(--sf-surface); border: 1px solid var(--sf-line); }
     .pdp__desc { margin-top: 32px; color: var(--sf-text-2); font-size: 16px; line-height: 1.7; max-width: 60ch; white-space: pre-line; }
     .pdp__specs { margin: 32px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     .pdp__spec { background: var(--sf-surface); border: 1px solid var(--sf-line); border-radius: 16px; padding: 14px 16px; display: grid; gap: 4px; }

@@ -63,10 +63,11 @@ export default function BrandFilm() {
 }
 
 const CSS = `
-.film { position: relative; overflow: hidden; isolation: isolate; margin-top: 24px; padding-block: 72px; border-block: 1px solid rgba(255,255,255,0.06); }
+.film { position: relative; overflow: hidden; isolation: isolate; padding-block: 56px; border-block: 1px solid rgba(255,255,255,0.06); }
 .film__bg { position: absolute; inset: -40px; z-index: -1; background-size: cover; background-position: center; filter: blur(48px) saturate(1.1); opacity: .35; transform: scale(1.1); }
 .film::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0B0B0C 0%, rgba(11,11,12,.8) 50%, rgba(11,11,12,.6) 100%); }
 .film__inner { display: grid; grid-template-columns: minmax(0, 440px) auto; justify-content: center; align-items: center; gap: clamp(40px, 8vw, 120px); }
+.film__copy { align-self: start; padding-top: 24px; }
 .film__lead { margin-top: 14px; max-width: 34ch; }
 .film__frame { position: relative; height: min(620px, 78vh); aspect-ratio: 9 / 16; border-radius: 20px; overflow: hidden; background: #0b0b0c;
     border: 1px solid rgba(255,255,255,0.10); box-shadow: 0 40px 90px rgba(0,0,0,.55); }
@@ -74,9 +75,10 @@ const CSS = `
 .film__frame::after { content: ""; position: absolute; inset: auto 0 0; height: 30%; background: linear-gradient(to top, rgba(8,8,8,.85), transparent); pointer-events: none; }
 .film__logo { position: absolute; left: 18px; bottom: 16px; z-index: 1; height: 34px; width: 96px; object-fit: contain; object-position: left center; pointer-events: none; }
 @media (max-width: 900px) {
-    .film { padding-block: 44px; }
+    .film { padding-block: 32px 40px; }
     .film::after { background: linear-gradient(180deg, #0B0B0C 0%, rgba(11,11,12,.75) 40%, rgba(11,11,12,.6) 100%); }
     .film__inner { grid-template-columns: 1fr; gap: 20px; }
+    .film__copy { padding-top: 0; }
     .film__frame { height: auto; width: 100%; aspect-ratio: 4 / 5; }
 }
 `;

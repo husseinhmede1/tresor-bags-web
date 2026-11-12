@@ -265,7 +265,7 @@ const BagListing = () => {
                 .sf-range { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; background: rgba(255,255,255,0.14); border-radius: 2px; outline: none; cursor: pointer; }
                 .sf-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
                 .sf-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
-                .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; min-height: min(760px, calc(100vh - 64px)); padding-block: 48px 56px; }
+                .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; padding-block: 40px 16px; }
                 .hero__ask { margin-top: 32px; max-width: 560px; }
                 /* The bag gets an explicit width (no percentage heights): Safari sized it differently and it spilled over the shop. */
                 .hero__art { position: relative; display: flex; align-items: center; justify-content: center; padding-block: 24px; }

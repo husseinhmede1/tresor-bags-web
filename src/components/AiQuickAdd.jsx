@@ -52,7 +52,6 @@ const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce
 
 const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
     const [shots, setShots]       = useState([]);
-    const [text, setText]         = useState("");
     const [language, setLanguage] = useState("en");   // the site is in English
     const [loading, setLoading]   = useState(false);
     const [error, setError]       = useState("");
@@ -118,8 +117,8 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
     };
 
     const handleRead = async () => {
-        if (!shots.length && !text.trim()) {
-            setError("Add at least one image or paste the supplier's text");
+        if (!shots.length) {
+            setError("Add at least one image");
             return;
         }
         setLoading(true);
@@ -128,7 +127,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
         setStep(0);
         setFresh(false);
         try {
-            const res = await parseProductFromChat({ images: await Promise.all(shots.map(forAi)), text, language });
+            const res = await parseProductFromChat({ images: await Promise.all(shots.map(forAi)), language });
             if (res.success) {
                 const k = {};
                 (res.data.images || []).forEach(i => { k[i.number - 1] = i.kind; });
@@ -198,13 +197,6 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                     </label>
                 )}
             </div>
-
-            <label className="sf-label" htmlFor="aq-text" style={{ marginBottom: 8 }}>
-                Supplier's message <small>Optional</small>
-            </label>
-            <textarea id="aq-text" className="sf-input" rows={3} value={text} dir="auto"
-                onChange={e => setText(e.target.value)}
-                placeholder="Paste the supplier's message text here…" />
 
             {loading && (
                 <p className="aq__status">

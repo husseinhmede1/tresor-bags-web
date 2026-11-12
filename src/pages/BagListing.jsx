@@ -72,12 +72,6 @@ const BagListing = () => {
         setTimeout(() => setPageRevealed(true), 650);
     };
 
-    const handleModalStart = (cat) => {
-        setSelectedPrimaryCategory(cat.title);
-        setSelectedCollection(null);
-        sessionStorage.setItem('tresor-selected-category', cat.title);
-        revealPage();
-    };
     // A bag picked from the assistant's answer: skip the modal next time and open it.
     const openBag = (id, from) => {
         sessionStorage.setItem('tresor-ask-return', from);
@@ -343,7 +337,6 @@ const BagListing = () => {
             {/* Type selector modal, rendered outside the dimmed content */}
             {showModal && (
                 <TypeSelectorModal
-                    onStart={handleModalStart}
                     onSkip={handleModalSkip}
                     onOpenBag={(id) => openBag(id, 'modal')}
                 />

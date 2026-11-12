@@ -63,8 +63,10 @@ export default function BrandFilm() {
 }
 
 const CSS = `
-.film { position: relative; overflow: hidden; isolation: isolate; padding-block: 56px; border-block: 1px solid rgba(255,255,255,0.06); }
-.film__bg { position: absolute; inset: -40px; z-index: -1; background-size: cover; background-position: center; filter: blur(48px) saturate(1.1); opacity: .35; transform: scale(1.1); }
+.film { position: relative; overflow: hidden; isolation: isolate; padding-block: 56px; }
+.film__bg { position: absolute; inset: 0 -60px; z-index: -1; background-size: cover; background-position: center; filter: blur(48px) saturate(1.1); opacity: .35;
+    /* fades in and out, so the section has no visible edge */
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 25%, #000 75%, transparent); }
 .film::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #0B0B0C 0%, rgba(11,11,12,.8) 50%, rgba(11,11,12,.6) 100%); }
 .film__inner { display: grid; grid-template-columns: minmax(0, 440px) auto; justify-content: center; align-items: center; gap: clamp(40px, 8vw, 120px); }
 .film__copy { align-self: start; padding-top: 24px; }

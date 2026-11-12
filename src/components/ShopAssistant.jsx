@@ -331,7 +331,7 @@ const CSS = `
 .sa-field:focus-within { border-color: rgba(217,178,111,0.6); background: #1B1B1E; }
 .sa-field input {
     flex: 1; min-width: 0; background: none; border: none; outline: none;
-    color: ${TEXT}; font: 400 15px/1.4 ${SANS}; padding: 9px 0;
+    color: ${TEXT}; font: 400 16px/1.4 ${SANS}; padding: 9px 0;   /* 16px: iPhone zooms the page into smaller fields */
 }
 .sa-field input::placeholder { color: #8C867E; }
 .sa-icon, .sa-send {

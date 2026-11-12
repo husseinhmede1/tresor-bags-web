@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import "@fontsource-variable/geist";
 import "./styles/storefront.css";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 
 /* Scrolls to top on every route change */
 const ScrollToTop = () => {
@@ -30,6 +30,13 @@ import AdminOrdersPage from "./pages/AdminOrdersPage";
 import AdminStatsPage from "./pages/AdminStatsPage";
 import AdminInfoPage from "./pages/AdminInfoPage";
 
+// A new bag page for each bag, so going from one bag to another (e.g. from "Ask about this bag")
+// never shows the previous bag while the next one loads.
+const GalleryPage = () => {
+  const { id } = useParams();
+  return <BagGallery key={id} />;
+};
+
 const App = () => {
   return (
     <CartProvider>
@@ -38,7 +45,7 @@ const App = () => {
           <ScrollToTop />
           <Routes>
             <Route path="/" element={<BagListing />} />
-            <Route path="/gallery/:id" element={<BagGallery />} />
+            <Route path="/gallery/:id" element={<GalleryPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout/delivery" element={<DeliveryPage />} />

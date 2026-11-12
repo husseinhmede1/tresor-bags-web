@@ -13,6 +13,7 @@ export default function BrandFilm() {
     const videoRef = useRef(null);
     const [near, setNear] = useState(false);
     const [still] = useState(reducedMotion);   // reduced motion: no autoplay, the customer presses play
+    const [blocked, setBlocked] = useState(false);   // the phone refused to autoplay (e.g. Low Power Mode)
 
     // Start loading a little before it scrolls into view.
     useEffect(() => {
@@ -28,7 +29,7 @@ export default function BrandFilm() {
         const v = videoRef.current;
         if (!v || !near || still) return;
         const io = new IntersectionObserver(([e]) => {
-            if (e.intersectionRatio >= 0.35) v.play().catch(() => {});
+            if (e.intersectionRatio >= 0.35) v.play().catch(err => { if (err?.name === "NotAllowedError") setBlocked(true); });
             else v.pause();
         }, { threshold: [0, 0.35] });
         io.observe(v);
@@ -51,7 +52,7 @@ export default function BrandFilm() {
                         poster={POSTER}
                         muted loop playsInline
                         preload="none"
-                        controls={still}
+                        controls={still || blocked}
                         aria-label="A short film of the Trésor shop"
                     />
                     <img className="film__logo" src="/tresor_logo.webp" alt="" />

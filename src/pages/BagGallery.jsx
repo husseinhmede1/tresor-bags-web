@@ -17,6 +17,7 @@ const BAG_QUESTIONS = {
     Accessories: ["Other colours?", "Something similar?"],
 };
 const DEFAULT_QUESTIONS = ["Does a laptop fit?", "Other colours?", "Something similar?"];
+const NO_EXAMPLES = [];
 
 // Plays in the main frame once the customer picks the video, so it costs nothing until then.
 // The file as it was uploaded (a 720p MP4), never converted by ImageKit.
@@ -226,7 +227,7 @@ const BagGallery = () => {
                             place="bag"
                             title="Ask about this bag"
                             hint="Size, laptop fit, colours..."
-                            examples={[]}
+                            examples={NO_EXAMPLES}
                             suggestions={BAG_QUESTIONS[bag.typeId?.category] || DEFAULT_QUESTIONS}
                             onOpenBag={(other) => navigate(`/gallery/${other}`)}
                         />

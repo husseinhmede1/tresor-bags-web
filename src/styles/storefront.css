@@ -177,6 +177,18 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 .sf-card__meta { font-size: 13px; color: var(--sf-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sf-card__title { font-size: 15.5px; font-weight: 550; letter-spacing: -0.015em; line-height: 1.3; color: var(--sf-text); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
 .sf-card__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; min-height: 38px; }
+/* Share, across the foot of the card: the card's own colour, a faint gold outline. */
+.sf-card__share {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 38px; margin-top: 10px; border-radius: 999px;
+    background: transparent; color: var(--sf-text-2);
+    border: 1px solid rgba(217, 178, 111, 0.28);
+    font: 500 13.5px/1 var(--sf-font); letter-spacing: -0.005em; cursor: pointer;
+    transition: border-color .2s, color .2s, background-color .2s, transform .15s;
+}
+.sf-card__share svg { color: var(--sf-gold); flex: none; }
+.sf-card__share:hover { border-color: rgba(217, 178, 111, 0.6); color: var(--sf-text); background: var(--sf-gold-soft); }
+.sf-card__share:active { transform: scale(0.98); }
 .sf-price { display: inline-flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
 .sf-price b { font-weight: 600; font-size: 16px; }
 .sf-price s { color: var(--sf-text-3); font-size: 13.5px; }
@@ -228,7 +240,7 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 @media (prefers-reduced-motion: reduce) {
     .sf-rise, .sf-float, .sf-skel { animation: none !important; }
     .sf-reveal { opacity: 1; transform: none; transition: none; }
-    .sf-tile img, .sf-btn { transition: none; }
+    .sf-tile img, .sf-btn, .sf-card__share { transition: none; }
 }
 
 /* ── Footer ───────────────────────────────────────────────────────────── */

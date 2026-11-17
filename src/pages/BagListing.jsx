@@ -8,6 +8,7 @@ import { getAllCollections } from "../services/collectionService";
 import { sized } from "../utils/image";
 import ShopAssistant from "../components/ShopAssistant";
 import BrandFilm from "../components/storefront/BrandFilm";
+import ShareButton from "../components/storefront/ShareButton";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
 import Reveal from "../components/storefront/Reveal";
@@ -548,6 +549,7 @@ const BagListing = () => {
                                                                 </div>
                                                             ))}
                                                         </div>
+                                                        <ShareButton bag={bag} copyOnly className="sf-card__share" />
                                                     </div>
                                                 </Reveal>
                                             );

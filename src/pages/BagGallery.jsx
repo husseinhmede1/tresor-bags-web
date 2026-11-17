@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FilmSlate, Handbag, Minus, Play, Plus } from "@phosphor-icons/react";
+import { Check, FilmSlate, Handbag, LinkSimple, Minus, Play, Plus, ShareNetwork } from "@phosphor-icons/react";
 import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
 import { usePageMeta } from "../utils/pageMeta";
@@ -18,6 +18,33 @@ const BAG_QUESTIONS = {
 };
 const DEFAULT_QUESTIONS = ["Does a laptop fit?", "Other colours?", "Something similar?"];
 const NO_EXAMPLES = [];
+
+// Sends this bag's link: the phone's share sheet (Telegram, WhatsApp...) on touch devices,
+// a copy to the clipboard on a laptop. The link's preview in those apps shows this bag's photo,
+// name and price (see vercel.json and the server's /share route).
+const canShareNatively = () => typeof navigator.share === "function" && window.matchMedia?.("(pointer: coarse)").matches;
+
+const ShareButton = ({ bag }) => {
+    const [native] = useState(canShareNatively);
+    const [copied, setCopied] = useState(false);
+    const share = async () => {
+        const url = `${window.location.origin}/gallery/${bag._id}`;
+        if (native) {
+            try { await navigator.share({ title: bag.title, url }); return; }
+            catch (err) { if (err?.name === "AbortError") return; }   // closed the sheet: nothing to do
+        }
+        try { await navigator.clipboard.writeText(url); }
+        catch { window.prompt("Copy this link", url); return; }       // clipboard blocked: show it to copy by hand
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2200);
+    };
+    return (
+        <button type="button" className="sf-btn sf-btn--ghost sf-btn--sm pdp__share" onClick={share}>
+            {copied ? <Check size={16} weight="bold" /> : native ? <ShareNetwork size={16} /> : <LinkSimple size={16} />}
+            <span aria-live="polite">{copied ? "Link copied" : native ? "Share" : "Copy link"}</span>
+        </button>
+    );
+};
 
 // Plays in the main frame once the customer picks the video, so it costs nothing until then.
 // The file as it was uploaded (a 720p MP4), never converted by ImageKit.
@@ -218,6 +245,8 @@ const BagGallery = () => {
                         )}
                     </div>
 
+                    <ShareButton bag={bag} />
+
                     {/* Questions about this bag, answered from its details */}
                     <div className="pdp__ask">
                         <ShopAssistant
@@ -285,6 +314,7 @@ const PDP_CSS = `
     .pdp__info { position: sticky; top: 96px; display: grid; min-width: 0; }
     .pdp__title { font-size: clamp(1.9rem, 3.4vw, 2.75rem); line-height: 1.08; font-weight: 600; letter-spacing: -0.035em; margin-top: 8px; }
     .pdp__buy { display: flex; gap: 10px; margin-top: 28px; }
+    .pdp__share { justify-self: start; margin-top: 12px; gap: 8px; }
     .pdp__ask { min-width: 0; margin-top: 24px; padding: 18px; border-radius: var(--sf-r-card); background: var(--sf-surface); border: 1px solid var(--sf-line); }
     .pdp__desc { margin-top: 32px; color: var(--sf-text-2); font-size: 16px; line-height: 1.7; max-width: 60ch; white-space: pre-line; }
     .pdp__specs { margin: 32px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

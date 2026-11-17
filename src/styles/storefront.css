@@ -173,10 +173,12 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 .sf-tile__flag--muted { color: #D8D4CD; }
 
 .sf-card { display: flex; flex-direction: column; gap: 12px; position: relative; }
-.sf-card__body { display: grid; gap: 4px; padding: 0 2px; }
+/* The cards in a row are equally tall; the body fills its card and pushes the price row and the
+   Share button to the bottom, so they line up across the row whatever the length of the titles. */
+.sf-card__body { display: flex; flex-direction: column; gap: 4px; flex: 1; padding: 0 2px; }
 .sf-card__meta { font-size: 13px; color: var(--sf-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sf-card__title { font-size: 15.5px; font-weight: 550; letter-spacing: -0.015em; line-height: 1.3; color: var(--sf-text); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; }
-.sf-card__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; min-height: 38px; }
+.sf-card__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 6px; min-height: 44px; }
 /* Share, across the foot of the card: the card's own colour, a faint gold outline. Soft corners
    (not a pill) so it reads as the foot of the photo box above it, not as a second "Add" button. */
 .sf-card__share {

@@ -137,13 +137,20 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
             const res = await parseProductFromChat({ images: await Promise.all(shots.map(forAi)), language });
             if (res.success) {
                 // A photo shown inside a phone screenshot ("framed") is cut out of it and used like
-                // any other photo. If no clear photo is found in it, the screenshot is info only.
+                // any other photo. The AI can be wrong about "framed", so the pixels have the last
+                // word: with no viewer found, a phone screenshot is info only, and anything else
+                // (a normal photo marked framed by mistake) stays the photo it is.
                 const data = res.data;
                 const photos = [...shots];
                 const soft = [];   // cut-outs too small to look sharp on the product page
                 await Promise.all((data.images || []).filter(i => i.framed).map(async (i) => {
-                    const cut = await cropViewerPhoto(shots[i.number - 1]).catch(() => null);
-                    if (!cut) { i.kind = "screenshot"; i.framed = false; return; }
+                    const found = await cropViewerPhoto(shots[i.number - 1]).catch(() => null);
+                    const cut = found?.photo;
+                    if (!cut) {
+                        i.framed = false;
+                        if (found?.phoneScreen) i.kind = "screenshot";
+                        return;
+                    }
                     photos[i.number - 1] = cut.src;
                     if (cut.width < SOFT_BELOW) soft.push(cut.src);
                 }));

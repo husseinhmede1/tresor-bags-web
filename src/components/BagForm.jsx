@@ -79,6 +79,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const [cleanups, setCleanups]                   = useState({});
     const [cleanerProgress, setCleanerProgress]     = useState(null);  // first download of the cleaner, %
     const [cleanerError, setCleanerError]           = useState("");
+    const [softPhotos, setSoftPhotos]               = useState([]);    // photos cut out of small screenshots
     const cleanQueue = useRef(Promise.resolve());                       // one photo at a time
     // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
     const [videos, setVideos] = useState(() =>
@@ -194,7 +195,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     };
 
     /* Merge what the AI read from the chat into the form; blanks never overwrite. */
-    const applyAiResult = (d, uploaded = []) => {
+    const applyAiResult = (d, uploaded = [], { soft = [] } = {}) => {
+        setSoftPhotos(soft);
         // Photos of the bag (whole-bag shots and details), in the order given: main first,
         // the rest go to the gallery.
         const photoNums = (d.images || []).filter(i => i.kind === "product" || i.kind === "detail").map(i => i.number);
@@ -477,6 +479,17 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 </p>
                             )}
                             {cleanerError && <p className="bf-vid__warn bf-cleaner-note">{cleanerError}</p>}
+                            {(() => {
+                                // Photos cut out of small screenshots (still shown, cleaned or not).
+                                const shown = new Set([imagePreview, ...sideImagePreviews]);
+                                const n = softPhotos.filter(s => shown.has(s) || shown.has(cleanups[s]?.clean)).length;
+                                return n > 0 && (
+                                    <p className="bf-vid__warn bf-cleaner-note">
+                                        {n === 1 ? "1 photo was cut out of a small screenshot and may look soft." : `${n} photos were cut out of small screenshots and may look soft.`}
+                                        {" "}For sharper photos, add the screenshots straight from the phone that took them (not ones sent through WhatsApp), or save the photos in WeChat.
+                                    </p>
+                                );
+                            })()}
                             {(() => {
                                 const shown = new Set([imagePreview, ...sideImagePreviews]);
                                 const n = Object.values(cleanups).filter(v => v.status === "done" && v.check && shown.has(v.clean)).length;

@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Plus, Sparkle, Star, X } from "@phosphor-icons/react";
 import { parseProductFromChat } from "../services/aiService";
+import { cropViewerPhoto, SOFT_BELOW } from "../utils/screenshotPhoto";
 
 const MAX_SHOTS = 20;
 // Product photos picked from here end up on the site, so keep them sharp enough.
 const MAX_EDGE = 1600;
+// A phone screenshot may hold a photo that gets cut out of it (see screenshotPhoto.js), so it
+// keeps the phone's own resolution: shrinking it first would shrink that photo too.
+const SHOT_EDGE = 3000;
+const isTall = (img) => img.height / img.width >= 1.6;
 
 /* Downscale + re-encode so a batch of phone images stays small to upload and store. */
 const fileToDataUrl = (file) => new Promise((resolve, reject) => {
@@ -14,12 +19,12 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
         const img = new Image();
         img.onerror = reject;
         img.onload = () => {
-            const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+            const scale = Math.min(1, (isTall(img) ? SHOT_EDGE : MAX_EDGE) / Math.max(img.width, img.height));
             const canvas = document.createElement("canvas");
             canvas.width = Math.round(img.width * scale);
             canvas.height = Math.round(img.height * scale);
             canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL("image/jpeg", 0.85));
+            resolve(canvas.toDataURL("image/jpeg", isTall(img) ? 0.92 : 0.85));
         };
         img.src = reader.result;
     };
@@ -27,16 +32,18 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
 });
 
 // The AI gets smaller copies of the bag photos (it only needs their shape and color, and a
-// smaller request is faster and cheaper). Phone screenshots, tall and full of small text, keep
-// their size so every character stays readable.
+// smaller request is faster and cheaper). Phone screenshots, tall and full of small text, stay
+// larger so every character stays readable.
 const AI_PHOTO_EDGE = 1024;
+const AI_SHOT_EDGE = 1600;
 const forAi = (dataUrl) => new Promise((resolve) => {
     const img = new Image();
     img.onerror = () => resolve(dataUrl);
     img.onload = () => {
         const long = Math.max(img.width, img.height);
-        if (img.height / img.width >= 1.6 || long <= AI_PHOTO_EDGE) return resolve(dataUrl);
-        const scale = AI_PHOTO_EDGE / long;
+        const edge = isTall(img) ? AI_SHOT_EDGE : AI_PHOTO_EDGE;
+        if (long <= edge) return resolve(dataUrl);
+        const scale = edge / long;
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(img.width * scale);
         canvas.height = Math.round(img.height * scale);
@@ -129,12 +136,26 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
         try {
             const res = await parseProductFromChat({ images: await Promise.all(shots.map(forAi)), language });
             if (res.success) {
+                // A photo shown inside a phone screenshot ("framed") is cut out of it and used like
+                // any other photo. If no clear photo is found in it, the screenshot is info only.
+                const data = res.data;
+                const photos = [...shots];
+                const soft = [];   // cut-outs too small to look sharp on the product page
+                await Promise.all((data.images || []).filter(i => i.framed).map(async (i) => {
+                    const cut = await cropViewerPhoto(shots[i.number - 1]).catch(() => null);
+                    if (!cut) { i.kind = "screenshot"; i.framed = false; return; }
+                    photos[i.number - 1] = cut.src;
+                    if (cut.width < SOFT_BELOW) soft.push(cut.src);
+                }));
+                const wholeBag = (data.images || []).filter(i => i.kind === "product").map(i => i.number);
+                if (!wholeBag.includes(data.mainImage)) data.mainImage = wholeBag[0] ?? null;
+
                 const k = {};
-                (res.data.images || []).forEach(i => { k[i.number - 1] = i.kind; });
-                if (res.data.mainImage) k[res.data.mainImage - 1] = "main";
+                (data.images || []).forEach(i => { k[i.number - 1] = i.kind; });
+                if (data.mainImage) k[data.mainImage - 1] = "main";
                 setKinds(k);
                 setFresh(!reducedMotion());
-                onResult(res.data, shots);
+                onResult(data, photos, { soft });
                 setDone(true);
             } else {
                 setError(res.message || "AI could not read this");

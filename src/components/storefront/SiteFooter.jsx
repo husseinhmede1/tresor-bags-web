@@ -8,6 +8,7 @@ export default function SiteFooter() {
                 <img src="/tresor_logo.webp" alt="Trésor Outlet Store" style={{ height: 40, width: 104, objectFit: "contain", objectPosition: "left center" }} />
                 <nav className="sf-footer__links" aria-label="Contact and legal">
                     <a href="https://wa.me/96178987288" target="_blank" rel="noreferrer"><WhatsappLogo size={18} /> +961 78 987 288</a>
+                    <a href="https://whatsapp.com/channel/0029VbEQBSj1iUxaHoohAL3r" target="_blank" rel="noreferrer"><WhatsappLogo size={18} /> WhatsApp channel</a>
                     <a href="https://t.me/+Cb0J2qQjEL84NzA0" target="_blank" rel="noreferrer"><TelegramLogo size={18} /> Telegram</a>
                     <Link to="/privacy">Privacy</Link>
                 </nav>

@@ -259,6 +259,10 @@ select.sf-input { appearance: none; cursor: pointer; background-image: linear-gr
 .sf-status--pending   { color: #E7C77A; background: rgba(231, 199, 122, 0.12); border-color: rgba(231, 199, 122, 0.3); }
 .sf-status--confirmed { color: #8FCB98; background: rgba(143, 203, 152, 0.12); border-color: rgba(143, 203, 152, 0.3); }
 .sf-status--cancelled { color: #F0907F; background: rgba(240, 144, 127, 0.12); border-color: rgba(240, 144, 127, 0.3); }
+/* A paid order: still waiting for stock, ready to hand over, done. */
+.sf-status--waiting   { color: #9DB9E8; background: rgba(157, 185, 232, 0.12); border-color: rgba(157, 185, 232, 0.3); }
+.sf-status--ready     { color: #8FCB98; background: rgba(143, 203, 152, 0.12); border-color: rgba(143, 203, 152, 0.3); }
+.sf-status--delivered { color: #B8B3AB; background: rgba(184, 179, 171, 0.1); border-color: rgba(184, 179, 171, 0.25); }
 
 /* Clickable list row (orders, etc.) */
 .sf-row { display: grid; gap: 12px; align-items: center; padding: 16px 18px; border-radius: 16px; background: var(--sf-surface); border: 1px solid var(--sf-line); color: inherit; text-align: left; width: 100%; font: inherit; cursor: pointer; transition: border-color .2s, background-color .2s; }

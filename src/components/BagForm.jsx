@@ -6,6 +6,7 @@ import { getAllTypes } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import AiQuickAdd from "./AiQuickAdd";
 import { getVideoUploadAuth, uploadVideoFile } from "../services/bagService";
+import { getWaiting } from "../services/orderService";
 import { isCompressedVideo, posterFileOf, videoPoster } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 import { compressImage } from "../utils/imageCompress";
@@ -80,6 +81,16 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const [cleanerProgress, setCleanerProgress]     = useState(null);  // first download of the cleaner, %
     const [cleanerError, setCleanerError]           = useState("");
     const [softPhotos, setSoftPhotos]               = useState([]);    // photos cut out of small screenshots
+    // Units of this bag that paid orders are waiting for: new stock goes to them first.
+    const [waitingUnits, setWaitingUnits] = useState(0);
+    useEffect(() => {
+        if (!bagId) return;
+        let off = false;
+        getWaiting()
+            .then((list) => { if (!off) setWaitingUnits(list.find(b => b.bagId === bagId)?.units || 0); })
+            .catch(() => {});
+        return () => { off = true; };
+    }, [bagId]);
     const cleanQueue = useRef(Promise.resolve());                       // one photo at a time
     // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
     const [videos, setVideos] = useState(() =>
@@ -699,6 +710,11 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                         <input id="bf-stock" className="sf-input sf-num" type="number" name="stock"
                                             value={formData.stock} onChange={handleChange}
                                             placeholder="0" min="0" inputMode="numeric" />
+                                        {waitingUnits > 0 && (
+                                            <p className="sf-gold" style={{ fontSize: 13 }}>
+                                                {waitingUnits} unit{waitingUnits === 1 ? " is" : "s are"} waiting in paid orders. Enter what arrived: those orders are served first.
+                                            </p>
+                                        )}
                                     </Field>
                                 </div>
                             </div>

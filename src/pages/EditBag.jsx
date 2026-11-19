@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, WarningCircle } from "@phosphor-icons/react";
+import { ArrowLeft, Package, WarningCircle } from "@phosphor-icons/react";
 import BagForm from "../components/BagForm";
 import AdminShell from "../components/storefront/AdminShell";
 import { getBagById, updateBag } from "../services/bagService";
@@ -11,6 +12,8 @@ const EditBag = () => {
     const [bagData, setBagData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    // Set when the saved stock went, in part or in full, to paid orders waiting for this bag.
+    const [reserved, setReserved] = useState(null);
 
     useEffect(() => {
         const fetchBag = async () => {
@@ -34,7 +37,10 @@ const EditBag = () => {
     // Errors are shown by BagForm next to the Save button, so the form stays filled in.
     const handleSubmit = async (formData) => {
         const result = await updateBag(id, formData);
-        if (result.success) navigate("/admin/dashboard");
+        if (result.success) {
+            if (result.reserved?.length) setReserved({ orders: result.reserved, stock: result.data?.stock ?? 0 });
+            else navigate("/admin/dashboard");
+        }
         return result;
     };
 
@@ -77,13 +83,44 @@ const EditBag = () => {
         );
     }
 
+    const kept = reserved ? reserved.orders.reduce((n, o) => n + o.units, 0) : 0;
+
     return bagData ? (
-        <BagForm
-            bagId={id}
-            initialData={bagData}
-            onSubmit={handleSubmit}
-            title="Edit bag"
-        />
+        <>
+            <BagForm
+                bagId={id}
+                initialData={bagData}
+                onSubmit={handleSubmit}
+                title="Edit bag"
+            />
+            {/* On the body: direct children of #root are forced to position: relative. */}
+            {reserved && createPortal(
+                <div className="sf eb-overlay">
+                    <style>{EB_CSS}</style>
+                    <div className="sf-panel eb-dialog" role="alertdialog" aria-modal="true" aria-labelledby="eb-kept-title">
+                        <Package size={32} style={{ color: "var(--sf-gold)" }} />
+                        <h2 id="eb-kept-title" className="sf-h3">{kept} unit{kept === 1 ? "" : "s"} kept for waiting orders</h2>
+                        <p className="sf-muted" style={{ fontSize: 14 }}>
+                            These customers already paid and were waiting for this bag, so the new stock went to them first.
+                        </p>
+                        <ul className="eb-kept">
+                            {reserved.orders.map((o) => (
+                                <li key={o.token}>
+                                    <span>{o.name || "Name not given"}</span>
+                                    <span className="sf-num">×{o.units}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="sf-num" style={{ fontSize: 15 }}>Stock now on the site: <b>{reserved.stock}</b></p>
+                        <button className="sf-btn sf-btn--primary sf-btn--block" onClick={() => navigate("/admin/orders?status=ready")}>
+                            See orders ready to deliver
+                        </button>
+                        <button className="sf-btn sf-btn--ghost sf-btn--block" onClick={() => navigate("/admin/dashboard")}>Done</button>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </>
     ) : null;
 };
 
@@ -91,6 +128,11 @@ const EB_CSS = `
     .eb-skel { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
     .eb-skel__col { display: grid; gap: 18px; }
     @media (max-width: 860px) { .eb-skel { grid-template-columns: 1fr; } }
+    .eb-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.72); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
+    .eb-dialog { max-width: 460px; width: 100%; max-height: 100%; overflow-y: auto; display: grid; gap: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+    .eb-kept { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .eb-kept li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--sf-surface-2); border: 1px solid var(--sf-line); }
+    .eb-kept li span:first-child { min-width: 0; overflow-wrap: anywhere; }
 `;
 
 export default EditBag;

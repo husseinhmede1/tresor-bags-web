@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CaretLeft, CaretRight, Receipt } from "@phosphor-icons/react";
-import { getAllOrders } from "../services/orderService";
+import { getAllOrders, getWaiting } from "../services/orderService";
+import { STAGE_LABEL, orderUnits, stageOf } from "../utils/orderStage";
 import AdminShell from "../components/storefront/AdminShell";
 
 const STATUSES = [
     { k: "", label: "All" },
     { k: "pending", label: "Pending" },
-    { k: "confirmed", label: "Confirmed" },
+    { k: "ready", label: "Ready" },
+    { k: "waiting", label: "Waiting" },
+    { k: "delivered", label: "Delivered" },
     { k: "cancelled", label: "Cancelled" },
 ];
 const PERIODS = [
@@ -16,7 +19,6 @@ const PERIODS = [
     { k: "week", label: "Week" },
     { k: "month", label: "Month" },
 ];
-const STATUS_LABEL = { pending: "Pending", confirmed: "Confirmed", cancelled: "Cancelled" };
 
 const money = (n) => "$" + (Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtDate = (d) => { try { return new Date(d).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); } catch { return ""; } };
@@ -41,6 +43,15 @@ export default function AdminOrdersPage() {
             .finally(() => setLoading(false));
     }, [status, period, page]);
 
+    // Under the Waiting filter: what to bring in, product by product.
+    const [waitingFor, setWaitingFor] = useState([]);
+    useEffect(() => {
+        if (status !== "waiting") return;
+        let off = false;
+        getWaiting().then((list) => { if (!off) setWaitingFor(list); }).catch(() => {});
+        return () => { off = true; };
+    }, [status]);
+
     const subtitle = loading ? "Loading orders" : `${data.total} order${data.total === 1 ? "" : "s"}`;
 
     return (
@@ -61,6 +72,30 @@ export default function AdminOrdersPage() {
             </div>
 
             {error && <p className="sf-error" role="alert" style={{ marginBottom: 16 }}>{error}</p>}
+
+            {status === "waiting" && waitingFor.length > 0 && (
+                <section className="sf-panel aos-need" aria-labelledby="aos-need-h">
+                    <h2 id="aos-need-h" className="sf-h3">To bring in</h2>
+                    <p className="sf-faint" style={{ fontSize: 13.5 }}>Paid and not in stock. Add stock to the product and it goes to these orders first, oldest first.</p>
+                    <ul>
+                        {waitingFor.map((b) => (
+                            <li key={b.bagId}>
+                                <div className="aos-need__head">
+                                    <span className="aos-need__title">{b.title}</span>
+                                    <span className="sf-num sf-gold">{b.units} unit{b.units === 1 ? "" : "s"}</span>
+                                </div>
+                                <p className="aos-need__who">
+                                    {b.orders.map((o, i) => (
+                                        <button key={o.token + i} type="button" onClick={() => navigate(`/admin/order/${o.token}`)}>
+                                            {o.name || "Name not given"}<span className="sf-num"> ×{o.units}</span>
+                                        </button>
+                                    ))}
+                                </p>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
 
             {loading ? (
                 <div className="aos-list" aria-busy="true" aria-label="Loading orders">
@@ -88,7 +123,10 @@ export default function AdminOrdersPage() {
                             const name = [d.name, d.surname].filter(Boolean).join(" ") || "Name not given";
                             const phone = d.phoneNumber ? [d.phonePrefix, d.phoneNumber].filter(Boolean).join(" ") : "";
                             const items = (o.items || []).reduce((n, it) => n + (it.quantity || 0), 0);
-                            const late = (o.items || []).reduce((n, it) => n + (it.preorder || 0), 0);
+                            const stage = stageOf(o);
+                            // Before payment: the pre-order estimate. After: what is still to arrive.
+                            const late = stage === "pending" ? (o.items || []).reduce((n, it) => n + (it.preorder || 0), 0) : 0;
+                            const waiting = orderUnits(o).waiting;
                             return (
                                 <li key={o._id}>
                                     <button type="button" className="sf-row aos-row" onClick={() => navigate(`/admin/order/${o.confirmToken}`)}>
@@ -98,12 +136,13 @@ export default function AdminOrdersPage() {
                                                 <span>{fmtDate(o.createdAt)}</span>
                                                 <span>{items} item{items === 1 ? "" : "s"}</span>
                                                 {late > 0 && <span className="sf-gold">{late} pre-order</span>}
+                                                {waiting > 0 && <span className="sf-gold">{waiting} waiting</span>}
                                                 {phone && <span className="aos-phone">{phone}</span>}
                                             </p>
                                         </div>
                                         <div className="aos-end">
                                             <span className="sf-num aos-total">{money(o.total)}</span>
-                                            <span className={`sf-status sf-status--${o.status}`}>{STATUS_LABEL[o.status] || o.status}</span>
+                                            <span className={`sf-status sf-status--${stage}`}>{STAGE_LABEL[stage] || stage}</span>
                                         </div>
                                         <CaretRight size={16} className="aos-chev" aria-hidden="true" />
                                     </button>
@@ -142,6 +181,15 @@ const ORDERS_CSS = `
     .aos-total { font-weight: 600; font-size: 16px; }
     .aos-chev { color: var(--sf-text-3); }
     .aos-skelrow { display: flex; align-items: center; gap: 16px; padding: 18px; border-radius: 16px; background: var(--sf-surface); border: 1px solid var(--sf-line); }
+    .aos-need { display: grid; gap: 10px; margin-bottom: 20px; }
+    .aos-need ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; }
+    .aos-need li { padding-block: 12px; display: grid; gap: 6px; }
+    .aos-need li + li { border-top: 1px solid var(--sf-line); }
+    .aos-need__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .aos-need__title { font-weight: 550; min-width: 0; overflow-wrap: anywhere; }
+    .aos-need__who { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+    .aos-need__who button { min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--sf-line-2); background: none; color: var(--sf-text-2); font: inherit; font-size: 13.5px; cursor: pointer; }
+    .aos-need__who button:hover { color: var(--sf-text); border-color: rgba(217, 178, 111, 0.5); }
     .aos-empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 56px 24px; }
     .aos-pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 28px; flex-wrap: wrap; }
     @media (max-width: 560px) {

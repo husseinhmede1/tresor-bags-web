@@ -33,6 +33,18 @@ export const confirmOrder = async (token) => {
     return res.data.data;
 };
 
+// Hands over what is ready now. Gives the updated order and what was sent this time.
+export const deliverOrder = async (token) => {
+    const res = await api.patch(`/orders/${token}/deliver`);
+    return { order: res.data.data, sent: res.data.sent || [] };
+};
+
+// What paid orders are still waiting for, product by product.
+export const getWaiting = async () => {
+    const res = await api.get('/orders/waiting');
+    return res.data.data || [];
+};
+
 export const cancelOrder = async (token) => {
     const res = await api.patch(`/orders/${token}/cancel`);
     return res.data.data;

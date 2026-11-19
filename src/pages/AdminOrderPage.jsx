@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getOrderByToken, confirmOrder, cancelOrder } from '../services/orderService';
+import { getOrderByToken, confirmOrder, deliverOrder, cancelOrder } from '../services/orderService';
 import {
-  ArrowLeft, ArrowSquareOut, CheckCircle, EnvelopeSimple, Handbag, MagnifyingGlass,
-  MapPin, Note, Phone, User, WarningCircle, WhatsappLogo, XCircle,
+  ArrowLeft, ArrowSquareOut, CheckCircle, EnvelopeSimple, Handbag, HourglassMedium, MagnifyingGlass,
+  MapPin, Note, Package, Phone, User, WarningCircle, WhatsappLogo, XCircle,
 } from '@phosphor-icons/react';
 import { sized } from '../utils/image';
 import { PREORDER_ETA } from '../utils/preorder';
+import { STAGE_LABEL, lineUnits, orderUnits, stageOf } from '../utils/orderStage';
 import AdminShell from '../components/storefront/AdminShell';
 
 const fmt = (n) =>
@@ -45,6 +46,31 @@ function buildConfirmMessage(order) {
   return lines.join('\n');
 }
 
+// `sent` is what goes out in this delivery; `order` is the order after it.
+function buildDeliverMessage(order, sent) {
+  const d = order.delivery || {};
+  const lines = [
+    `Your Tresor Bags order is on its way!`,
+    ``,
+    `Hi ${`${d.name || ''} ${d.surname || ''}`.trim()},`,
+    `These items are out for delivery:`,
+  ];
+  sent.forEach(item => lines.push(`- ${item.title} x${item.quantity}`));
+  const later = (order.items || []).filter(item => item.waiting > 0);
+  if (later.length) {
+    lines.push(``);
+    lines.push(`Still to come (pre-order):`);
+    later.forEach(item => lines.push(`- ${item.title} x${item.waiting}`));
+    lines.push(`We will let you know as soon as they arrive.`);
+  }
+  lines.push(``);
+  const dest = [d.address, d.region].filter((s) => s && s.trim()).join(', ');
+  if (dest) lines.push(`Delivering to: ${dest}`);
+  lines.push(``);
+  lines.push(`Thank you for shopping with Tresor Bags!`);
+  return lines.join('\n');
+}
+
 function buildCancelMessage(order) {
   const d = order.delivery || {};
   const lines = [
@@ -70,6 +96,7 @@ export default function AdminOrderPage() {
 
   const [confirming, setConfirming] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [delivering, setDelivering] = useState(false);
 
   // Stock error popup
   const [stockError, setStockError] = useState(null); // null | { insufficient: [...] }
@@ -113,6 +140,32 @@ export default function AdminOrderPage() {
     }
   };
 
+  // Hands over everything that is ready now. What still waits for stock stays on the order.
+  const handleDeliver = async () => {
+    if (delivering) return;
+    const ready = orderUnits(order).ready;
+    if (!window.confirm(`Mark ${ready} item${ready === 1 ? '' : 's'} as delivered? This cannot be undone.`)) return;
+    setDelivering(true);
+    // Open the WhatsApp tab synchronously (within the click gesture) so it
+    // isn't blocked as a pop-up after the await below.
+    const phone = customerPhone(order?.delivery);
+    const waWindow = phone ? window.open('', '_blank') : null;
+    try {
+      const { order: updated, sent } = await deliverOrder(token);
+      setOrder(updated);
+      if (phone && sent.length) {
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildDeliverMessage(updated, sent))}`;
+        if (waWindow && !waWindow.closed) waWindow.location.href = url;
+        else window.location.href = url;
+      } else if (waWindow && !waWindow.closed) waWindow.close();
+    } catch (err) {
+      if (waWindow && !waWindow.closed) waWindow.close();
+      alert(err?.response?.data?.message || 'Could not mark the order as delivered. Please try again.');
+    } finally {
+      setDelivering(false);
+    }
+  };
+
   const handleCancel = async () => {
     if (cancelling) return;
     if (!window.confirm('Are you sure you want to cancel this order? This cannot be undone.')) return;
@@ -141,6 +194,11 @@ export default function AdminOrderPage() {
 
   const isConfirmed = order?.status === 'confirmed';
   const isCancelled = order?.status === 'cancelled';
+  const stage = stageOf(order);
+  const units = orderUnits(order);
+  // Lines of a paid order by what happens to them next.
+  const readyLines = (order?.items || []).filter(it => lineUnits(order, it)?.ready > 0);
+  const waitingLines = (order?.items || []).filter(it => lineUnits(order, it)?.waiting > 0);
   const savings = order?.savings || 0;
 
   const d = order?.delivery || {};
@@ -209,7 +267,7 @@ export default function AdminOrderPage() {
           <div className="aod-head">
             <h1 className="sf-h2">{customerName || 'Order'}</h1>
             <div className="aod-meta">
-              {isConfirmed && <span className="sf-status sf-status--confirmed">Confirmed</span>}
+              {isConfirmed && <span className={`sf-status sf-status--${stage}`}>{STAGE_LABEL[stage]}</span>}
               {isCancelled && <span className="sf-status sf-status--cancelled">Cancelled</span>}
               {!isConfirmed && !isCancelled && <span className="sf-status sf-status--pending">Awaiting confirmation</span>}
               {order.createdAt && <span className="sf-faint sf-num">Placed {fmtWhen(order.createdAt)}</span>}
@@ -225,7 +283,9 @@ export default function AdminOrderPage() {
               </div>
 
               <ul className="aod-items">
-                {(order.items || []).map((item, i) => (
+                {(order.items || []).map((item, i) => {
+                  const u = lineUnits(order, item);
+                  return (
                   <li key={item._id || i} className="aod-item">
                     <span className="sf-tile aod-thumb">
                       {item.mainImage
@@ -237,15 +297,23 @@ export default function AdminOrderPage() {
                       <p className="sf-faint sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
                         ${fmt(item.subtotal / (item.quantity || 1))} × {item.quantity || 1}
                       </p>
-                      {item.preorder > 0 && (
+                      {!u && !isConfirmed && item.preorder > 0 && (
                         <p className="sf-gold sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
                           Pre-order: {item.preorder >= item.quantity ? 'all' : `${item.preorder} of ${item.quantity}`}, not in stock
+                        </p>
+                      )}
+                      {u && (
+                        <p className="aod-units sf-num">
+                          {u.ready > 0 && <span className="aod-units__ready">{u.ready} ready</span>}
+                          {u.waiting > 0 && <span className="aod-units__waiting">{u.waiting} waiting for stock</span>}
+                          {u.delivered > 0 && <span>{u.delivered} delivered</span>}
                         </p>
                       )}
                     </div>
                     <span className="sf-num" style={{ fontWeight: 600 }}>${fmt(item.subtotal)}</span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
 
               <div className="aod-totals">
@@ -335,14 +403,58 @@ export default function AdminOrderPage() {
                 </section>
               )}
 
-              {isConfirmed && (
+              {/* Paid, with something here to hand over */}
+              {isConfirmed && stage === 'ready' && (
+                <section className="sf-panel aod-actions">
+                  <h2 className="sf-h3">Ready to deliver</h2>
+                  <ul className="aod-plan">
+                    {readyLines.map((it, i) => <li key={it._id || i}><span>{it.title}</span><span className="sf-num">×{lineUnits(order, it).ready}</span></li>)}
+                  </ul>
+                  {waitingLines.length > 0 && (
+                    <>
+                      <p className="sf-faint" style={{ fontSize: 13.5 }}>Still waiting for stock, for a later delivery:</p>
+                      <ul className="aod-plan aod-plan--later">
+                        {waitingLines.map((it, i) => <li key={it._id || i}><span>{it.title}</span><span className="sf-num">×{it.waiting}</span></li>)}
+                      </ul>
+                    </>
+                  )}
+                  <button className="sf-btn sf-btn--primary sf-btn--block" onClick={handleDeliver} disabled={delivering}>
+                    <Package size={18} weight="bold" />
+                    {delivering ? 'Saving…' : 'Mark as delivered'}
+                  </button>
+                  <p className="sf-faint" style={{ fontSize: 13, textAlign: 'center' }}>
+                    Opens WhatsApp with a message for the customer.
+                  </p>
+                </section>
+              )}
+
+              {/* Paid, nothing to hand over until stock comes in */}
+              {isConfirmed && stage === 'waiting' && (
+                <div className="aod-state aod-state--wait">
+                  <HourglassMedium size={22} weight="fill" />
+                  <div>
+                    <p>Waiting for stock{units.delivered > 0 ? '. The rest was delivered.' : '.'}</p>
+                    <ul className="aod-plan aod-plan--later" style={{ marginTop: 8 }}>
+                      {waitingLines.map((it, i) => <li key={it._id || i}><span>{it.title}</span><span className="sf-num">×{it.waiting}</span></li>)}
+                    </ul>
+                    <p className="aod-state__when">Add stock to the product and this order becomes ready by itself.</p>
+                  </div>
+                </div>
+              )}
+
+              {isConfirmed && stage === 'delivered' && (
                 <div className="aod-state aod-state--ok">
                   <CheckCircle size={22} weight="fill" />
                   <div>
-                    <p>Payment confirmed. Stock has been updated.</p>
-                    {order.confirmedAt && <p className="aod-state__when sf-num">Confirmed on {fmtWhen(order.confirmedAt)}</p>}
+                    <p>{order.fulfilment ? 'Delivered.' : 'Payment confirmed. Stock has been updated.'}</p>
+                    {order.deliveredAt && <p className="aod-state__when sf-num">Delivered on {fmtWhen(order.deliveredAt)}</p>}
+                    {!order.fulfilment && order.confirmedAt && <p className="aod-state__when sf-num">Confirmed on {fmtWhen(order.confirmedAt)}</p>}
                   </div>
                 </div>
+              )}
+
+              {isConfirmed && order.fulfilment && order.confirmedAt && (
+                <p className="sf-faint sf-num" style={{ fontSize: 13.5 }}>Payment confirmed on {fmtWhen(order.confirmedAt)}</p>
               )}
 
               {isCancelled && (
@@ -391,6 +503,15 @@ const ORDER_CSS = `
   .aod-cancel:hover:not(:disabled) { border-color: rgba(240, 144, 127, 0.5) !important; background: rgba(240, 144, 127, 0.06) !important; }
   .aod-state { display: flex; gap: 12px; align-items: flex-start; padding: 18px 20px; border-radius: 16px; border: 1px solid; font-size: 15px; }
   .aod-state--ok { color: #8FCB98; background: rgba(143, 203, 152, 0.08); border-color: rgba(143, 203, 152, 0.25); }
+  .aod-state--wait { color: #9DB9E8; background: rgba(157, 185, 232, 0.08); border-color: rgba(157, 185, 232, 0.25); }
+  .aod-state--wait > div { min-width: 0; flex: 1; }
+  .aod-units { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 13.5px; margin-top: 2px; color: var(--sf-text-3); }
+  .aod-units__ready { color: #8FCB98; }
+  .aod-units__waiting { color: var(--sf-gold); }
+  .aod-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 15px; color: var(--sf-text); }
+  .aod-plan li { display: flex; justify-content: space-between; gap: 12px; }
+  .aod-plan li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+  .aod-plan--later { color: var(--sf-text-2); font-size: 14px; }
   .aod-state--bad { color: var(--sf-danger); background: rgba(240, 144, 127, 0.08); border-color: rgba(240, 144, 127, 0.25); }
   .aod-state svg { flex-shrink: 0; margin-top: 1px; }
   .aod-state__when { color: var(--sf-text-3); font-size: 13.5px; margin-top: 2px; }

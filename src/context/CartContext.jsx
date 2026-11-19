@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { MAX_PER_BAG } from '../utils/preorder';
 
 const CartContext = createContext(null);
 
@@ -31,10 +32,8 @@ export function CartProvider({ children }) {
       if (qty <= 0) {
         delete next[id];
       } else {
-        const maxStock = typeof bag.stock === 'number' ? bag.stock : Infinity;
-        const capped = Math.min(qty, maxStock);
-        if (capped <= 0) { delete next[id]; return next; }
-        next[id] = { bag, quantity: capped };
+        // Not capped by stock: what the stock does not cover is a pre-order.
+        next[id] = { bag, quantity: Math.min(qty, MAX_PER_BAG) };
       }
       return next;
     });

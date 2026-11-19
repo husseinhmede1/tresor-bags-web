@@ -6,6 +6,7 @@ import {
   MapPin, Note, Phone, User, WarningCircle, WhatsappLogo, XCircle,
 } from '@phosphor-icons/react';
 import { sized } from '../utils/image';
+import { PREORDER_ETA } from '../utils/preorder';
 import AdminShell from '../components/storefront/AdminShell';
 
 const fmt = (n) =>
@@ -30,6 +31,9 @@ function buildConfirmMessage(order) {
   ];
   (order.items || []).forEach(item => {
     lines.push(`- ${item.title} x${item.quantity} = $${fmt(item.subtotal)}`);
+    if (item.preorder > 0) {
+      lines.push(`  Pre-order: ${item.preorder >= item.quantity ? 'arrives' : `${item.preorder} of ${item.quantity} arrive`} in ${PREORDER_ETA}`);
+    }
   });
   lines.push(``);
   lines.push(`Total Paid: $${fmt(order.total)}`);
@@ -92,7 +96,7 @@ export default function AdminOrderPage() {
       setOrder(updated);
       // WhatsApp to customer
       if (phone) {
-        const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildConfirmMessage(order))}`;
+        const url = `https://wa.me/${phone}?text=${encodeURIComponent(buildConfirmMessage(updated))}`;
         if (waWindow && !waWindow.closed) waWindow.location.href = url;
         else window.location.href = url;
       }
@@ -157,19 +161,15 @@ export default function AdminOrderPage() {
         <div className="aod-overlay" onClick={() => setStockError(null)}>
           <div className="sf-panel aod-dialog" role="alertdialog" aria-modal="true" aria-labelledby="aod-stock-title" onClick={e => e.stopPropagation()}>
             <WarningCircle size={32} color="var(--sf-danger)" />
-            <h2 id="aod-stock-title" className="sf-h3" style={{ marginTop: 12 }}>Not enough stock</h2>
+            <h2 id="aod-stock-title" className="sf-h3" style={{ marginTop: 12 }}>Product no longer in the shop</h2>
             <p className="sf-muted" style={{ fontSize: 14, marginTop: 6 }}>
-              The following items don't have enough stock to fulfil this order. No changes were made.
+              These products were deleted from the shop, so this order cannot be confirmed. No changes were made.
             </p>
             <ul className="aod-stock">
               {stockError.insufficient.map((item, i) => (
                 <li key={i}>
                   <p style={{ fontWeight: 550 }}>{item.title}</p>
-                  <p className="sf-faint sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
-                    Required <span className="aod-danger">{item.required}</span>
-                    <span style={{ marginInline: 8 }}>·</span>
-                    Available <span style={{ color: 'var(--sf-text)' }}>{item.available}</span>
-                  </p>
+                  <p className="sf-faint sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>Ordered {item.required}</p>
                 </li>
               ))}
             </ul>
@@ -237,6 +237,11 @@ export default function AdminOrderPage() {
                       <p className="sf-faint sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
                         ${fmt(item.subtotal / (item.quantity || 1))} × {item.quantity || 1}
                       </p>
+                      {item.preorder > 0 && (
+                        <p className="sf-gold sf-num" style={{ fontSize: 13.5, marginTop: 2 }}>
+                          Pre-order: {item.preorder >= item.quantity ? 'all' : `${item.preorder} of ${item.quantity}`}, not in stock
+                        </p>
+                      )}
                     </div>
                     <span className="sf-num" style={{ fontWeight: 600 }}>${fmt(item.subtotal)}</span>
                   </li>
@@ -325,7 +330,7 @@ export default function AdminOrderPage() {
                     {cancelling ? 'Cancelling…' : 'Cancel order'}
                   </button>
                   <p className="sf-faint" style={{ fontSize: 13, textAlign: 'center' }}>
-                    Confirming deducts stock. Both actions open WhatsApp with a message for the customer.
+                    Confirming deducts what is in stock; the rest is a pre-order. Both actions open WhatsApp with a message for the customer.
                   </p>
                 </section>
               )}

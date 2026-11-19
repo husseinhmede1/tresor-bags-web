@@ -6,6 +6,7 @@ import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllTypes, deleteType } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import { sized } from "../utils/image";
+import { MAX_PER_BAG, PREORDER_FLAG } from "../utils/preorder";
 import ShopAssistant from "../components/ShopAssistant";
 import BrandFilm from "../components/storefront/BrandFilm";
 import ShareButton from "../components/storefront/ShareButton";
@@ -525,7 +526,7 @@ const BagListing = () => {
                                                     )}
                                                     <button className="sf-tile" onClick={() => navigate(`/gallery/${bag._id}`)} aria-label={`View ${bag.title}`}>
                                                         {outOfStock
-                                                            ? <span className="sf-tile__flag sf-tile__flag--muted">Sold out</span>
+                                                            ? <span className="sf-tile__flag sf-tile__flag--muted">{PREORDER_FLAG}</span>
                                                             : discount > 0 && <span className="sf-tile__flag">-{discount}%</span>}
                                                         <img src={sized(bag.mainImage, 700)} alt="" loading="lazy" />
                                                     </button>
@@ -537,17 +538,17 @@ const BagListing = () => {
                                                                 <b>{money(finalPrice)}</b>
                                                                 {discount > 0 && <s>{money(bag.price)}</s>}
                                                             </span>
-                                                            {!outOfStock && (qty === 0 ? (
-                                                                <button className="sf-btn sf-btn--ghost sf-btn--sm sf-card__add" onClick={() => setQuantity(bag, 1)} aria-label={`Add ${bag.title} to bag`}>
+                                                            {qty === 0 ? (
+                                                                <button className="sf-btn sf-btn--ghost sf-btn--sm sf-card__add" onClick={() => setQuantity(bag, 1)} aria-label={outOfStock ? `Pre-order ${bag.title}` : `Add ${bag.title} to bag`}>
                                                                     <Plus size={14} /> <span className="sf-card__add-label">Add</span>
                                                                 </button>
                                                             ) : (
                                                                 <div className="sf-stepper" aria-label={`${bag.title} quantity`}>
                                                                     <button onClick={() => setQuantity(bag, qty - 1)} aria-label="Remove one"><Minus size={14} /></button>
                                                                     <span>{qty}</span>
-                                                                    <button onClick={() => setQuantity(bag, qty + 1)} disabled={qty >= bag.stock} aria-label="Add one"><Plus size={14} /></button>
+                                                                    <button onClick={() => setQuantity(bag, qty + 1)} disabled={qty >= MAX_PER_BAG} aria-label="Add one"><Plus size={14} /></button>
                                                                 </div>
-                                                            ))}
+                                                            )}
                                                         </div>
                                                         <ShareButton bag={bag} copyOnly className="sf-card__share" />
                                                     </div>

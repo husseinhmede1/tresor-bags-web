@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { createOrder } from '../services/orderService';
 import { sized } from '../utils/image';
+import { PREORDER_ETA, preorderCount, preorderNote } from '../utils/preorder';
 import SiteHeader from '../components/storefront/SiteHeader';
 import CheckoutSteps from '../components/storefront/CheckoutSteps';
 
@@ -44,7 +45,9 @@ export default function PaymentPage() {
 
   if (!delivery) return null;
 
-  function buildMessage(confirmToken) {
+  // `lateById` is the server's count of pre-ordered units per bag, from the stock at that moment.
+  // Without it (the order could not be saved) the stock the cart knows is used.
+  function buildMessage(confirmToken, lateById = {}) {
     const confirmLink = `https://tresorbags.com/admin/order/${confirmToken}`;
     const lines = [];
     lines.push('NEW ORDER - Tresor Bags');
@@ -65,6 +68,8 @@ export default function PaymentPage() {
       const unit = bag.price * (1 - discount / 100);
       const subtotal = unit * quantity;
       lines.push(`- ${bag.title} x${quantity} = ${fmt(subtotal)}`);
+      const late = lateById[bag._id] ?? preorderCount(bag, quantity);
+      if (late > 0) lines.push(`  PRE-ORDER: ${late >= quantity ? 'all' : `${late} of ${quantity}`}, arriving in ${PREORDER_ETA}`);
     });
     lines.push('');
     if (totalSavings > 0) {
@@ -90,8 +95,8 @@ export default function PaymentPage() {
     // opened). We redirect this tab once we have the order token.
     const waWindow = window.open('', '_blank');
 
-    const openWhatsApp = (token) => {
-      const encoded = encodeURIComponent(buildMessage(token));
+    const openWhatsApp = (token, lateById) => {
+      const encoded = encodeURIComponent(buildMessage(token, lateById));
       const url = `https://wa.me/96178987288?text=${encoded}`;
       if (waWindow && !waWindow.closed) {
         waWindow.location.href = url;
@@ -124,7 +129,8 @@ export default function PaymentPage() {
       });
       const confirmToken = result.data?.confirmToken || '';
 
-      openWhatsApp(confirmToken);
+      const lateById = Object.fromEntries((result.data?.items || []).map((i) => [i.bagId, i.preorder]));
+      openWhatsApp(confirmToken, lateById);
 
       clearCart();
       sessionStorage.removeItem('tresor-delivery');
@@ -171,6 +177,7 @@ export default function PaymentPage() {
               {cartItems.map(({ bag, quantity }) => {
                 const discount = bag.typeId?.discount ?? 0;
                 const unit = bag.price * (1 - discount / 100);
+                const note = preorderNote(quantity, preorderCount(bag, quantity));
                 return (
                   <li key={bag._id || bag.id}>
                     <span className="sf-tile" style={{ width: 56, aspectRatio: '1', borderRadius: 10, flexShrink: 0 }}>
@@ -179,6 +186,7 @@ export default function PaymentPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontWeight: 550 }}>{bag.title}</p>
                       <p className="sf-faint sf-num" style={{ fontSize: 13 }}>{fmt(unit)} × {quantity}</p>
+                      {note && <p className="sf-gold" style={{ fontSize: 13 }}>{note}</p>}
                     </div>
                     <span className="sf-num">{fmt(unit * quantity)}</span>
                   </li>

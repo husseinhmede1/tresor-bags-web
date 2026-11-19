@@ -88,6 +88,7 @@ export default function AdminOrdersPage() {
                             const name = [d.name, d.surname].filter(Boolean).join(" ") || "Name not given";
                             const phone = d.phoneNumber ? [d.phonePrefix, d.phoneNumber].filter(Boolean).join(" ") : "";
                             const items = (o.items || []).reduce((n, it) => n + (it.quantity || 0), 0);
+                            const late = (o.items || []).reduce((n, it) => n + (it.preorder || 0), 0);
                             return (
                                 <li key={o._id}>
                                     <button type="button" className="sf-row aos-row" onClick={() => navigate(`/admin/order/${o.confirmToken}`)}>
@@ -96,6 +97,7 @@ export default function AdminOrdersPage() {
                                             <p className="aos-sub sf-num">
                                                 <span>{fmtDate(o.createdAt)}</span>
                                                 <span>{items} item{items === 1 ? "" : "s"}</span>
+                                                {late > 0 && <span className="sf-gold">{late} pre-order</span>}
                                                 {phone && <span className="aos-phone">{phone}</span>}
                                             </p>
                                         </div>

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Sparkle, Camera, ArrowRight, X } from "@phosphor-icons/react";
 import { askShop } from "../services/aiService";
 import { sized } from "../utils/image";
+import { PREORDER_FLAG } from "../utils/preorder";
 
 // "Ask Trésor": a question and/or a photo in, a short answer plus matching bags out.
 // Answers come only from the catalog (enforced on the server). On a bag's page (bagId) the
@@ -268,7 +269,7 @@ export default function ShopAssistant({
                                 >
                                     <span className="sa-card-img">
                                         <img src={sized(b.mainImage, 280)} alt="" loading="lazy" />
-                                        {!b.inStock && <span className="sa-soldout">Sold out</span>}
+                                        {!b.inStock && <span className="sa-soldout">{PREORDER_FLAG}</span>}
                                     </span>
                                     <span className="sa-card-title">{b.title}</span>
                                     <span className="sa-card-price">

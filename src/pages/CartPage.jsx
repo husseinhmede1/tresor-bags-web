@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Handbag, Minus, Plus, X } from '@phosphor-icons/react';
 import { useCart } from '../context/CartContext';
 import { sized } from '../utils/image';
+import { MAX_PER_BAG, PREORDER_ETA, preorderCount, preorderNote } from '../utils/preorder';
 import SiteHeader from '../components/storefront/SiteHeader';
 import CheckoutSteps from '../components/storefront/CheckoutSteps';
 
@@ -13,6 +14,7 @@ export default function CartPage() {
 
   const cartItems = Object.values(items).filter(({ quantity }) => quantity > 0);
   const isEmpty = cartItems.length === 0;
+  const hasPreorder = cartItems.some(({ bag, quantity }) => preorderCount(bag, quantity) > 0);
 
   return (
     <div className="sf">
@@ -37,6 +39,7 @@ export default function CartPage() {
               {cartItems.map(({ bag, quantity }) => {
                 const discount = bag.typeId?.discount ?? 0;
                 const unit = bag.price * (1 - discount / 100);
+                const note = preorderNote(quantity, preorderCount(bag, quantity));
                 return (
                   <li key={bag._id || bag.id} className="cart__item">
                     <button className="sf-tile cart__thumb" onClick={() => navigate(`/gallery/${bag._id}`)} aria-label={`View ${bag.title}`}>
@@ -51,8 +54,9 @@ export default function CartPage() {
                       <div className="sf-stepper" style={{ marginTop: 8, width: 'fit-content' }} aria-label={`${bag.title} quantity`}>
                         <button onClick={() => setQuantity(bag, quantity - 1)} disabled={quantity <= 1} aria-label="Remove one"><Minus size={14} /></button>
                         <span>{quantity}</span>
-                        <button onClick={() => setQuantity(bag, quantity + 1)} disabled={quantity >= (bag.stock ?? Infinity)} aria-label="Add one"><Plus size={14} /></button>
+                        <button onClick={() => setQuantity(bag, quantity + 1)} disabled={quantity >= MAX_PER_BAG} aria-label="Add one"><Plus size={14} /></button>
                       </div>
+                      {note && <p className="sf-gold" role="status" style={{ fontSize: 13.5, marginTop: 4 }}>{note}</p>}
                     </div>
                     <div className="cart__end">
                       <span className="sf-num" style={{ fontWeight: 600 }}>{fmt(unit * quantity)}</span>
@@ -69,6 +73,7 @@ export default function CartPage() {
                 <div><dt>Items</dt><dd className="sf-num">{totalItems}</dd></div>
                 {totalSavings > 0 && <div><dt>You save</dt><dd className="sf-num sf-gold">{fmt(totalSavings)}</dd></div>}
                 <div><dt>Delivery</dt><dd>Confirmed on WhatsApp</dd></div>
+                {hasPreorder && <div><dt>Pre-order items</dt><dd>Arrive in {PREORDER_ETA}</dd></div>}
               </dl>
               <div className="cart__total">
                 <span>Total</span>

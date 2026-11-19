@@ -5,6 +5,7 @@ import { getBagById } from "../services/bagService";
 import { useCart } from "../context/CartContext";
 import { usePageMeta } from "../utils/pageMeta";
 import { sized, videoPoster } from "../utils/image";
+import { MAX_PER_BAG, PREORDER_ETA, preorderCount, preorderNote } from "../utils/preorder";
 import SiteHeader from "../components/storefront/SiteHeader";
 import SiteFooter from "../components/storefront/SiteFooter";
 import ShopAssistant from "../components/ShopAssistant";
@@ -96,7 +97,7 @@ const BagGallery = () => {
             <SiteHeader back="/" />
             <div className="sf-container" style={{ paddingBlock: 96, display: "grid", gap: 16, justifyItems: "start" }}>
                 <h1 className="sf-h2">This bag isn’t available</h1>
-                <p className="sf-muted">{error ? "We couldn’t load it right now. Please try again in a moment." : "It may have sold out or been removed."}</p>
+                <p className="sf-muted">{error ? "We couldn’t load it right now. Please try again in a moment." : "It may have been removed."}</p>
                 <button className="sf-btn sf-btn--primary" onClick={() => navigate("/")}>Back to the collection</button>
             </div>
         </div>
@@ -133,7 +134,7 @@ const BagGallery = () => {
             url: pageUrl,
             priceCurrency: "USD",
             price: Number(discountedPrice ?? bag.price).toFixed(2),
-            availability: bag.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            availability: bag.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
         },
     };
 
@@ -141,6 +142,7 @@ const BagGallery = () => {
     const outOfStock = (bag.stock ?? 0) <= 0;
     const qty = getQuantity(bag._id);
     const maxStock = bag.stock ?? 0;
+    const late = preorderCount(bag, qty);
     const meta = [bag.typeId?.title, bag.collectionId?.title].filter(Boolean).join(" · ");
 
     return (
@@ -196,28 +198,30 @@ const BagGallery = () => {
                         {discountedPrice && <s style={{ fontSize: 17 }}>{money(bag.price)}</s>}
                         {discount > 0 && <span className="sf-gold" style={{ fontSize: 14, fontWeight: 600 }}>{discount}% off</span>}
                     </div>
-                    <p className={outOfStock ? "sf-error" : "sf-faint"} style={{ fontSize: 14, marginTop: 6 }}>
-                        {outOfStock ? "Sold out" : maxStock <= 3 ? `Only ${maxStock} left` : "In stock, delivered across Lebanon"}
+                    <p className={outOfStock ? "sf-gold" : "sf-faint"} style={{ fontSize: 14, marginTop: 6 }}>
+                        {outOfStock ? preorderNote(1, 1) : maxStock <= 3 ? `Only ${maxStock} in stock, more in ${PREORDER_ETA}` : "In stock, delivered across Lebanon"}
                     </p>
 
                     <div className="pdp__buy">
-                        {outOfStock ? (
-                            <button className="sf-btn sf-btn--ghost sf-btn--block" disabled>Sold out</button>
-                        ) : qty === 0 ? (
+                        {qty === 0 ? (
                             <button className="sf-btn sf-btn--primary sf-btn--block" onClick={() => setQuantity(bag, 1)}>
-                                <Handbag size={18} /> Add to bag
+                                <Handbag size={18} /> {outOfStock ? "Pre-order" : "Add to bag"}
                             </button>
                         ) : (
                             <>
                                 <div className="sf-stepper" style={{ height: 48 }} aria-label="Quantity">
                                     <button style={{ width: 46, height: 46 }} onClick={() => setQuantity(bag, qty - 1)} aria-label="Remove one"><Minus size={16} /></button>
                                     <span>{qty}</span>
-                                    <button style={{ width: 46, height: 46 }} onClick={() => setQuantity(bag, qty + 1)} disabled={qty >= maxStock} aria-label="Add one"><Plus size={16} /></button>
+                                    <button style={{ width: 46, height: 46 }} onClick={() => setQuantity(bag, qty + 1)} disabled={qty >= MAX_PER_BAG} aria-label="Add one"><Plus size={16} /></button>
                                 </div>
                                 <button className="sf-btn sf-btn--primary" style={{ flex: 1 }} onClick={() => navigate("/cart")}>View bag</button>
                             </>
                         )}
                     </div>
+
+                    {!outOfStock && late > 0 && (
+                        <p className="sf-gold" role="status" style={{ fontSize: 14, marginTop: 10 }}>{preorderNote(qty, late)}</p>
+                    )}
 
                     <ShareButton bag={bag} className="sf-btn sf-btn--ghost sf-btn--sm pdp__share" />
 

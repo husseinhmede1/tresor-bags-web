@@ -197,5 +197,8 @@ const ORDERS_CSS = `
         .aos-chev { display: none; }
         .aos-phone { display: none; }
         .aos-pager { gap: 10px; }
+        /* Six filters do not fit one row on a phone: two rows of three, all in view. */
+        .aos-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; overflow: visible; border-radius: 22px; }
+        .aos-seg button { justify-content: center; padding-inline: 4px; }
     }
 `;

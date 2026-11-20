@@ -143,6 +143,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                 const data = res.data;
                 const photos = [...shots];
                 const soft = [];   // cut-outs too small to look sharp on the product page
+                const cuts = [];   // every photo cut out of a screenshot
                 await Promise.all((data.images || []).filter(i => i.framed).map(async (i) => {
                     const found = await cropViewerPhoto(shots[i.number - 1]).catch(() => null);
                     const cut = found?.photo;
@@ -152,6 +153,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                         return;
                     }
                     photos[i.number - 1] = cut.src;
+                    cuts.push(cut.src);
                     if (cut.width < SOFT_BELOW) soft.push(cut.src);
                 }));
                 const wholeBag = (data.images || []).filter(i => i.kind === "product").map(i => i.number);
@@ -162,7 +164,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                 if (data.mainImage) k[data.mainImage - 1] = "main";
                 setKinds(k);
                 setFresh(!reducedMotion());
-                onResult(data, photos, { soft });
+                onResult(data, photos, { soft, cuts });
                 setDone(true);
             } else {
                 setError(res.message || "AI could not read this");

@@ -235,6 +235,8 @@ const fillBagHoles = (alpha, rgba, w, h) => {
 
 /* ── Composition ───────────────────────────────────────────────────────── */
 
+let enlargedBy = 0;   // how many times compose() last enlarged the bag to fit the square
+
 const compose = (img, alpha) => {
     const w = img.naturalWidth, h = img.naturalHeight;
     let x0 = w, y0 = h, x1 = -1, y1 = -1;
@@ -286,6 +288,7 @@ const compose = (img, alpha) => {
 
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(cut, x0, y0, bw, bh, dx, dy, dw, dh);
+    enlargedBy = scale;
     return out.toDataURL("image/jpeg", 0.9);
 };
 
@@ -298,8 +301,15 @@ const cleanNow = async (src, { onModelProgress } = {}) => {
     ctx.drawImage(img, 0, 0);
     tidyMask(alpha, w, h);
     fillBagHoles(alpha, ctx.getImageData(0, 0, w, h).data, w, h);
-    return compose(img, alpha);
+    const out = compose(img, alpha);
+    if (out) enlargements.set(src, enlargedBy);
+    return out;
 };
+
+// How many times the bag of a cleaned photo was enlarged (0 if not known). A bag enlarged a lot
+// came from a small photo and looks soft: see photoSharpen.js.
+const enlargements = new Map();
+export const enlargementOf = (src) => enlargements.get(src) || 0;
 
 // One photo at a time (the device works hard on each), each photo only once: a photo cleaned
 // ahead of time (see precleanPhotos) is ready the moment it is asked for.

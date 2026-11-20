@@ -10,7 +10,8 @@ import { getWaiting } from "../services/orderService";
 import { isCompressedVideo, posterFileOf, videoPoster } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 import { compressImage } from "../utils/imageCompress";
-import { canClean, cleanPhoto, NO_CLEANER, precleanPhotos, skipPrecleaning } from "../utils/bagCutout";
+import { canClean, cleanPhoto, enlargementOf, NO_CLEANER, precleanPhotos, skipPrecleaning } from "../utils/bagCutout";
+import { sharpenCleaned } from "../utils/photoSharpen";
 
 const MAX_VIDEOS = 5;
 const MAX_VIDEO_MB = 100;   // ImageKit free plan upload limit (for the file that is uploaded)
@@ -92,6 +93,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         return () => { off = true; };
     }, [bagId]);
     const cleanQueue = useRef(Promise.resolve());                       // one photo at a time
+    const screenshotCuts = useRef(new Set());                           // photos cut out of screenshots
     // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
     const [videos, setVideos] = useState(() =>
         (initialData?.videos || []).map(url => ({ key: url, url, status: "done" })));
@@ -156,7 +158,15 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         setPreparingPhotos(n => n + 1);
         cleanQueue.current = cleanQueue.current.then(async () => {
             try {
-                const clean = await cleanPhoto(src, { onModelProgress: setCleanerProgress });
+                let clean = await cleanPhoto(src, { onModelProgress: setCleanerProgress });
+                // A bag cut out of a screenshot is small and comes out soft: sharpen it once
+                // cleaned. If that can't run here, the cleaned photo is kept as it is.
+                if (clean && screenshotCuts.current.has(src)) {
+                    clean = await sharpenCleaned(clean, enlargementOf(src)).catch((err) => {
+                        console.warn("Photo sharpening failed:", err);
+                        return clean;
+                    });
+                }
                 setCleanups(p => ({ ...p, [src]: clean ? { status: "done", clean, check } : { status: "skipped" } }));
                 if (clean) replacePhoto(src, clean);
             } catch (err) {
@@ -206,8 +216,9 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     };
 
     /* Merge what the AI read from the chat into the form; blanks never overwrite. */
-    const applyAiResult = (d, uploaded = [], { soft = [] } = {}) => {
+    const applyAiResult = (d, uploaded = [], { soft = [], cuts = [] } = {}) => {
         setSoftPhotos(soft);
+        screenshotCuts.current = new Set(cuts);
         // Photos of the bag (whole-bag shots and details), in the order given: main first,
         // the rest go to the gallery.
         const photoNums = (d.images || []).filter(i => i.kind === "product" || i.kind === "detail").map(i => i.number);

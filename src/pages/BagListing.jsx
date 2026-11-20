@@ -342,7 +342,7 @@ const BagListing = () => {
                             Premium bags for work and <span className="sf-gold">travel.</span>
                         </h1>
                         <p className="sf-lead sf-rise" style={{ "--d": "160ms", marginTop: 20 }}>
-                            Business, travel and luxury bags, delivered across Lebanon. Order online and pay with Whish.
+                            Business, travel and luxury bags, delivered across Lebanon. Order online.
                         </p>
                         {/* Ask Trésor, open right away: a question or a photo of a bag they like */}
                         <div className="hero__ask sf-rise" style={{ "--d": "260ms" }}>

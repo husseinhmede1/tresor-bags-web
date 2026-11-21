@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -17,6 +17,7 @@ import { SHOP_CATEGORIES } from "../utils/shopCategories";
 import {
     Sparkle, MagnifyingGlass, SlidersHorizontal, Plus, Minus, PencilSimple, Trash, ArrowLeft, ArrowDown, CaretDown, X,
 } from "@phosphor-icons/react";
+const SeasonDecor = lazy(() => import("../components/storefront/SeasonDecor"));
 
 // Served from /public so index.html can preload it.
 const heroBagImg = "/hero_final1.webp";
@@ -111,6 +112,8 @@ const BagListing = () => {
     const WEIGHT_RANGE = { min: 0,  max: 6  };
 
     const [heroLoaded, setHeroLoaded] = useState(false);
+    // The occasion the shop is decorated for, if any (see SeasonDecor). Nothing is loaded without one.
+    const [season] = useState(() => { try { return localStorage.getItem("tresor-season"); } catch { return null; } });
     const shopRef = useRef(null);
     const scrollToShop = () => shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     const openAssistant = () => { setActiveTab("items"); setAskOpen(true); setTimeout(() => askRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
@@ -279,7 +282,7 @@ const BagListing = () => {
                 .sf-range { -webkit-appearance: none; appearance: none; width: 100%; height: 2px; background: rgba(255,255,255,0.14); border-radius: 2px; outline: none; cursor: pointer; }
                 .sf-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
                 .sf-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #D9B26F; border: 3px solid #0B0B0C; }
-                .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; padding-block: 40px 16px; }
+                .hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: center; gap: 32px; padding-block: 40px 16px; }
                 .hero__ask { margin-top: 32px; max-width: 560px; }
                 /* The bag gets an explicit width (no percentage heights): Safari sized it differently and it spilled over the shop. */
                 .hero__art { position: relative; display: flex; align-items: center; justify-content: center; padding-block: 24px; }
@@ -337,6 +340,7 @@ const BagListing = () => {
 
                 {/* ── Hero: message left, bag right ── */}
                 <section className="sf-container hero">
+                    {season && <Suspense fallback={null}><SeasonDecor season={season} /></Suspense>}
                     <div>
                         <h1 className="sf-display sf-rise" style={{ "--d": "60ms", maxWidth: "15ch" }}>
                             Premium bags for work and <span className="sf-gold">travel.</span>

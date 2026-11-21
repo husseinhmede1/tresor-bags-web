@@ -106,5 +106,9 @@ const CSS = `
     .oc__preview { display: flex; flex-wrap: wrap; gap: 18px 22px; align-items: flex-start; padding: 20px; border-radius: 14px; background: #0B0B0C; border: 1px solid var(--sf-line); min-height: 96px; }
     .oc__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
     .oc__done { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #8FCB98; }
+    /* An iPhone draws a date box at its own width, wider than the card: keep it to the column. */
+    .oc__row .sf-field { min-width: 0; }
+    #oc-until { display: block; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; }
+    #oc-until::-webkit-date-and-time-value { text-align: left; }
     @media (max-width: 560px) { .oc__row { grid-template-columns: 1fr; } }
 `;

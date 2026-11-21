@@ -285,6 +285,29 @@ const SEASONS = {
     ],
 };
 
+// On a phone the bag sits under the text with room on both sides, so the rest of the drawings
+// hang there from a garland strung over the bag (which passes behind it). `k`, `drop` and
+// `size` as above, for the bag's picture at its phone size (320px at most).
+const beside = (a, b, c, d) => [
+    { art: a, k: -0.555, drop: 20, size: 36 },
+    { art: b, k: -0.42, drop: 70, size: 32 },
+    { art: c, k: 0.42, drop: 54, size: 32 },
+    { art: d, k: 0.555, drop: 16, size: 36 },
+];
+const small = (art) => Object.assign(() => art(), { small: true });
+const Glint = small(Sparkle);   // a sparkle is drawn at half the size of the others
+const BESIDE_BAG = {
+    christmas: beside(Star, Tree, Snowflake, Drop),
+    ramadan: beside(Crescent, Lantern, Glint, EightStar),
+    fitr: beside(Crescent, Lantern, Glint, EightStar),
+    easter: beside(Chick, Flower, Glint, DottedEgg),
+    independence: beside(Star, Firework, Glint, Rosette),
+};
+const GARLAND = 1.2;    // its width, in widths of the bag's picture
+const SAG = 20;         // its height in px: it starts 2px down and hangs 18px down in the middle
+// How far down the garland is at a drawing's place, so the thread starts on it.
+const onGarland = (k) => { const t = 0.5 + k / GARLAND; return 4 + SAG * (0.1 + 3.2 * t * (1 - t)); };
+
 // The drawings of an occasion side by side, for the admin's choice.
 export function SeasonPreview({ season }) {
     const arts = [...new Set((SEASONS[season] || []).map(i => i.art))];
@@ -295,19 +318,40 @@ export default function SeasonDecor({ season }) {
     const items = SEASONS[season];
     if (!items) return null;
     return (
-        <div className="season" aria-hidden="true">
-            <style>{CSS}</style>
-            {items.map(({ art: Drawing, k, drop, size, far, phone }, i) => (
-                <div key={i}
-                    className={`season__item${phone ? "" : " season__item--laptop"}${far ? " season__item--far" : ""}${phone?.from ? " season__item--roomy" : ""}`}
-                    style={{
-                        "--k": k, "--drop": drop / 480, "--size": size / 480, "--d": `${i * 90}ms`,
-                        ...(phone && { "--p-back": `${phone.back}px`, "--p-drop": `${phone.drop}px`, "--p-size": `${phone.size}px` }),
-                    }}>
-                    <Drawing />
-                </div>
-            ))}
-        </div>
+        <>
+            <div className="season" aria-hidden="true">
+                <style>{CSS}</style>
+                {items.map(({ art: Drawing, k, drop, size, far, phone }, i) => (
+                    <div key={i}
+                        className={`season__item${phone ? "" : " season__item--laptop"}${far ? " season__item--far" : ""}${phone?.from ? " season__item--roomy" : ""}`}
+                        style={{
+                            "--k": k, "--drop": drop / 480, "--size": size / 480, "--d": `${i * 90}ms`,
+                            ...(phone && { "--p-back": `${phone.back}px`, "--p-drop": `${phone.drop}px`, "--p-size": `${phone.size}px` }),
+                        }}>
+                        <Drawing />
+                    </div>
+                ))}
+            </div>
+            <div className="season season--bag" aria-hidden="true">
+                <svg className="season__garland" viewBox="0 0 100 10" preserveAspectRatio="none" focusable="false">
+                    <defs>
+                        <linearGradient id="season-garland">
+                            <stop offset="0" stopColor={GOLD} stopOpacity="0" />
+                            <stop offset="0.1" stopColor={GOLD} stopOpacity="0.55" />
+                            <stop offset="0.9" stopColor={GOLD} stopOpacity="0.55" />
+                            <stop offset="1" stopColor={GOLD} stopOpacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M0 1 Q50 17 100 1" fill="none" stroke="url(#season-garland)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                </svg>
+                {BESIDE_BAG[season].map(({ art: Drawing, k, drop, size }, i) => (
+                    <div key={i} className="season__item"
+                        style={{ "--k": k, "--drop": drop / 320, "--size": (Drawing.small ? size / 2 : size) / 320, "--top": `${onGarland(k).toFixed(1)}px`, "--d": `${i * 90}ms` }}>
+                        <Drawing />
+                    </div>
+                ))}
+            </div>
+        </>
     );
 }
 
@@ -327,5 +371,12 @@ const CSS = `
         .season__item--laptop { display: none; }
     }
     @media (max-width: 389px) { .season__item--roomy { display: none; } }
+    .season--bag { display: none; }
+    @media (max-width: 900px) {
+        .season--bag { display: block; grid-row: 2 / 3; transform: none; }
+        .season--bag .season__item { --u: min(82cqw, 320px); top: var(--top); left: calc(50% + var(--u) * var(--k)); width: calc(var(--u) * var(--size)); padding-top: calc(var(--u) * var(--drop)); }
+        .season--bag .season__item::before { height: calc(var(--u) * var(--drop)); }
+        .season__garland { position: absolute; top: 4px; left: 50%; width: calc(min(82cqw, 320px) * 1.2); height: 20px; transform: translateX(-50%); overflow: visible; }
+    }
     @media (prefers-reduced-motion: reduce) { .season__item { animation: none; } }
 `;

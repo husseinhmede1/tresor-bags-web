@@ -6,6 +6,7 @@ import { getAllBags, deleteBag } from "../services/bagService";
 import { getAllTypes, deleteType } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import { sized } from "../utils/image";
+import { rememberedSeason, rememberSeason } from "../utils/season";
 import { MAX_PER_BAG, PREORDER_FLAG } from "../utils/preorder";
 import ShopAssistant from "../components/ShopAssistant";
 import BrandFilm from "../components/storefront/BrandFilm";
@@ -113,7 +114,7 @@ const BagListing = () => {
 
     const [heroLoaded, setHeroLoaded] = useState(false);
     // The occasion the shop is decorated for, if any (see SeasonDecor). Nothing is loaded without one.
-    const [season] = useState(() => { try { return localStorage.getItem("tresor-season"); } catch { return null; } });
+    const [season, setSeason] = useState(rememberedSeason);
     const shopRef = useRef(null);
     const scrollToShop = () => shopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     const openAssistant = () => { setActiveTab("items"); setAskOpen(true); setTimeout(() => askRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); };
@@ -169,6 +170,7 @@ const BagListing = () => {
                 ...(selectedCollection && { collectionId: selectedCollection._id }),
             };
             const result = await getAllBags(params);
+            if ("season" in result) setSeason(rememberSeason(result.season));
             setBags(result.data); setBagTotalPages(result.totalPages); setBagTotal(result.total);
         } catch (err) { setErrorBags(err.message || "Failed to fetch bags"); }
         finally { setLoadingBags(false); }

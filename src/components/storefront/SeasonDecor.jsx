@@ -117,6 +117,118 @@ const Sparkle = () => (
     </Art>
 );
 
+/* ── Easter: eggs, a bunny, a chick, a flower ──────────────────────────── */
+
+const EGG = "M24 9 C34 9 41 25 41 37 C41 49 33 57 24 57 C15 57 7 49 7 37 C7 25 14 9 24 9 Z";
+const Egg = () => (
+    <Art>
+        <circle cx="24" cy="5.5" r="2.5" {...line} />
+        <path d={EGG} {...body} />
+        <path d="M8 31 L13.3 26 L18.7 31 L24 26 L29.3 31 L34.7 26 L40 31 M7.3 41 Q24 47 40.7 41" {...line} />
+        <circle cx="16" cy="38" r="1.4" {...dot} /><circle cx="24" cy="39.5" r="1.4" {...dot} /><circle cx="32" cy="38" r="1.4" {...dot} />
+    </Art>
+);
+const DottedEgg = () => (
+    <Art>
+        <circle cx="24" cy="5.5" r="2.5" {...line} />
+        <path d={EGG} {...body} />
+        <path d="M9.5 26 Q16.8 21 24 26 T38.5 26 M7.2 36 Q15.6 31 24 36 T40.8 36 M9 46 Q16.5 41 24 46 T39 46" {...line} />
+    </Art>
+);
+const Bunny = () => (
+    <Art box="0 3 48 58">
+        <path d="M18.5 30 C12.5 21 13.5 4 19 4 C24.5 4 23 20 21.5 28.5 Z M29.5 30 C35.5 21 34.5 4 29 4 C23.5 4 25 20 26.5 28.5 Z" {...body} />
+        <circle cx="24" cy="42" r="15" {...body} />
+        <circle cx="18.5" cy="39.5" r="1.7" {...dot} /><circle cx="29.5" cy="39.5" r="1.7" {...dot} />
+        <path d="M22.4 44.5 H25.6 L24 46.6 Z" {...dot} />
+        <path d="M24 46.6 V48.5 M24 48.5 Q21.5 51 19.5 49 M24 48.5 Q26.5 51 28.5 49" {...line} />
+    </Art>
+);
+const Chick = () => (
+    <Art>
+        <circle cx="24" cy="5.5" r="2.5" {...line} />
+        <path d="M24 13 V8 M20.5 14 L18.5 10 M27.5 14 L29.5 10" {...line} />
+        <circle cx="24" cy="32" r="18" {...body} />
+        <circle cx="17.5" cy="28" r="1.8" {...dot} /><circle cx="30.5" cy="28" r="1.8" {...dot} />
+        <path d="M20.5 32.5 H27.5 L24 37.5 Z" {...dot} />
+        <path d="M8.5 31 Q4 36 9.5 39 M39.5 31 Q44 36 38.5 39" {...line} />
+        <path d="M19 49.5 V55 M19 55 L16 57.5 M19 55 L22 57.5 M29 49.5 V55 M29 55 L26 57.5 M29 55 L32 57.5" {...line} />
+    </Art>
+);
+const Flower = () => (
+    <Art box="5 0 38 48">
+        <circle cx="24" cy="3.5" r="2.5" {...line} />
+        <ellipse cx="24" cy="17.5" rx="5" ry="8" transform="rotate(0 24 30)" {...body} />
+        <ellipse cx="24" cy="17.5" rx="5" ry="8" transform="rotate(60 24 30)" {...body} />
+        <ellipse cx="24" cy="17.5" rx="5" ry="8" transform="rotate(120 24 30)" {...body} />
+        <ellipse cx="24" cy="17.5" rx="5" ry="8" transform="rotate(180 24 30)" {...body} />
+        <ellipse cx="24" cy="17.5" rx="5" ry="8" transform="rotate(240 24 30)" {...body} />
+        <ellipse cx="24" cy="17.5" rx="5" ry="8" transform="rotate(300 24 30)" {...body} />
+        <circle cx="24" cy="30" r="4.5" {...dot} />
+    </Art>
+);
+
+/* ── Independence Day: the cedar, the flag, fireworks ──────────────────── */
+
+const Cedar = () => (
+    <Art>
+        <circle cx="24" cy="3.5" r="2.5" {...line} />
+        <path d="M24 7.5 L27.5 13 H20.5 Z" {...body} />
+        <path d="M15.5 20 Q24 12.5 32.5 20 Q24 18 15.5 20 Z M10.5 28 Q24 18.5 37.5 28 Q24 25.5 10.5 28 Z M6 36.5 Q24 25.5 42 36.5 Q24 33.5 6 36.5 Z M2.5 45.5 Q24 33 45.5 45.5 Q24 41.5 2.5 45.5 Z" {...body} />
+        <path d="M22 43.5 L21.2 56 H26.8 L26 43.5" {...body} />
+        <path d="M15 56 H33" {...line} />
+    </Art>
+);
+const Flag = () => (
+    <Art box="0 0 48 46">
+        <circle cx="24" cy="3.5" r="2.5" {...line} />
+        <path d="M24 6 L5 13 M24 6 L43 13" {...line} />
+        <rect x="5" y="13" width="38" height="28" rx="2" {...line} />
+        <path d="M5 15 a2 2 0 0 1 2 -2 H41 a2 2 0 0 1 2 2 V20 H5 Z M5 34 H43 V39 a2 2 0 0 1 -2 2 H7 a2 2 0 0 1 -2 -2 Z" fill="rgba(217, 178, 111, 0.32)" stroke="none" />
+        <path d="M5 20 H43 M5 34 H43" {...line} />
+        <path d="M24 22 L26.5 25 H21.5 Z M19 27.5 Q24 22.5 29 27.5 Q24 26.3 19 27.5 Z M17 30.6 Q24 24.6 31 30.6 Q24 29 17 30.6 Z" {...dot} />
+        <path d="M24 30 V32.5" {...line} />
+    </Art>
+);
+const Firework = () => (
+    <Art box="0 4 48 48">
+        <path d="M24.0 21.0 L24.0 11.0 M27.5 23.1 L31.1 18.3 M30.7 25.8 L40.2 22.7 M29.7 29.9 L35.4 31.7 M28.1 33.7 L34.0 41.8 M24.0 34.0 L24.0 40.0 M19.9 33.7 L14.0 41.8 M18.3 29.9 L12.6 31.7 M17.3 25.8 L7.8 22.7 M20.5 23.1 L16.9 18.3" {...line} />
+        <circle cx="24.0" cy="7.0" r="1.6" {...dot} /> <circle cx="44.0" cy="21.5" r="1.6" {...dot} /> <circle cx="36.3" cy="45.0" r="1.6" {...dot} /> <circle cx="11.7" cy="45.0" r="1.6" {...dot} /> <circle cx="4.0" cy="21.5" r="1.6" {...dot} />
+        <circle cx="24" cy="28" r="2" {...dot} />
+    </Art>
+);
+const Rosette = () => (
+    <Art>
+        <circle cx="24" cy="3.5" r="2.5" {...line} />
+        <path d="M17 31 L12 56 L19 51 L23 57 L24 34 M31 31 L36 56 L29 51 L25 57 L24 34" {...body} />
+        <circle cx="37.0" cy="22.0" r="3.6" {...body} /> <circle cx="34.5" cy="29.6" r="3.6" {...body} /> <circle cx="28.0" cy="34.4" r="3.6" {...body} /> <circle cx="20.0" cy="34.4" r="3.6" {...body} /> <circle cx="13.5" cy="29.6" r="3.6" {...body} /> <circle cx="11.0" cy="22.0" r="3.6" {...body} /> <circle cx="13.5" cy="14.4" r="3.6" {...body} /> <circle cx="20.0" cy="9.6" r="3.6" {...body} /> <circle cx="28.0" cy="9.6" r="3.6" {...body} /> <circle cx="34.5" cy="14.4" r="3.6" {...body} />
+        <circle cx="24" cy="22" r="11.5" fill="#0B0B0C" stroke="none" />
+        <circle cx="24" cy="22" r="11.5" {...body} />
+        <path d="M24.0 14.5 L26.0 19.6 L31.4 19.9 L27.2 23.3 L28.6 28.6 L24.0 25.6 L19.4 28.6 L20.8 23.3 L16.6 19.9 L22.0 19.6 Z" {...dot} />
+    </Art>
+);
+
+/* ── Eid al-Fitr: gifts and sweets ─────────────────────────────────────── */
+
+const Gift = () => (
+    <Art>
+        <circle cx="24" cy="3.5" r="2.5" {...line} />
+        <path d="M24 20 C19 10 9 11 12 16.5 C14 20 20 20 24 20 Z M24 20 C29 10 39 11 36 16.5 C34 20 28 20 24 20 Z" {...body} />
+        <rect x="5" y="20" width="38" height="9" rx="2" {...body} />
+        <rect x="8" y="29" width="32" height="27" rx="2" {...body} />
+        <path d="M24 20 V56 M20.5 20 V56 M27.5 20 V56" {...line} />
+    </Art>
+);
+const Candy = () => (
+    <Art box="0 0 48 44">
+        <circle cx="24" cy="3.5" r="2.5" {...line} />
+        <path d="M24 6 V14" {...line} />
+        <path d="M13 26 L3 18 Q6.5 26 3 34 Z M35 26 L45 18 Q41.5 26 45 34 Z" {...body} />
+        <ellipse cx="24" cy="26" rx="12" ry="12" {...body} />
+        <path d="M17 16.5 Q22 26 17 35.5 M24 14 Q29 26 24 38 M31 16.5 Q35 26 31 35.5" {...line} />
+    </Art>
+);
+
 // Where each drawing hangs. On a laptop the layer covers the hero's right column, where the
 // bag's picture sits in the middle: `k` is the place across it, counted from its centre in
 // widths of that picture (the bag itself reaches about 0.3 each way), so the drawings stay
@@ -144,7 +256,40 @@ const SEASONS = {
         { art: RoundLantern, k: 0.5, drop: 128, size: 58, phone: { back: 6, drop: 86, size: 22 } },
         { art: Sparkle, k: 0.615, drop: 36, size: 18, far: true },
     ],
+    fitr: [
+        { art: Lantern, k: -0.64, drop: 96, size: 28, far: true },
+        { art: Sparkle, k: -0.53, drop: 52, size: 20 },
+        { art: Gift, k: -0.415, drop: 142, size: 60, phone: { back: 36, drop: 20, size: 24, from: 390 } },
+        { art: Crescent, k: -0.325, drop: 42, size: 48 },
+        { art: EightStar, k: 0.375, drop: 38, size: 42 },
+        { art: Candy, k: 0.5, drop: 136, size: 60, phone: { back: 6, drop: 88, size: 24 } },
+        { art: Sparkle, k: 0.615, drop: 36, size: 18, far: true },
+    ],
+    easter: [
+        { art: Flower, k: -0.64, drop: 100, size: 30, far: true },
+        { art: Sparkle, k: -0.53, drop: 52, size: 18 },
+        { art: Egg, k: -0.415, drop: 150, size: 58, phone: { back: 36, drop: 20, size: 24, from: 390 } },
+        { art: Chick, k: -0.335, drop: 28, size: 40 },
+        { art: DottedEgg, k: 0.375, drop: 36, size: 40 },
+        { art: Bunny, k: 0.5, drop: 132, size: 58, phone: { back: 6, drop: 84, size: 24 } },
+        { art: Flower, k: 0.615, drop: 32, size: 28, far: true },
+    ],
+    independence: [
+        { art: Sparkle, k: -0.64, drop: 96, size: 18, far: true },
+        { art: Firework, k: -0.53, drop: 44, size: 36 },
+        { art: Cedar, k: -0.415, drop: 146, size: 62, phone: { back: 36, drop: 20, size: 24, from: 390 } },
+        { art: Star, k: -0.325, drop: 44, size: 44 },
+        { art: Rosette, k: 0.375, drop: 36, size: 42 },
+        { art: Flag, k: 0.5, drop: 138, size: 62, phone: { back: 6, drop: 88, size: 26 } },
+        { art: Firework, k: 0.615, drop: 34, size: 30, far: true },
+    ],
 };
+
+// The drawings of an occasion side by side, for the admin's choice.
+export function SeasonPreview({ season }) {
+    const arts = [...new Set((SEASONS[season] || []).map(i => i.art))];
+    return arts.map((Drawing, i) => <span key={i} style={{ width: 44, flex: "none" }}><Drawing /></span>);
+}
 
 export default function SeasonDecor({ season }) {
     const items = SEASONS[season];

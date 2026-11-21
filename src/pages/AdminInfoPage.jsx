@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, PencilSimple, Trash, ChatCircleDots, Check, X, ArrowCounterClockwise } from "@phosphor-icons/react";
 import AdminShell from "../components/storefront/AdminShell";
 import { getInfo, createInfo, updateInfo, deleteInfo, getUnanswered, setQuestionState } from "../services/infoService";
+
+// Loaded when its tab is opened: visitors of the shop never download it.
+const OccasionSetting = lazy(() => import("../components/OccasionSetting"));
 
 // What the shop assistant knows about the store, plus the questions it could not answer.
 // The assistant answers only from these entries and the catalog.
@@ -209,6 +212,7 @@ export default function AdminInfoPage() {
                 <button role="tab" aria-selected={tab === "questions"} aria-pressed={tab === "questions"} onClick={() => setTab("questions")}>
                     Unanswered {openCount > 0 && <span className="ai-count sf-num">{openCount}</span>}
                 </button>
+                <button role="tab" aria-selected={tab === "occasion"} aria-pressed={tab === "occasion"} onClick={() => setTab("occasion")}>Occasion</button>
             </div>
 
             {tab === "info" && (
@@ -288,6 +292,8 @@ export default function AdminInfoPage() {
                     )}
                 </section>
             )}
+
+            {tab === "occasion" && <Suspense fallback={null}><OccasionSetting /></Suspense>}
 
             {tab === "questions" && (
                 <section>

@@ -10,7 +10,7 @@ import { getWaiting } from "../services/orderService";
 import { isCompressedVideo, posterFileOf, videoPoster } from "../utils/image";
 import { canCompress, capturePoster, compressVideo } from "../utils/videoCompress";
 import { compressImage } from "../utils/imageCompress";
-import { canClean, cleanPhoto, enlargementOf, NO_CLEANER, precleanPhotos, skipPrecleaning } from "../utils/bagCutout";
+import { canClean, cleanPhoto, enlargementOf, NO_CLEANER, precleanPhotos, prepareCleaner, skipPrecleaning } from "../utils/bagCutout";
 import { sharpenCleaned } from "../utils/photoSharpen";
 
 const MAX_VIDEOS = 5;
@@ -81,6 +81,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     const [cleanups, setCleanups]                   = useState({});
     const [cleanerProgress, setCleanerProgress]     = useState(null);  // first download of the cleaner, %
     const [cleanerError, setCleanerError]           = useState("");
+    const [engine, setEngine]                       = useState(null);  // what runs the photo tools here: "webgpu" | "wasm"
     const [softPhotos, setSoftPhotos]               = useState([]);    // photos cut out of small screenshots
     // Units of this bag that paid orders are waiting for: new stock goes to them first.
     const [waitingUnits, setWaitingUnits] = useState(0);
@@ -94,6 +95,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     }, [bagId]);
     const cleanQueue = useRef(Promise.resolve());                       // one photo at a time
     const screenshotCuts = useRef(new Set());                           // photos cut out of screenshots
+    const sharpenQueue = useRef(Promise.resolve());                     // one photo at a time, beside the cleaning
     // Each video: { key, url?, preview?, name?, status: "done" | "uploading" | "error", progress?, error?, long? }
     const [videos, setVideos] = useState(() =>
         (initialData?.videos || []).map(url => ({ key: url, url, status: "done" })));
@@ -158,17 +160,13 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
         setPreparingPhotos(n => n + 1);
         cleanQueue.current = cleanQueue.current.then(async () => {
             try {
-                let clean = await cleanPhoto(src, { onModelProgress: setCleanerProgress });
-                // A bag cut out of a screenshot is small and comes out soft: sharpen it once
-                // cleaned. If that can't run here, the cleaned photo is kept as it is.
-                if (clean && screenshotCuts.current.has(src)) {
-                    clean = await sharpenCleaned(clean, enlargementOf(src)).catch((err) => {
-                        console.warn("Photo sharpening failed:", err);
-                        return clean;
-                    });
-                }
-                setCleanups(p => ({ ...p, [src]: clean ? { status: "done", clean, check } : { status: "skipped" } }));
+                const clean = await cleanPhoto(src, { onModelProgress: setCleanerProgress });
+                // A bag cut out of a screenshot is small and comes out soft: it is sharpened too.
+                const sharpen = Boolean(clean) && screenshotCuts.current.has(src);
+                setCleanups(p => ({ ...p, [src]: clean ? { status: sharpen ? "sharpening" : "done", clean, check } : { status: "skipped" } }));
                 if (clean) replacePhoto(src, clean);
+                if (sharpen) sharpenLater(src, clean, check);
+                if (clean) prepareCleaner().then(({ ep }) => setEngine(ep)).catch(() => {});
             } catch (err) {
                 console.warn("Photo cleaning failed:", err);
                 setCleanups(p => ({ ...p, [src]: { status: "failed" } }));
@@ -178,6 +176,24 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                 setCleanerProgress(null);
                 setPreparingPhotos(n => n - 1);
             }
+        });
+    };
+
+    // Sharpening runs on its own, beside the cleaning of the next photos: the cleaned photo is
+    // already in place and the sharper one takes its place when ready. Save waits for it. If it
+    // can't run here, the cleaned photo stays as it is.
+    const sharpenLater = (src, clean, check) => {
+        setPreparingPhotos(n => n + 1);
+        sharpenQueue.current = sharpenQueue.current.then(async () => {
+            let sharp = clean;
+            try {
+                sharp = await sharpenCleaned(clean, enlargementOf(src));
+            } catch (err) {
+                console.warn("Photo sharpening failed:", err);
+            }
+            setCleanups(p => (p[src]?.clean === clean ? { ...p, [src]: { status: "done", clean: sharp, check } } : p));
+            if (sharp !== clean) replacePhoto(clean, sharp);
+            setPreparingPhotos(n => n - 1);
         });
     };
 
@@ -191,8 +207,8 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     // `small`: gallery thumbnails, where a long label would cover the remove button.
     const cleanChip = (src, small = false) => {
         const st = photoState(src);
-        if (st?.status === "cleaning") {
-            return <span className="bf-clean bf-clean--busy" role="status"><span className="bf-clean__dot" aria-hidden="true" /> Cleaning</span>;
+        if (st?.status === "cleaning" || st?.status === "sharpening") {
+            return <span className="bf-clean bf-clean--busy" role="status"><span className="bf-clean__dot" aria-hidden="true" /> {st.status === "cleaning" ? "Cleaning" : "Sharpening"}</span>;
         }
         if (st?.status === "done") {
             return st.showing === "clean" ? (
@@ -216,9 +232,10 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
     };
 
     /* Merge what the AI read from the chat into the form; blanks never overwrite. */
-    const applyAiResult = (d, uploaded = [], { soft = [], cuts = [] } = {}) => {
+    const applyAiResult = (d, uploaded = [], { soft = [], cuts = [], unused = [] } = {}) => {
         setSoftPhotos(soft);
         screenshotCuts.current = new Set(cuts);
+        skipPrecleaning(unused);   // cut out ahead of time, then not used: no need to clean them
         // Photos of the bag (whole-bag shots and details), in the order given: main first,
         // the rest go to the gallery.
         const photoNums = (d.images || []).filter(i => i.kind === "product" || i.kind === "detail").map(i => i.number);
@@ -501,6 +518,15 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
                                 </p>
                             )}
                             {cleanerError && <p className="bf-vid__warn bf-cleaner-note">{cleanerError}</p>}
+                            {engine && (
+                                <p className="sf-faint bf-cleaner-note bf-engine">
+                                    {engine === "webgpu"
+                                        ? "Photo tools: running on the graphics card (GPU)."
+                                        : `Photo tools: running on the processor (CPU), which is slower. ${typeof navigator !== "undefined" && navigator.gpu
+                                            ? "The graphics card could not run them here."
+                                            : "This browser can't use the graphics card: on an iPhone that needs iOS 26 or later. A laptop with Chrome is much faster."}`}
+                                </p>
+                            )}
                             {(() => {
                                 // Photos cut out of small screenshots (still shown, cleaned or not).
                                 const shown = new Set([imagePreview, ...sideImagePreviews]);

@@ -68,6 +68,15 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
     const [fresh, setFresh]       = useState(false); // badges just arrived, animate them in
     const rootRef = useRef(null);
 
+    // A photo shown inside a phone screenshot is looked for as soon as the screenshot is added
+    // (the pixels decide, see screenshotPhoto.js), so it can be cleaned while the AI is still
+    // reading. Each screenshot is cut once: the same photo is used when the AI has answered.
+    const precuts = useRef(new Map());   // screenshot -> Promise<{ photo, phoneScreen } | null>
+    const precut = (src) => {
+        if (!precuts.current.has(src)) precuts.current.set(src, cropViewerPhoto(src).catch(() => null));
+        return precuts.current.get(src);
+    };
+
     useEffect(() => {
         if (!loading) return;
         const id = setInterval(() => setStep(s => Math.min(s + 1, STEPS.length - 1)), 2200);
@@ -109,6 +118,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
         setShots(p => [...p, ...urls]);
         setKinds({});
         onPhotosAdded?.(urls);
+        urls.forEach((src) => precut(src).then((found) => { if (found?.photo) onPhotosAdded?.([found.photo.src]); }));
     };
 
     // Ctrl/Cmd+V a screenshot straight into the box
@@ -145,7 +155,7 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                 const soft = [];   // cut-outs too small to look sharp on the product page
                 const cuts = [];   // every photo cut out of a screenshot
                 await Promise.all((data.images || []).filter(i => i.framed).map(async (i) => {
-                    const found = await cropViewerPhoto(shots[i.number - 1]).catch(() => null);
+                    const found = await precut(shots[i.number - 1]);
                     const cut = found?.photo;
                     if (!cut) {
                         i.framed = false;
@@ -164,7 +174,11 @@ const AiQuickAdd = ({ onResult, onPhotosAdded }) => {
                 if (data.mainImage) k[data.mainImage - 1] = "main";
                 setKinds(k);
                 setFresh(!reducedMotion());
-                onResult(data, photos, { soft, cuts });
+                // Photos cut out ahead of time that are not used after all (the AI did not call
+                // their screenshot a photo, or the screenshot was removed).
+                const unused = (await Promise.all([...precuts.current.values()]))
+                    .map(found => found?.photo?.src).filter(src => src && !cuts.includes(src));
+                onResult(data, photos, { soft, cuts, unused });
                 setDone(true);
             } else {
                 setError(res.message || "AI could not read this");

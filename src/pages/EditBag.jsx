@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
+import { useGoBack } from "../utils/goBack";
 import { ArrowLeft, Package, WarningCircle } from "@phosphor-icons/react";
 import BagForm from "../components/BagForm";
 import AdminShell from "../components/storefront/AdminShell";
@@ -9,6 +10,7 @@ import { getBagById, updateBag } from "../services/bagService";
 const EditBag = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const goBack = useGoBack();
     const [bagData, setBagData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -39,7 +41,7 @@ const EditBag = () => {
         const result = await updateBag(id, formData);
         if (result.success) {
             if (result.reserved?.length) setReserved({ orders: result.reserved, stock: result.data?.stock ?? 0 });
-            else navigate("/admin/dashboard");
+            else goBack("/admin/dashboard");   // back to the list, at the page it was on
         }
         return result;
     };
@@ -75,7 +77,7 @@ const EditBag = () => {
                     <h2 className="sf-h3">Could not load this bag</h2>
                     <p className="sf-muted">{error}</p>
                     <button className="sf-btn sf-btn--ghost sf-btn--sm" style={{ marginTop: 8 }}
-                        onClick={() => navigate("/admin/dashboard")}>
+                        onClick={() => goBack("/admin/dashboard")}>
                         <ArrowLeft size={16} /> Back to bags
                     </button>
                 </div>
@@ -115,7 +117,7 @@ const EditBag = () => {
                         <button className="sf-btn sf-btn--primary sf-btn--block" onClick={() => navigate("/admin/orders?status=ready")}>
                             See orders ready to deliver
                         </button>
-                        <button className="sf-btn sf-btn--ghost sf-btn--block" onClick={() => navigate("/admin/dashboard")}>Done</button>
+                        <button className="sf-btn sf-btn--ghost sf-btn--block" onClick={() => goBack("/admin/dashboard")}>Done</button>
                     </div>
                 </div>,
                 document.body

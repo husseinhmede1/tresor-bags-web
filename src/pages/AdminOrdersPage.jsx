@@ -4,6 +4,7 @@ import { CaretLeft, CaretRight, Receipt } from "@phosphor-icons/react";
 import { getAllOrders, getWaiting } from "../services/orderService";
 import { STAGE_LABEL, orderUnits, stageOf } from "../utils/orderStage";
 import AdminShell from "../components/storefront/AdminShell";
+import { useReturnPlace } from "../utils/returnPlace";
 
 const STATUSES = [
     { k: "", label: "All" },
@@ -26,14 +27,19 @@ const fmtDate = (d) => { try { return new Date(d).toLocaleString(undefined, { da
 export default function AdminOrdersPage() {
     const navigate = useNavigate();
     const [sp] = useSearchParams();
-    const [status, setStatus] = useState(sp.get("status") || "");
-    const [period, setPeriod] = useState("all");
-    const [page, setPage] = useState(1);
+    // Coming back from an order: the same filter, page and place in the list as before.
+    const { view: was, remember, restoreScroll } = useReturnPlace();
+    const [status, setStatus] = useState(was ? was.status || "" : sp.get("status") || "");
+    const [period, setPeriod] = useState(was?.period || "all");
+    const [page, setPage] = useState(was?.page || 1);
     const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => { setPage(1); }, [status, period]);
+    // Another filter starts again at page 1.
+    const pickStatus = (k) => { setStatus(k); setPage(1); };
+    const pickPeriod = (k) => { setPeriod(k); setPage(1); };
+    useEffect(() => { remember({ status, period, page }); }, [remember, status, period, page]);
 
     useEffect(() => {
         setLoading(true); setError("");
@@ -52,6 +58,8 @@ export default function AdminOrdersPage() {
         return () => { off = true; };
     }, [status]);
 
+    useEffect(() => { if (!loading) restoreScroll(); }, [loading, restoreScroll]);
+
     const subtitle = loading ? "Loading orders" : `${data.total} order${data.total === 1 ? "" : "s"}`;
 
     return (
@@ -61,12 +69,12 @@ export default function AdminOrdersPage() {
             <div className="aos-filters">
                 <div className="sf-seg aos-seg" role="group" aria-label="Filter by status">
                     {STATUSES.map((s) => (
-                        <button key={s.k} type="button" aria-pressed={status === s.k} onClick={() => setStatus(s.k)}>{s.label}</button>
+                        <button key={s.k} type="button" aria-pressed={status === s.k} onClick={() => pickStatus(s.k)}>{s.label}</button>
                     ))}
                 </div>
                 <div className="sf-chips" role="group" aria-label="Filter by period">
                     {PERIODS.map((p) => (
-                        <button key={p.k} type="button" className="sf-chip" aria-pressed={period === p.k} onClick={() => setPeriod(p.k)}>{p.label}</button>
+                        <button key={p.k} type="button" className="sf-chip" aria-pressed={period === p.k} onClick={() => pickPeriod(p.k)}>{p.label}</button>
                     ))}
                 </div>
             </div>

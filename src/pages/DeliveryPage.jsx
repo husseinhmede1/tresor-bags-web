@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useGoBack } from '../utils/goBack';
 import LEBANON from '../data/lebanon';
 import LocationPicker from '../components/LocationPicker';
 import SiteHeader from '../components/storefront/SiteHeader';
@@ -34,6 +35,7 @@ function validatePhone(v) {
 
 export default function DeliveryPage() {
   const navigate = useNavigate();
+  const goBack = useGoBack();
   const [form, setForm] = useState(INITIAL);
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -147,7 +149,7 @@ export default function DeliveryPage() {
           <p className="sf-error" role="alert" style={{ marginTop: 24 }}>Please fix the fields marked above.</p>
         )}
         <div style={{ display: 'flex', gap: 12, marginTop: 32 }}>
-          <button className="sf-btn sf-btn--ghost" onClick={() => navigate('/cart')}>Back</button>
+          <button className="sf-btn sf-btn--ghost" onClick={() => goBack('/cart')}>Back</button>
           <button className="sf-btn sf-btn--primary" style={{ flex: 1 }} onClick={handleContinue}>Continue to payment</button>
         </div>
         <p className="sf-faint" style={{ fontSize: 13, marginTop: 16 }}>

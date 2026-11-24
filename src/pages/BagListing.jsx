@@ -7,6 +7,7 @@ import { getAllTypes, deleteType } from "../services/typeService";
 import { getAllCollections } from "../services/collectionService";
 import { sized } from "../utils/image";
 import { rememberedSeason, rememberSeason } from "../utils/season";
+import { useReturnPlace, useStepKey } from "../utils/returnPlace";
 import { MAX_PER_BAG, PREORDER_FLAG } from "../utils/preorder";
 import ShopAssistant from "../components/ShopAssistant";
 import BrandFilm from "../components/storefront/BrandFilm";
@@ -49,11 +50,15 @@ const BagListing = () => {
     const location = useLocation();
     // A choice from the header's shop menu (see ShopMenu): open straight on the shop with it.
     const shopPick = location.state?.shopPick;
+    // Coming back to this list (the browser's back, a Cancel, the arrow on a bag's page): `was`
+    // is what it was showing, so it opens on the same page, filters and place, not on page 1.
+    const place = useReturnPlace();
+    const was = place.view || {};
 
     const savedCategory = sessionStorage.getItem('tresor-selected-category') || null;
     // Set when a bag was opened from the assistant, so coming back reopens it where it was.
     const [askReturn] = useState(() => sessionStorage.getItem('tresor-ask-return'));
-    const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(savedCategory);
+    const [selectedPrimaryCategory, setSelectedPrimaryCategory] = useState(place.view ? was.selectedPrimaryCategory || null : savedCategory);
 
     // A bag picked from an assistant's answer ('home': the hero, 'listing': the shop's panel).
     const openBag = (id, from) => {
@@ -68,42 +73,42 @@ const BagListing = () => {
         if (askReturn === 'listing') setTimeout(() => askRef.current?.scrollIntoView({ block: "center" }), 100);
     }, [askReturn]);
 
-    const [activeTab, setActiveTab] = useState("items");
+    const [activeTab, setActiveTab] = useState(was.activeTab || "items");
 
     const [bags, setBags] = useState([]);
     const [loadingBags, setLoadingBags] = useState(true);
     const [errorBags, setErrorBags] = useState("");
-    const [bagPage, setBagPage] = useState(1);
+    const [bagPage, setBagPage] = useState(was.bagPage || 1);
     const [bagTotalPages, setBagTotalPages] = useState(1);
     const [bagTotal, setBagTotal] = useState(0);
     const LIMIT = 12;
 
-    const [selectedCategory, setSelectedCategory] = useState(null);
-    const [selectedCollection, setSelectedCollection] = useState(null);
+    const [selectedCategory, setSelectedCategory] = useState(was.selectedCategory || null);
+    const [selectedCollection, setSelectedCollection] = useState(was.selectedCollection || null);
     const [collections, setCollections] = useState([]);
 
-    const [searchInput, setSearchInput] = useState("");
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchInput, setSearchInput] = useState(was.searchQuery || "");
+    const [searchQuery, setSearchQuery] = useState(was.searchQuery || "");
     const debounceRef = useRef(null);
-    const [minPrice, setMinPrice] = useState("");
-    const [maxPrice, setMaxPrice] = useState("");
-    const [minHeight, setMinHeight] = useState("");
-    const [maxHeight, setMaxHeight] = useState("");
-    const [minWidth, setMinWidth] = useState("");
-    const [maxWidth, setMaxWidth] = useState("");
-    const [minWeight, setMinWeight] = useState("");
-    const [maxWeight, setMaxWeight] = useState("");
-    const [color, setColor] = useState("");
-    const [capacity, setCapacity] = useState("");
-    const [filterOpen, setFilterOpen] = useState(false);
+    const [minPrice, setMinPrice] = useState(was.minPrice || "");
+    const [maxPrice, setMaxPrice] = useState(was.maxPrice || "");
+    const [minHeight, setMinHeight] = useState(was.minHeight || "");
+    const [maxHeight, setMaxHeight] = useState(was.maxHeight || "");
+    const [minWidth, setMinWidth] = useState(was.minWidth || "");
+    const [maxWidth, setMaxWidth] = useState(was.maxWidth || "");
+    const [minWeight, setMinWeight] = useState(was.minWeight || "");
+    const [maxWeight, setMaxWeight] = useState(was.maxWeight || "");
+    const [color, setColor] = useState(was.color || "");
+    const [capacity, setCapacity] = useState(was.capacity || "");
+    const [filterOpen, setFilterOpen] = useState(Boolean(was.filterOpen));
     const [adminMenuOpen, setAdminMenuOpen] = useState(false);
 
     const [categories, setCategories] = useState([]);
     const [loadingCats, setLoadingCats] = useState(false);
-    const [catSearch, setCatSearch] = useState("");
-    const [catSearchQuery, setCatSearchQuery] = useState("");
+    const [catSearch, setCatSearch] = useState(was.catSearchQuery || "");
+    const [catSearchQuery, setCatSearchQuery] = useState(was.catSearchQuery || "");
     const catDebounceRef = useRef(null);
-    const [hasDiscount, setHasDiscount] = useState(false);
+    const [hasDiscount, setHasDiscount] = useState(Boolean(was.hasDiscount));
     const [catPage, setCatPage] = useState(1);
     const [, setCatTotalPages] = useState(1);
     const [catTotal, setCatTotal] = useState(0);
@@ -209,7 +214,27 @@ const BagListing = () => {
         getAllBags({ page: 1, limit: 1 }).then(res => setAllBagsCount(res.total ?? null)).catch(() => {});
     }, []);
 
-    useEffect(() => { setBagPage(1); }, [searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection]);
+    // A new search or filter starts again at page 1. Only when one really changes: not when the
+    // page opens, which may be on the page the visitor left.
+    const filterKey = JSON.stringify([searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory?._id, selectedPrimaryCategory, selectedCollection?._id]);
+    const lastFilterKey = useRef(filterKey);
+    useEffect(() => {
+        if (lastFilterKey.current === filterKey) return;
+        lastFilterKey.current = filterKey;
+        setBagPage(1);
+    }, [filterKey]);
+
+    // What the list is showing, kept for when the visitor comes back to it.
+    const { remember, restoreScroll } = place;
+    useEffect(() => {
+        remember({ activeTab, bagPage, selectedPrimaryCategory, selectedCategory, selectedCollection, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, filterOpen, catSearchQuery, hasDiscount });
+    }, [remember, activeTab, bagPage, selectedPrimaryCategory, selectedCategory, selectedCollection, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, filterOpen, catSearchQuery, hasDiscount]);
+    // Back where they were on the page, once the list is on screen. (A bag opened from the
+    // assistant has its own way back to the assistant, above.)
+    const listReady = activeTab === "items" ? !loadingBags : !loadingCats && categories.length > 0;
+    useEffect(() => {
+        if (listReady && place.view && !askReturn) restoreScroll();
+    }, [listReady, place.view, askReturn, restoreScroll]);
     useEffect(() => { if (activeTab === "items") fetchBags(); }, [bagPage, searchQuery, minPrice, maxPrice, minHeight, maxHeight, minWidth, maxWidth, minWeight, maxWeight, color, capacity, selectedCategory, selectedPrimaryCategory, selectedCollection, activeTab]);
     useEffect(() => { setCatPage(1); }, [catSearchQuery, hasDiscount]);
     useEffect(() => { if (activeTab === "categories") fetchCategories(); }, [catPage, catSearchQuery, hasDiscount, selectedPrimaryCategory, activeTab]);
@@ -616,4 +641,7 @@ const BagListing = () => {
     );
 };
 
-export default BagListing;
+// Opened again when the visitor goes back between two steps that are both this page.
+const BagListingStep = () => <BagListing key={useStepKey()} />;
+
+export default BagListingStep;

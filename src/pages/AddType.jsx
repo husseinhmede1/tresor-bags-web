@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGoBack } from "../utils/goBack";
 import { createType } from "../services/typeService";
 import AdminShell from "../components/storefront/AdminShell";
 
@@ -13,6 +14,7 @@ const errorField = (msg) =>
 
 export default function AddType() {
     const navigate = useNavigate();
+    const goBack = useGoBack();
     const [form, setForm] = useState({ title: "", category: "", discount: "", note: "" });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -87,7 +89,7 @@ export default function AddType() {
                     <button type="submit" className="sf-btn sf-btn--primary" disabled={loading} aria-busy={loading}>
                         {loading ? "Saving…" : "Save type"}
                     </button>
-                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => navigate("/admin/dashboard")}>Cancel</button>
+                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => goBack("/admin/dashboard")}>Cancel</button>
                 </div>
             </form>
         </AdminShell>

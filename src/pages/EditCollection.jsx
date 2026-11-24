@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useGoBack } from "../utils/goBack";
 import { ImageSquare, X, ArrowsClockwise } from "@phosphor-icons/react";
 import { getCollectionById, updateCollection } from "../services/collectionService";
 import AdminShell from "../components/storefront/AdminShell";
 
 export default function EditCollection() {
     const { id } = useParams();
-    const navigate = useNavigate();
+    const goBack = useGoBack();
     const [title, setTitle] = useState("");
     const [logo, setLogo] = useState("");
     const [preview, setPreview] = useState("");
@@ -34,7 +35,7 @@ export default function EditCollection() {
         setLoading(true); setError("");
         try {
             const res = await updateCollection(id, { title: title.trim(), logo });
-            if (res.success) navigate("/admin/dashboard");
+            if (res.success) goBack("/admin/dashboard");
         } catch (err) { setError(err.message || "Failed to update collection"); }
         finally { setLoading(false); }
     };
@@ -90,7 +91,7 @@ export default function EditCollection() {
                     <button type="submit" className="sf-btn sf-btn--primary" disabled={loading} aria-busy={loading}>
                         {loading ? "Saving…" : "Save changes"}
                     </button>
-                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => navigate("/admin/dashboard")}>Cancel</button>
+                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => goBack("/admin/dashboard")}>Cancel</button>
                 </div>
             </form>
             )}

@@ -3,6 +3,10 @@ import "@fontsource-variable/geist";
 import "./styles/storefront.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 
+// Where a page is scrolled to is decided here, not by the browser: the top on a new page, and
+// the place the visitor left on a list they come back to (see utils/returnPlace.js).
+if (typeof window !== "undefined" && "scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+
 /* Scrolls to top on every route change */
 const ScrollToTop = () => {
   const { pathname } = useLocation();

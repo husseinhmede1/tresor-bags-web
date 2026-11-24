@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useGoBack } from "../utils/goBack";
 import { ArrowCounterClockwise, FilmSlate, ImageSquare, MagicWand, Play, Plus, Star, Trash, X } from "@phosphor-icons/react";
 import AdminShell from "./storefront/AdminShell";
 import { getAllTypes } from "../services/typeService";
@@ -52,7 +52,7 @@ const errProps = (id, error) => ({
 });
 
 const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag" }) => {
-    const navigate = useNavigate();
+    const goBack = useGoBack();
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -464,7 +464,7 @@ const BagForm = ({ bagId = null, initialData = null, onSubmit, title = "Add bag"
 
     const missing = Object.keys(errors).filter(k => k !== "submit").length;
 
-    const handleCancel = () => navigate("/admin/dashboard");
+    const handleCancel = () => goBack("/admin/dashboard");
 
     const typeLabel = (t) => `${t.title} · ${t.category}${t.discount > 0 ? ` (${t.discount}% off)` : ""}`;
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useGoBack } from '../utils/goBack';
 import { getOrderByToken, confirmOrder, deliverOrder, cancelOrder } from '../services/orderService';
 import {
   ArrowLeft, ArrowSquareOut, CheckCircle, EnvelopeSimple, Handbag, HourglassMedium, MagnifyingGlass,
@@ -88,7 +89,7 @@ function buildCancelMessage(order) {
 
 export default function AdminOrderPage() {
   const { token } = useParams();
-  const navigate = useNavigate();
+  const goBack = useGoBack();
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -236,7 +237,7 @@ export default function AdminOrderPage() {
         </div>
       )}
 
-      <button className="sf-btn sf-btn--ghost sf-btn--sm" onClick={() => navigate('/admin/orders')}>
+      <button className="sf-btn sf-btn--ghost sf-btn--sm" onClick={() => goBack('/admin/orders')}>
         <ArrowLeft size={16} /> Orders
       </button>
 

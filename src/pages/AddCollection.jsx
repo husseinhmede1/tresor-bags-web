@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGoBack } from "../utils/goBack";
 import { ImageSquare, X } from "@phosphor-icons/react";
 import { createCollection } from "../services/collectionService";
 import AdminShell from "../components/storefront/AdminShell";
 
 export default function AddCollection() {
     const navigate = useNavigate();
+    const goBack = useGoBack();
     const [title, setTitle] = useState("");
     const [logo, setLogo] = useState("");
     const [preview, setPreview] = useState("");
@@ -71,7 +73,7 @@ export default function AddCollection() {
                     <button type="submit" className="sf-btn sf-btn--primary" disabled={loading} aria-busy={loading}>
                         {loading ? "Saving…" : "Save collection"}
                     </button>
-                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => navigate("/admin/dashboard")}>Cancel</button>
+                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => goBack("/admin/dashboard")}>Cancel</button>
                 </div>
             </form>
         </AdminShell>

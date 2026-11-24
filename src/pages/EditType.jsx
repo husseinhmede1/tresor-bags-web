@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useGoBack } from "../utils/goBack";
 import { getTypeById, updateType } from "../services/typeService";
 import AdminShell from "../components/storefront/AdminShell";
 
@@ -13,7 +14,7 @@ const errorField = (msg) =>
 
 export default function EditType() {
     const { id } = useParams();
-    const navigate = useNavigate();
+    const goBack = useGoBack();
     const [form, setForm] = useState({ title: "", category: "", discount: "", note: "" });
     const [fetching, setFetching] = useState(true);
     const [error, setError] = useState("");
@@ -47,7 +48,7 @@ export default function EditType() {
                 discount: form.discount === "" ? 0 : Number(form.discount),
                 note: form.note.trim(),
             });
-            if (res.success) navigate("/admin/dashboard");
+            if (res.success) goBack("/admin/dashboard");
         } catch (err) { setError(err.message || "Failed to update type"); }
         finally { setLoading(false); }
     };
@@ -112,7 +113,7 @@ export default function EditType() {
                     <button type="submit" className="sf-btn sf-btn--primary" disabled={loading} aria-busy={loading}>
                         {loading ? "Saving…" : "Save changes"}
                     </button>
-                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => navigate("/admin/dashboard")}>Cancel</button>
+                    <button type="button" className="sf-btn sf-btn--ghost" onClick={() => goBack("/admin/dashboard")}>Cancel</button>
                 </div>
             </form>
             )}
